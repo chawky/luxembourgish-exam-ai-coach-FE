@@ -1,0 +1,99 @@
+.themes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1.5rem 0;
+}
+.theme-chip {
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+.theme-chip:hover { border-color: var(--primary); }
+.theme-chip.active { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+
+.flash-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+.arrow-btn {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  color: var(--foreground);
+  transition: all 0.15s;
+}
+.arrow-btn:hover { border-color: var(--primary); color: var(--primary); }
+.flip { transform: rotate(180deg); }
+
+.flashcard {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  height: 280px;
+  cursor: pointer;
+  perspective: 1200px;
+}
+.face {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(var(--radius) + 4px);
+  border: 1px solid var(--border);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  text-align: center;
+  backface-visibility: hidden;
+  transition: transform 0.5s;
+  box-shadow: 0 10px 30px -12px rgba(15, 38, 76, 0.25);
+}
+.front { background: var(--card); transform: rotateY(0deg); }
+.back {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  transform: rotateY(180deg);
+}
+.flashcard.flipped .front { transform: rotateY(-180deg); }
+.flashcard.flipped .back { transform: rotateY(0deg); }
+
+.lb-word { font-size: 2.2rem; font-weight: 800; color: var(--primary); }
+.en-word { font-size: 1.8rem; font-weight: 800; }
+.example {
+  font-style: italic;
+  opacity: 0.9;
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.counter {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+.dots { display: flex; gap: 0.4rem; }
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.15s;
+}
+.dot.active { background: var(--primary); }

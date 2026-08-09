@@ -1,0 +1,150 @@
+.page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.page-head h1 {
+  font-size: 28px;
+  margin: 4px 0 6px;
+}
+
+.card-title {
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+.small {
+  font-size: 13px;
+}
+
+/* Stat cards */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.stat strong {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 22px;
+  color: var(--blue-900);
+}
+.stat span.text-muted {
+  font-size: 13.5px;
+}
+.stat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+.stat-icon.blue {
+  background: var(--blue-50);
+  color: var(--blue-700);
+}
+.stat-icon.sky {
+  background: var(--sky-50);
+  color: #0277a8;
+}
+.stat-icon.green {
+  background: #e7f4ec;
+  color: var(--green);
+}
+
+/* Columns */
+.cols {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+/* Skills */
+.skills {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.skill-label {
+  font-weight: 600;
+}
+.skill .progress {
+  margin-top: 8px;
+}
+
+/* Quick links */
+.quick {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.quick-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition:
+    border 0.15s ease,
+    background 0.15s ease;
+}
+.quick-item:hover {
+  border-color: var(--blue-600);
+  background: var(--blue-50);
+}
+.quick-item strong {
+  display: block;
+  font-size: 15px;
+}
+.quick-item app-icon:last-child {
+  color: var(--slate-500);
+}
+.quick-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--blue-50);
+  color: var(--blue-700);
+  flex-shrink: 0;
+}
+
+/* Tip */
+.tip {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.tip strong {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  color: var(--blue-900);
+}
+.tip p {
+  margin: 6px 0 0;
+}
+
+@media (min-width: 640px) {
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (min-width: 1000px) {
+  .cols {
+    grid-template-columns: 1.1fr 0.9fr;
+  }
+}

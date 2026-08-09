@@ -1,0 +1,121 @@
+.chat {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 230px);
+  min-height: 460px;
+  margin-top: 1.5rem;
+  overflow: hidden;
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.msg { display: flex; gap: 0.6rem; max-width: 80%; }
+.msg.user { margin-left: auto; flex-direction: row-reverse; }
+
+.avatar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--secondary);
+  color: var(--primary);
+  display: grid;
+  place-items: center;
+}
+
+.bubble-group { display: flex; flex-direction: column; gap: 0.35rem; }
+.bubble {
+  padding: 0.7rem 1rem;
+  border-radius: 16px;
+  background: var(--muted);
+  color: var(--foreground);
+  line-height: 1.5;
+  border-top-left-radius: 4px;
+}
+.msg.user .bubble {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 4px;
+}
+
+.correction {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 10%, transparent);
+  padding: 0.35rem 0.6rem;
+  border-radius: 8px;
+}
+
+.typing { display: flex; gap: 4px; align-items: center; }
+.typing span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted-foreground);
+  animation: blink 1.2s infinite;
+}
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink {
+  0%, 60%, 100% { opacity: 0.25; }
+  30% { opacity: 1; }
+}
+
+.suggestions {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 0;
+  flex-wrap: wrap;
+}
+.suggestion {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  cursor: pointer;
+  color: var(--foreground);
+  transition: all 0.15s;
+}
+.suggestion:hover { border-color: var(--primary); color: var(--primary); }
+
+.composer {
+  display: flex;
+  gap: 0.6rem;
+  padding: 1rem;
+  border-top: 1px solid var(--border);
+}
+.composer input {
+  flex: 1;
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  font-size: 0.95rem;
+  color: var(--foreground);
+}
+.composer input:focus { outline: none; border-color: var(--primary); }
+.send-btn {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.send-btn:disabled { opacity: 0.4; cursor: not-allowed; }

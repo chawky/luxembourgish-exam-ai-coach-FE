@@ -5,8 +5,9 @@ import {
 } from '@angular/core';
 import { provideRouter, withInMemoryScrolling } from '@angular/router';
 import { routes } from './app.routes';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { AuthService } from './services/auth.service';
+import { authTokenInterceptor } from './interceptors/auth-token.interceptor';
 
 function initializeAuth(auth: AuthService): () => Promise<void> {
   return () => auth.initializeSession();
@@ -14,7 +15,7 @@ function initializeAuth(auth: AuthService): () => Promise<void> {
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideHttpClient(),
+    provideHttpClient(withInterceptors([authTokenInterceptor])),
     {
       provide: APP_INITIALIZER,
       useFactory: initializeAuth,

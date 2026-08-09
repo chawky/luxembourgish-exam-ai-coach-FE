@@ -1,9 +1,5 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import {
-  HttpClient,
-  HttpErrorResponse,
-  HttpHeaders,
-} from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import {
   catchError,
   firstValueFrom,
@@ -39,7 +35,7 @@ export class AuthService {
     }
 
     return firstValueFrom(
-      this.fetchCurrentUser(token).pipe(
+      this.fetchCurrentUser().pipe(
         map(() => undefined),
         catchError(() => {
           this.currentUser.set(null);
@@ -103,12 +99,9 @@ export class AuthService {
     return of(null);
   }
 
-  private fetchCurrentUser(token: string) {
+  private fetchCurrentUser() {
     return this.https
-      .get<ApiResponse<ResponseUserDto | null>>(
-        this.url + '/me',
-        this.getAuthOptions(token),
-      )
+      .get<ApiResponse<ResponseUserDto | null>>(this.url + '/me')
       .pipe(
         this.requireSuccess('Could not load current user.'),
         tap((response) => {
@@ -117,14 +110,6 @@ export class AuthService {
           );
         }),
       );
-  }
-
-  private getAuthOptions(token: string) {
-    return {
-      headers: new HttpHeaders({
-        Authorization: `Bearer ${this.normalizeToken(token)}`,
-      }),
-    };
   }
 
   private getToken(): string | null {

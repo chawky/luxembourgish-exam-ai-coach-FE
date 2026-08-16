@@ -51,6 +51,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'exercises',
+        loadComponent: () =>
+          import('./pages/exercises/exercises.component').then(
+            (m) => m.ExercisesComponent,
+          ),
+      },
+      {
         path: 'mock-exam',
         loadComponent: () =>
           import('./pages/mock-exam/mock-exam.component').then(

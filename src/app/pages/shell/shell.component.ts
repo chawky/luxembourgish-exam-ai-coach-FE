@@ -97,6 +97,7 @@ export class ShellComponent {
     { path: '/app/dashboard', label: 'Dashboard', icon: 'chart' },
     { path: '/app/speaking', label: 'Speaking', icon: 'mic' },
     { path: '/app/listening', label: 'Listening', icon: 'headphones' },
+    { path: '/app/exercises', label: 'Exercises', icon: 'book' },
     { path: '/app/mock-exam', label: 'Mock Exam', icon: 'clipboard' },
     { path: '/app/vocabulary', label: 'Vocabulary', icon: 'cards' },
     { path: '/app/chat', label: 'AI Tutor', icon: 'chat' },

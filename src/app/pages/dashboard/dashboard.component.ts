@@ -116,6 +116,7 @@ export class DashboardComponent {
   quickLinks = [
     { path: '/app/speaking', icon: 'mic', title: 'Speaking drill', text: 'Practice an exam-style prompt' },
     { path: '/app/listening', icon: 'headphones', title: 'Listening exercise', text: 'Sharpen your comprehension' },
+    { path: '/app/exercises', icon: 'book', title: 'Topic exercises', text: 'Generate practice by level and topic' },
     { path: '/app/vocabulary', icon: 'cards', title: 'Flashcards', text: 'Review everyday vocabulary' },
     { path: '/app/chat', icon: 'chat', title: 'Chat with your tutor', text: 'Have a guided conversation' },
   ];

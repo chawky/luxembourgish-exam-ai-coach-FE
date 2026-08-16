@@ -59,3 +59,74 @@ export interface ChatMessage {
   text: string;
   correction?: string;
 }
+
+export type ExerciseLevel = 'A1' | 'A2' | 'B1';
+
+export type ExerciseTopic =
+  | 'INTRODUCTION'
+  | 'FAMILY'
+  | 'HOME'
+  | 'DAILY_ROUTINE'
+  | 'WORK'
+  | 'EDUCATION'
+  | 'FOOD_AND_DRINK'
+  | 'SHOPPING'
+  | 'CLOTHES'
+  | 'HEALTH'
+  | 'SPORTS'
+  | 'HOBBIES'
+  | 'TRANSPORT'
+  | 'TRAVEL'
+  | 'WEATHER'
+  | 'NATURE'
+  | 'CITY_AND_PLACES'
+  | 'PUBLIC_SERVICES'
+  | 'LUXEMBOURG'
+  | 'FRIENDS_AND_SOCIAL_LIFE'
+  | 'MEDIA_AND_TECHNOLOGY'
+  | 'EVENTS_AND_CELEBRATIONS'
+  | 'TIME_AND_DATES'
+  | 'PAST_EXPERIENCES'
+  | 'FUTURE_PLANS'
+  | 'OPINIONS_AND_PREFERENCES';
+
+export type ExerciseType =
+  | 'TRANSLATION'
+  | 'MULTIPLE_CHOICE'
+  | 'FILL_IN_THE_BLANK'
+  | 'SHORT_ANSWER';
+
+export interface GenerateExerciseRequest {
+  level: ExerciseLevel;
+  topic: ExerciseTopic;
+  type: ExerciseType;
+}
+
+export interface ExerciseOptionDto {
+  id?: string;
+  label?: string;
+  text?: string;
+  correct?: boolean;
+}
+
+export interface ExerciseDto {
+  id?: string;
+  level?: ExerciseLevel | string;
+  topic?: string;
+  type?: ExerciseType | string;
+  title?: string;
+  instruction?: string;
+  prompt?: string;
+  question?: string;
+  sourceText?: string;
+  targetLanguage?: string;
+  options?: Array<string | ExerciseOptionDto>;
+  expectedAnswer?: string;
+  hint?: string;
+  answer?: string;
+  correctAnswer?: string;
+  explanation?: string;
+  hints?: string[];
+}
+
+export type GeneratedExerciseDto = ExerciseDto;

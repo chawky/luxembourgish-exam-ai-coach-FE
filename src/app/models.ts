@@ -130,3 +130,17 @@ export interface ExerciseDto {
 }
 
 export type GeneratedExerciseDto = ExerciseDto;
+
+export interface SpeakingPracticeDto extends ExerciseDto {
+  questionsTranslations?: string;
+  questionTranslation?: string;
+  questionEn?: string;
+  promptEn?: string;
+}
+
+export interface SpeakingEvaluationDto {
+  transcript?: string;
+  score?: number;
+  feedback?: string;
+  corrections?: string[];
+}

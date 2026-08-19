@@ -1,133 +1,333 @@
 import { Component, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DataService } from '../../services/data.service';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { SpeakingService } from '../../services/speaking.service';
 import { IconComponent } from '../../components/icon.component';
-import { SpeakingPrompt } from '../../models';
+import {
+  GenerateExerciseRequest,
+  ExerciseLevel,
+  ExerciseTopic,
+  SpeakingEvaluationDto,
+  SpeakingPracticeDto,
+  SpeakingPrompt,
+} from '../../models';
+import {
+  PRACTICE_LEVELS,
+  PRACTICE_TOPICS,
+  TopicOption,
+  topicLabel,
+} from '../../practice-options';
 
 @Component({
   selector: 'app-speaking',
   standalone: true,
-  imports: [CommonModule, IconComponent],
+  imports: [CommonModule, ReactiveFormsModule, IconComponent],
   template: `
     <header class="page-head">
       <div>
         <span class="eyebrow">Speaking practice</span>
         <h1>Speak like the exam</h1>
         <p class="text-muted">
-          Pick a prompt, record your answer, and review structured coaching tips.
+          Choose a level and topic, generate a prompt, then record your answer.
         </p>
       </div>
     </header>
 
     <div class="layout">
-      <!-- Prompt list -->
-      <aside class="prompt-list">
-        @for (p of prompts; track p.id) {
-          <button
-            class="prompt-card"
-            [class.active]="p.id === current().id"
-            (click)="select(p)"
-          >
-            <div class="flex items-center justify-between">
-              <span class="badge">{{ p.level }}</span>
-              <app-icon name="mic" [size]="16"></app-icon>
-            </div>
-            <strong>{{ p.topic }}</strong>
-            <span class="text-muted small">{{ p.questionEn }}</span>
-          </button>
-        }
-      </aside>
-
-      <!-- Practice panel -->
-      <section class="card card-pad panel">
-        <span class="badge badge-sky">{{ current().topic }} · {{ current().level }}</span>
-        <h2 class="lb-question">{{ current().question }}</h2>
-        <p class="text-muted translation">{{ current().questionEn }}</p>
-
-        <div class="recorder">
-          <button
-            class="record-btn"
-            [class.recording]="recording()"
-            (click)="toggleRecord()"
-            [attr.aria-label]="recording() ? 'Stop recording' : 'Start recording'"
-          >
-            <app-icon [name]="recording() ? 'check' : 'mic'" [size]="26"></app-icon>
-          </button>
-          <div class="recorder-meta">
-            <strong>{{ recording() ? 'Recording…' : feedback() ? 'Recorded' : 'Ready when you are' }}</strong>
-            <span class="text-muted">{{ formattedTime() }}</span>
+      <section class="card card-pad generator">
+        <div class="section-title">
+          <span class="stat-icon blue">
+            <app-icon name="mic" [size]="22"></app-icon>
+          </span>
+          <div>
+            <h2>Generate speaking practice</h2>
+            <p class="text-muted">
+              Topics are matched to the selected level, using the same topic
+              set as exercises.
+            </p>
           </div>
         </div>
 
-        @if (feedback()) {
-          <div class="feedback">
-            <div class="flex items-center gap-2 fb-head">
+        <form [formGroup]="form" (ngSubmit)="generate()" novalidate>
+          <div class="field">
+            <label for="level">Level</label>
+            <select
+              id="level"
+              class="input"
+              formControlName="level"
+              (change)="onLevelChange()"
+            >
+              @for (level of levels; track level.value) {
+                <option [value]="level.value">{{ level.label }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="topic">Topic</label>
+            <select id="topic" class="input" formControlName="topic">
+              @for (topic of topicsForSelectedLevel(); track topic.value) {
+                <option [value]="topic.value">{{ topic.label }}</option>
+              }
+            </select>
+          </div>
+
+          @if (errorMsg()) {
+            <div class="form-error" role="alert">{{ errorMsg() }}</div>
+          }
+
+          <button
+            type="submit"
+            class="btn btn-primary btn-block"
+            [disabled]="loading() || recording() || uploadingRecording()"
+          >
+            @if (loading()) {
+              Generating prompt...
+            } @else {
               <app-icon name="sparkles" [size]="18"></app-icon>
-              <strong>Coach feedback</strong>
-              <span class="badge badge-green">Score {{ score() }}/100</span>
-            </div>
-            <ul>
-              <li><strong>Fluency:</strong> Good pace overall — try to reduce long pauses before connectors.</li>
-              <li><strong>Vocabulary:</strong> Nice use of everyday words. Add one or two linking words like “duerno”.</li>
-              <li><strong>Pronunciation:</strong> Clear vowels. Watch the soft “ch” sound in “ech”.</li>
-            </ul>
-          </div>
-        }
-
-        <div class="tips">
-          <h3>Coaching tips for this prompt</h3>
-          <ul>
-            @for (t of current().tips; track t) {
-              <li><app-icon name="check" [size]="16"></app-icon> {{ t }}</li>
+              Generate prompt
             }
-          </ul>
-        </div>
+          </button>
+        </form>
+      </section>
+
+      <section class="card card-pad panel">
+        @if (loading()) {
+          <div class="empty-state">
+            <span class="stat-icon sky">
+              <app-icon name="sparkles" [size]="22"></app-icon>
+            </span>
+            <h2>Generating...</h2>
+            <p class="text-muted">
+              Preparing a speaking prompt for your selected level and topic.
+            </p>
+          </div>
+        } @else {
+          @if (current(); as prompt) {
+            <span class="badge badge-sky">
+              {{ promptTopicLabel(prompt) }} &middot; {{ prompt.level }}
+            </span>
+            <h2 class="lb-question">{{ prompt.question }}</h2>
+
+            @if (prompt.questionEn) {
+              <div class="translation-actions">
+                <button
+                  type="button"
+                  class="btn btn-outline"
+                  (click)="showTranslation.set(!showTranslation())"
+                >
+                  {{
+                    showTranslation()
+                      ? 'Hide English translation'
+                      : 'Show English translation'
+                  }}
+                </button>
+              </div>
+
+              @if (showTranslation()) {
+                <p class="text-muted translation">{{ prompt.questionEn }}</p>
+              }
+            }
+
+            <div class="recorder">
+              <button
+                class="record-btn"
+                [class.recording]="recording()"
+                (click)="toggleRecord()"
+                [disabled]="uploadingRecording()"
+                [attr.aria-label]="recording() ? 'Stop recording' : 'Start recording'"
+              >
+                <app-icon [name]="recording() ? 'check' : 'mic'" [size]="26"></app-icon>
+              </button>
+              <div class="recorder-meta">
+                <strong>
+                  {{
+                    recording()
+                      ? 'Recording...'
+                      : uploadingRecording()
+                        ? 'Uploading recording...'
+                        : evaluation()
+                          ? 'Evaluation ready'
+                        : 'Ready when you are'
+                  }}
+                </strong>
+                <span class="text-muted">{{ formattedTime() }}</span>
+              </div>
+            </div>
+
+            @if (recordingError()) {
+              <div class="form-error recording-error" role="alert">
+                {{ recordingError() }}
+              </div>
+            }
+
+            @if (retryableRecording()) {
+              <button
+                type="button"
+                class="btn btn-outline retry-recording-btn"
+                [disabled]="uploadingRecording()"
+                (click)="resendRecording()"
+              >
+                Resend recording
+              </button>
+            }
+
+            @if (evaluation(); as result) {
+              <div class="feedback">
+                <div class="flex items-center gap-2 fb-head">
+                  <app-icon name="sparkles" [size]="18"></app-icon>
+                  <strong>Coach evaluation</strong>
+                  <span class="badge badge-green">Score {{ result.score ?? 0 }}/100</span>
+                </div>
+                @if (result.transcript) {
+                  <div class="evaluation-block">
+                    <strong>Transcript</strong>
+                    <p>{{ result.transcript }}</p>
+                  </div>
+                }
+                @if (result.feedback) {
+                  <div class="evaluation-block">
+                    <strong>Feedback</strong>
+                    <p>{{ result.feedback }}</p>
+                  </div>
+                }
+                @if (correctionItems(result).length) {
+                  <div class="evaluation-block">
+                    <strong>Corrections</strong>
+                    <ul>
+                      @for (correction of correctionItems(result); track correction) {
+                        <li>{{ correction }}</li>
+                      }
+                    </ul>
+                  </div>
+                }
+              </div>
+            }
+
+            @if (prompt.tips.length) {
+              <div class="tips">
+                <h3>Coaching tips for this prompt</h3>
+                <ul>
+                  @for (tip of prompt.tips; track tip) {
+                    <li><app-icon name="check" [size]="16"></app-icon> {{ tip }}</li>
+                  }
+                </ul>
+              </div>
+            }
+          } @else {
+            <div class="empty-state">
+              <span class="stat-icon blue">
+                <app-icon name="mic" [size]="22"></app-icon>
+              </span>
+              <h2>No prompt generated yet</h2>
+              <p class="text-muted">
+                Pick a level and topic, then generate a speaking practice prompt.
+              </p>
+            </div>
+          }
+        }
       </section>
     </div>
   `,
   styleUrl: './speaking.component.css',
 })
 export class SpeakingComponent implements OnDestroy {
-  private data = inject(DataService);
-  prompts = this.data.getSpeakingPrompts();
+  private fb = inject(FormBuilder);
+  private speaking = inject(SpeakingService);
 
-  current = signal<SpeakingPrompt>(this.prompts[0]);
+  levels = PRACTICE_LEVELS;
+  topics = PRACTICE_TOPICS;
+  loading = signal(false);
+  errorMsg = signal('');
+  current = signal<SpeakingPrompt | null>(null);
   recording = signal(false);
+  uploadingRecording = signal(false);
+  evaluation = signal<SpeakingEvaluationDto | null>(null);
+  recordingError = signal('');
+  retryableRecording = signal(false);
   elapsed = signal(0);
-  feedback = signal(false);
-  score = signal(0);
+  showTranslation = signal(false);
 
   private timer: ReturnType<typeof setInterval> | null = null;
+  private mediaRecorder: MediaRecorder | null = null;
+  private mediaStream: MediaStream | null = null;
+  private recordedChunks: Blob[] = [];
+  private lastRecordingAudio: Blob | null = null;
+  private shouldUploadStoppedRecording = false;
 
-  select(p: SpeakingPrompt): void {
-    if (this.recording()) this.toggleRecord();
-    this.current.set(p);
-    this.feedback.set(false);
-    this.elapsed.set(0);
+  form = this.fb.nonNullable.group({
+    level: ['A2' as ExerciseLevel, [Validators.required]],
+    topic: ['WORK' as ExerciseTopic, [Validators.required]],
+  });
+
+  generate(): void {
+    this.errorMsg.set('');
+
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    this.ensureTopicMatchesLevel();
+    this.stopRecording(false);
+    this.loading.set(true);
+    this.resetPracticeSession();
+    const request = this.request();
+
+    this.speaking.generatePractice(request).subscribe({
+      next: (practice) => {
+        this.current.set(this.toPrompt(practice, request));
+      },
+      error: (error) => {
+        this.errorMsg.set(this.errorMessage(error));
+        this.loading.set(false);
+      },
+      complete: () => {
+        this.loading.set(false);
+      },
+    });
+  }
+
+  onLevelChange(): void {
+    this.ensureTopicMatchesLevel();
+  }
+
+  topicsForSelectedLevel(): TopicOption[] {
+    const level = this.form.controls.level.value;
+    return this.topics.filter((topic) => topic.level === level);
+  }
+
+  promptTopicLabel(prompt: SpeakingPrompt): string {
+    return topicLabel(prompt.topic);
   }
 
   toggleRecord(): void {
+    if (!this.current() || this.loading() || this.uploadingRecording()) {
+      return;
+    }
+
     if (this.recording()) {
-      this.recording.set(false);
-      this.clearTimer();
-      // simulate AI scoring
-      this.score.set(64 + Math.floor(Math.random() * 26));
-      this.feedback.set(true);
+      this.stopRecording(true);
     } else {
-      this.recording.set(true);
-      this.feedback.set(false);
-      this.elapsed.set(0);
-      this.timer = setInterval(() => this.elapsed.update((v) => v + 1), 1000);
+      void this.startRecording();
     }
   }
 
+  resendRecording(): void {
+    if (!this.lastRecordingAudio || this.uploadingRecording()) {
+      return;
+    }
+
+    this.uploadRecordedAudio(this.lastRecordingAudio);
+  }
+
   formattedTime(): string {
-    const s = this.elapsed();
-    const m = Math.floor(s / 60)
+    const seconds = this.elapsed();
+    const minutes = Math.floor(seconds / 60)
       .toString()
       .padStart(2, '0');
-    const sec = (s % 60).toString().padStart(2, '0');
-    return `${m}:${sec}`;
+    const remainingSeconds = (seconds % 60).toString().padStart(2, '0');
+    return `${minutes}:${remainingSeconds}`;
   }
 
   private clearTimer(): void {
@@ -137,7 +337,208 @@ export class SpeakingComponent implements OnDestroy {
     }
   }
 
+  private stopRecording(uploadRecording: boolean): void {
+    this.shouldUploadStoppedRecording = uploadRecording;
+    this.recording.set(false);
+    this.clearTimer();
+
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.mediaRecorder.stop();
+      return;
+    }
+
+    this.cleanupRecordingResources();
+  }
+
+  private resetPracticeSession(): void {
+    this.evaluation.set(null);
+    this.recordingError.set('');
+    this.retryableRecording.set(false);
+    this.lastRecordingAudio = null;
+    this.elapsed.set(0);
+    this.showTranslation.set(false);
+  }
+
+  private async startRecording(): Promise<void> {
+    this.recordingError.set('');
+    this.evaluation.set(null);
+    this.retryableRecording.set(false);
+    this.lastRecordingAudio = null;
+
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      this.recordingError.set('Audio recording is not supported in this browser.');
+      return;
+    }
+
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+      });
+      const mimeType = this.supportedAudioMimeType();
+
+      this.mediaStream = mediaStream;
+      this.recordedChunks = [];
+      this.mediaRecorder = mimeType
+        ? new MediaRecorder(mediaStream, { mimeType })
+        : new MediaRecorder(mediaStream);
+
+      this.mediaRecorder.addEventListener('dataavailable', (event) => {
+        if (event.data.size > 0) {
+          this.recordedChunks.push(event.data);
+        }
+      });
+      this.mediaRecorder.addEventListener(
+        'stop',
+        () => this.handleRecordingStop(),
+        { once: true },
+      );
+
+      this.mediaRecorder.start();
+      this.recording.set(true);
+      this.elapsed.set(0);
+      this.timer = setInterval(() => this.elapsed.update((value) => value + 1), 1000);
+    } catch (error) {
+      this.recordingError.set(this.microphoneErrorMessage(error));
+      this.cleanupRecordingResources();
+    }
+  }
+
+  private handleRecordingStop(): void {
+    const shouldUploadRecording = this.shouldUploadStoppedRecording;
+    const recordedChunks = [...this.recordedChunks];
+    const mimeType = this.mediaRecorder?.mimeType || 'audio/webm';
+
+    this.shouldUploadStoppedRecording = false;
+    this.cleanupRecordingResources();
+
+    if (!shouldUploadRecording) {
+      return;
+    }
+
+    if (!recordedChunks.length) {
+      this.recordingError.set('No audio was captured. Please try again.');
+      return;
+    }
+
+    const audio = new Blob(recordedChunks, { type: mimeType });
+    this.uploadRecordedAudio(audio);
+  }
+
+  private uploadRecordedAudio(audio: Blob): void {
+    this.lastRecordingAudio = audio;
+    this.uploadingRecording.set(true);
+    this.retryableRecording.set(false);
+    this.evaluation.set(null);
+    this.recordingError.set('');
+
+    this.speaking.uploadRecording(audio).subscribe({
+      next: (evaluation) => {
+        this.evaluation.set(evaluation);
+        this.lastRecordingAudio = null;
+      },
+      error: (error) => {
+        this.recordingError.set(this.errorMessage(error));
+        this.retryableRecording.set(true);
+        this.uploadingRecording.set(false);
+      },
+      complete: () => {
+        this.uploadingRecording.set(false);
+      },
+    });
+  }
+
+  private supportedAudioMimeType(): string | undefined {
+    return ['audio/webm;codecs=opus', 'audio/webm'].find((mimeType) =>
+      MediaRecorder.isTypeSupported(mimeType),
+    );
+  }
+
+  private cleanupRecordingResources(): void {
+    this.recordedChunks = [];
+    this.mediaRecorder = null;
+
+    this.mediaStream?.getTracks().forEach((track) => track.stop());
+    this.mediaStream = null;
+  }
+
+  private request(): GenerateExerciseRequest {
+    const { level, topic } = this.form.getRawValue();
+    return { level, topic, type: 'SHORT_ANSWER' };
+  }
+
+  private ensureTopicMatchesLevel(): void {
+    const availableTopics = this.topicsForSelectedLevel();
+    const selectedTopic = this.form.controls.topic.value;
+
+    if (availableTopics.some((topic) => topic.value === selectedTopic)) {
+      return;
+    }
+
+    const firstTopic = availableTopics[0];
+    if (firstTopic) {
+      this.form.controls.topic.setValue(firstTopic.value);
+    }
+  }
+
+  private toPrompt(
+    practice: SpeakingPracticeDto,
+    request: GenerateExerciseRequest,
+  ): SpeakingPrompt {
+    const practiceTopic = practice.topic || practice.title || request.topic;
+
+    return {
+      id: practice.id || `${request.level}-${request.topic}-${Date.now()}`,
+      topic: practiceTopic,
+      level: practice.level || request.level,
+      question:
+        practice.question ||
+        practice.prompt ||
+        practice.instruction ||
+        'Generated prompt did not include a question.',
+      questionEn:
+        this.translationText(practice) ||
+        (practice.title && practice.title !== practiceTopic ? practice.title : ''),
+      tips: this.collectTips(practice),
+    };
+  }
+
+  private translationText(practice: SpeakingPracticeDto): string {
+    return (
+      practice.questionsTranslations ||
+      practice.questionTranslation ||
+      practice.questionEn ||
+      practice.promptEn ||
+      ''
+    );
+  }
+
+  private collectTips(practice: SpeakingPracticeDto): string[] {
+    const hints = practice.hints ?? [];
+    return practice.hint ? [practice.hint, ...hints] : hints;
+  }
+
+  correctionItems(evaluation: SpeakingEvaluationDto): string[] {
+    return (evaluation.corrections ?? []).filter(
+      (correction) => correction.trim().length > 0,
+    );
+  }
+
+  private errorMessage(error: unknown): string {
+    return error instanceof Error && error.message
+      ? error.message
+      : 'Something went wrong.';
+  }
+
+  private microphoneErrorMessage(error: unknown): string {
+    if (error instanceof DOMException && error.name === 'NotAllowedError') {
+      return 'Microphone permission was denied.';
+    }
+
+    return this.errorMessage(error);
+  }
+
   ngOnDestroy(): void {
+    this.stopRecording(false);
     this.clearTimer();
   }
 }

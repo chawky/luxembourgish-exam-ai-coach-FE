@@ -23,6 +23,7 @@ export interface SpeakingPrompt {
   level: string;
   question: string;
   questionEn: string;
+  audioUrl?: string;
   tips: string[];
 }
 
@@ -136,6 +137,9 @@ export interface SpeakingPracticeDto extends ExerciseDto {
   questionTranslation?: string;
   questionEn?: string;
   promptEn?: string;
+  audio?: string | number[];
+  audioContentType?: string;
+  audioMimeType?: string;
 }
 
 export interface SpeakingEvaluationDto {

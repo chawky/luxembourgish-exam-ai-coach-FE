@@ -107,26 +107,78 @@ import {
             <span class="badge badge-sky">
               {{ promptTopicLabel(prompt) }} &middot; {{ prompt.level }}
             </span>
-            <h2 class="lb-question">{{ prompt.question }}</h2>
 
-            @if (prompt.questionEn) {
-              <div class="translation-actions">
+            @if (prompt.audioUrl) {
+              <div class="prompt-audio">
                 <button
                   type="button"
-                  class="btn btn-outline"
+                  class="listen-btn"
+                  [class.playing]="promptAudioPlaying()"
+                  (click)="togglePromptAudio()"
+                  [attr.aria-label]="
+                    promptAudioPlaying()
+                      ? 'Pause question audio'
+                      : 'Play question audio'
+                  "
+                >
+                  <app-icon
+                    [name]="promptAudioPlaying() ? 'pause' : 'play'"
+                    [size]="22"
+                  ></app-icon>
+                </button>
+                <div class="prompt-audio-copy">
+                  <strong>
+                    {{
+                      promptAudioPlaying()
+                        ? 'Playing question audio'
+                        : 'Listen to the question'
+                    }}
+                  </strong>
+                  <span class="text-muted">
+                    Play the Luxembourgish question before revealing the text.
+                  </span>
+                </div>
+              </div>
+            } @else {
+              <div class="form-error" role="alert">
+                Generated prompt did not include audio.
+              </div>
+            }
+
+            @if (promptAudioError()) {
+              <div class="form-error" role="alert">{{ promptAudioError() }}</div>
+            }
+
+            <div class="prompt-actions">
+              <button
+                type="button"
+                class="btn btn-primary prompt-action-btn"
+                (click)="showQuestion.set(!showQuestion())"
+              >
+                {{ showQuestion() ? 'Hide original' : 'See original' }}
+              </button>
+
+              @if (prompt.questionEn) {
+                <button
+                  type="button"
+                  class="btn btn-outline prompt-action-btn"
                   (click)="showTranslation.set(!showTranslation())"
                 >
-                  {{
-                    showTranslation()
-                      ? 'Hide English translation'
-                      : 'Show English translation'
-                  }}
+                  {{ showTranslation() ? 'Hide translation' : 'Translate' }}
                 </button>
-              </div>
-
-              @if (showTranslation()) {
-                <p class="text-muted translation">{{ prompt.questionEn }}</p>
+              } @else {
+                <button type="button" class="btn btn-outline prompt-action-btn" disabled>
+                  Translation unavailable
+                </button>
               }
+            </div>
+
+            @if (showQuestion()) {
+              <h2 class="lb-question">{{ prompt.question }}</h2>
+            }
+
+            @if (showTranslation()) {
+              <p class="text-muted translation">{{ prompt.questionEn }}</p>
             }
 
             <div class="recorder">
@@ -202,6 +254,18 @@ import {
                   </div>
                 }
               </div>
+
+              <div class="record-again-actions">
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  [disabled]="recording() || uploadingRecording()"
+                  (click)="recordNewAnswer()"
+                >
+                  <app-icon name="mic" [size]="18"></app-icon>
+                  Record new answer
+                </button>
+              </div>
             }
 
             @if (prompt.tips.length) {
@@ -246,9 +310,14 @@ export class SpeakingComponent implements OnDestroy {
   recordingError = signal('');
   retryableRecording = signal(false);
   elapsed = signal(0);
+  showQuestion = signal(false);
   showTranslation = signal(false);
+  promptAudioPlaying = signal(false);
+  promptAudioError = signal('');
 
   private timer: ReturnType<typeof setInterval> | null = null;
+  private promptAudio: HTMLAudioElement | null = null;
+  private promptAudioObjectUrl: string | null = null;
   private mediaRecorder: MediaRecorder | null = null;
   private mediaStream: MediaStream | null = null;
   private recordedChunks: Blob[] = [];
@@ -272,6 +341,7 @@ export class SpeakingComponent implements OnDestroy {
     this.stopRecording(false);
     this.loading.set(true);
     this.resetPracticeSession();
+    this.current.set(null);
     const request = this.request();
 
     this.speaking.generatePractice(request).subscribe({
@@ -301,6 +371,44 @@ export class SpeakingComponent implements OnDestroy {
     return topicLabel(prompt.topic);
   }
 
+  togglePromptAudio(): void {
+    const audioUrl = this.current()?.audioUrl;
+
+    if (!audioUrl) {
+      this.promptAudioError.set('No generated audio is available for this prompt.');
+      return;
+    }
+
+    this.promptAudioError.set('');
+
+    if (!this.promptAudio || this.promptAudio.src !== audioUrl) {
+      this.promptAudio = new Audio(audioUrl);
+      this.promptAudio.addEventListener('play', () =>
+        this.promptAudioPlaying.set(true),
+      );
+      this.promptAudio.addEventListener('pause', () =>
+        this.promptAudioPlaying.set(false),
+      );
+      this.promptAudio.addEventListener('ended', () =>
+        this.promptAudioPlaying.set(false),
+      );
+      this.promptAudio.addEventListener('error', () => {
+        this.promptAudioPlaying.set(false);
+        this.promptAudioError.set('Could not play the generated question audio.');
+      });
+    }
+
+    if (this.promptAudio.paused) {
+      void this.promptAudio.play().catch(() => {
+        this.promptAudioPlaying.set(false);
+        this.promptAudioError.set('Could not play the generated question audio.');
+      });
+      return;
+    }
+
+    this.promptAudio.pause();
+  }
+
   toggleRecord(): void {
     if (!this.current() || this.loading() || this.uploadingRecording()) {
       return;
@@ -319,6 +427,21 @@ export class SpeakingComponent implements OnDestroy {
     }
 
     this.uploadRecordedAudio(this.lastRecordingAudio);
+  }
+
+  recordNewAnswer(): void {
+    if (!this.current() || this.loading() || this.recording() || this.uploadingRecording()) {
+      return;
+    }
+
+    this.promptAudio?.pause();
+    this.evaluation.set(null);
+    this.recordingError.set('');
+    this.retryableRecording.set(false);
+    this.lastRecordingAudio = null;
+    this.elapsed.set(0);
+
+    void this.startRecording();
   }
 
   formattedTime(): string {
@@ -351,12 +474,15 @@ export class SpeakingComponent implements OnDestroy {
   }
 
   private resetPracticeSession(): void {
+    this.clearPromptAudio();
     this.evaluation.set(null);
     this.recordingError.set('');
     this.retryableRecording.set(false);
     this.lastRecordingAudio = null;
     this.elapsed.set(0);
+    this.showQuestion.set(false);
     this.showTranslation.set(false);
+    this.promptAudioError.set('');
   }
 
   private async startRecording(): Promise<void> {
@@ -498,8 +624,56 @@ export class SpeakingComponent implements OnDestroy {
       questionEn:
         this.translationText(practice) ||
         (practice.title && practice.title !== practiceTopic ? practice.title : ''),
+      audioUrl: this.toPromptAudioUrl(practice),
       tips: this.collectTips(practice),
     };
+  }
+
+  private toPromptAudioUrl(practice: SpeakingPracticeDto): string {
+    const audio = practice.audio;
+
+    if (!audio) {
+      return '';
+    }
+
+    try {
+      const bytes = Array.isArray(audio)
+        ? new Uint8Array(audio)
+        : this.base64ToBytes(audio);
+      const blob = new Blob([bytes], {
+        type: practice.audioMimeType || practice.audioContentType || 'audio/mpeg',
+      });
+      const audioUrl = URL.createObjectURL(blob);
+
+      this.promptAudioObjectUrl = audioUrl;
+      return audioUrl;
+    } catch {
+      this.promptAudioError.set('Generated audio could not be loaded.');
+      return '';
+    }
+  }
+
+  private base64ToBytes(value: string): Uint8Array {
+    const base64 = value.includes(',') ? value.split(',').pop() || '' : value;
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index);
+    }
+
+    return bytes;
+  }
+
+  private clearPromptAudio(): void {
+    this.promptAudio?.pause();
+    this.promptAudio = null;
+    this.promptAudioPlaying.set(false);
+
+    if (this.promptAudioObjectUrl) {
+      URL.revokeObjectURL(this.promptAudioObjectUrl);
+      this.promptAudioObjectUrl = null;
+    }
   }
 
   private translationText(practice: SpeakingPracticeDto): string {
@@ -540,5 +714,6 @@ export class SpeakingComponent implements OnDestroy {
   ngOnDestroy(): void {
     this.stopRecording(false);
     this.clearTimer();
+    this.clearPromptAudio();
   }
 }

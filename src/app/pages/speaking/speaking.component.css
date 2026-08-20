@@ -75,10 +75,55 @@
   margin: 0 0 20px;
   font-style: italic;
 }
-.translation-actions {
-  margin: 14px 0 16px;
+.prompt-audio {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--blue-100);
+  border-radius: 14px;
+  background: var(--blue-50);
+  margin: 18px 0 16px;
 }
-.translation-actions .btn {
+.listen-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: var(--blue-700);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+.listen-btn:hover {
+  background: var(--blue-600);
+}
+.listen-btn.playing {
+  background: #0277a8;
+}
+.prompt-audio-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.prompt-audio-copy strong {
+  color: var(--blue-900);
+}
+.prompt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--slate-300);
+  border-radius: 12px;
+  background: var(--surface-2);
+  margin: 14px 0 18px;
+}
+.prompt-action-btn {
+  min-width: 150px;
   padding: 8px 12px;
   font-size: 14px;
 }
@@ -145,6 +190,11 @@
 }
 .retry-recording-btn {
   margin: 0 0 20px;
+}
+.record-again-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin: -4px 0 22px;
 }
 .fb-head {
   margin-bottom: 10px;

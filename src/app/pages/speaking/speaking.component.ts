@@ -1,8 +1,9 @@
-import { Component, OnDestroy, inject, signal } from '@angular/core';
+import { Component, OnDestroy, ViewChild, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SpeakingService } from '../../services/speaking.service';
 import { IconComponent } from '../../components/icon.component';
+import { AudioPlayerComponent } from '../../components/audio-player.component';
 import {
   GenerateExerciseRequest,
   ExerciseLevel,
@@ -21,7 +22,7 @@ import {
 @Component({
   selector: 'app-speaking',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, IconComponent],
+  imports: [CommonModule, ReactiveFormsModule, IconComponent, AudioPlayerComponent],
   template: `
     <header class="page-head">
       <div>
@@ -82,6 +83,7 @@ import {
             [disabled]="loading() || recording() || uploadingRecording()"
           >
             @if (loading()) {
+              <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
               Generating prompt...
             } @else {
               <app-icon name="sparkles" [size]="18"></app-icon>
@@ -94,7 +96,7 @@ import {
       <section class="card card-pad panel">
         @if (loading()) {
           <div class="empty-state">
-            <span class="stat-icon sky">
+            <span class="stat-icon sky loading-icon">
               <app-icon name="sparkles" [size]="22"></app-icon>
             </span>
             <h2>Generating...</h2>
@@ -109,39 +111,14 @@ import {
             </span>
 
             @if (prompt.audioUrl) {
-              <div class="prompt-audio">
-                <button
-                  type="button"
-                  class="listen-btn"
-                  [class.playing]="promptAudioPlaying()"
-                  (click)="togglePromptAudio()"
-                  [attr.aria-label]="
-                    promptAudioPlaying()
-                      ? 'Pause question audio'
-                      : 'Play question audio'
-                  "
-                >
-                  <app-icon
-                    [name]="promptAudioPlaying() ? 'pause' : 'play'"
-                    [size]="22"
-                  ></app-icon>
-                </button>
-                <div class="prompt-audio-copy">
-                  <strong>
-                    {{
-                      promptAudioPlaying()
-                        ? 'Playing question audio'
-                        : 'Listen to the question'
-                    }}
-                  </strong>
-                  <span class="text-muted">
-                    Play the Luxembourgish question before revealing the text.
-                  </span>
-                </div>
-              </div>
+              <app-audio-player
+                [src]="prompt.audioUrl"
+                title="Listen to the question"
+                subtitle="Use the waveform to replay, seek, or repeat difficult parts."
+              ></app-audio-player>
             } @else {
               <div class="form-error" role="alert">
-                Generated prompt did not include audio.
+                This prompt does not include playable audio. Generate a new prompt.
               </div>
             }
 
@@ -299,6 +276,9 @@ export class SpeakingComponent implements OnDestroy {
   private fb = inject(FormBuilder);
   private speaking = inject(SpeakingService);
 
+  @ViewChild(AudioPlayerComponent)
+  private promptAudioPlayer?: AudioPlayerComponent;
+
   levels = PRACTICE_LEVELS;
   topics = PRACTICE_TOPICS;
   loading = signal(false);
@@ -312,11 +292,9 @@ export class SpeakingComponent implements OnDestroy {
   elapsed = signal(0);
   showQuestion = signal(false);
   showTranslation = signal(false);
-  promptAudioPlaying = signal(false);
   promptAudioError = signal('');
 
   private timer: ReturnType<typeof setInterval> | null = null;
-  private promptAudio: HTMLAudioElement | null = null;
   private promptAudioObjectUrl: string | null = null;
   private mediaRecorder: MediaRecorder | null = null;
   private mediaStream: MediaStream | null = null;
@@ -371,44 +349,6 @@ export class SpeakingComponent implements OnDestroy {
     return topicLabel(prompt.topic);
   }
 
-  togglePromptAudio(): void {
-    const audioUrl = this.current()?.audioUrl;
-
-    if (!audioUrl) {
-      this.promptAudioError.set('No generated audio is available for this prompt.');
-      return;
-    }
-
-    this.promptAudioError.set('');
-
-    if (!this.promptAudio || this.promptAudio.src !== audioUrl) {
-      this.promptAudio = new Audio(audioUrl);
-      this.promptAudio.addEventListener('play', () =>
-        this.promptAudioPlaying.set(true),
-      );
-      this.promptAudio.addEventListener('pause', () =>
-        this.promptAudioPlaying.set(false),
-      );
-      this.promptAudio.addEventListener('ended', () =>
-        this.promptAudioPlaying.set(false),
-      );
-      this.promptAudio.addEventListener('error', () => {
-        this.promptAudioPlaying.set(false);
-        this.promptAudioError.set('Could not play the generated question audio.');
-      });
-    }
-
-    if (this.promptAudio.paused) {
-      void this.promptAudio.play().catch(() => {
-        this.promptAudioPlaying.set(false);
-        this.promptAudioError.set('Could not play the generated question audio.');
-      });
-      return;
-    }
-
-    this.promptAudio.pause();
-  }
-
   toggleRecord(): void {
     if (!this.current() || this.loading() || this.uploadingRecording()) {
       return;
@@ -434,7 +374,7 @@ export class SpeakingComponent implements OnDestroy {
       return;
     }
 
-    this.promptAudio?.pause();
+    this.promptAudioPlayer?.pause();
     this.evaluation.set(null);
     this.recordingError.set('');
     this.retryableRecording.set(false);
@@ -666,9 +606,7 @@ export class SpeakingComponent implements OnDestroy {
   }
 
   private clearPromptAudio(): void {
-    this.promptAudio?.pause();
-    this.promptAudio = null;
-    this.promptAudioPlaying.set(false);
+    this.promptAudioPlayer?.pause();
 
     if (this.promptAudioObjectUrl) {
       URL.revokeObjectURL(this.promptAudioObjectUrl);

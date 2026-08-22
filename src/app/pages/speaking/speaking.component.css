@@ -75,42 +75,8 @@
   margin: 0 0 20px;
   font-style: italic;
 }
-.prompt-audio {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 18px;
-  border: 1px solid var(--blue-100);
-  border-radius: 14px;
-  background: var(--blue-50);
+app-audio-player {
   margin: 18px 0 16px;
-}
-.listen-btn {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: none;
-  background: var(--blue-700);
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: background 0.15s ease;
-}
-.listen-btn:hover {
-  background: var(--blue-600);
-}
-.listen-btn.playing {
-  background: #0277a8;
-}
-.prompt-audio-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.prompt-audio-copy strong {
-  color: var(--blue-900);
 }
 .prompt-actions {
   display: flex;

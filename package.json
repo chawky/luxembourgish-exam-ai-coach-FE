@@ -6,7 +6,8 @@
     "dev": "ng serve --host 0.0.0.0 --port 4200 --disable-host-check",
     "start": "ng serve --host 0.0.0.0 --port 4200 --disable-host-check",
     "build": "ng build",
-    "watch": "ng build --watch --configuration development"
+    "watch": "ng build --watch --configuration development",
+    "api:types": "openapi-typescript http://localhost:8080/v3/api-docs -o src/app/api/backend-schema.ts"
   },
   "dependencies": {
     "@angular/animations": "^18.2.0",
@@ -19,12 +20,14 @@
     "@angular/router": "^18.2.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
+    "wavesurfer.js": "^7.12.11",
     "zone.js": "~0.14.10"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "^18.2.0",
     "@angular/cli": "^18.2.0",
     "@angular/compiler-cli": "^18.2.0",
+    "openapi-typescript": "^7.13.0",
     "typescript": "~5.5.2"
   }
 }

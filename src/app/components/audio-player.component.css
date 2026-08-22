@@ -1,0 +1,127 @@
+:host {
+  display: block;
+}
+
+.audio-player {
+  padding: 18px;
+  border: 1px solid var(--blue-100);
+  border-radius: 14px;
+  background: var(--blue-50);
+}
+
+.audio-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.play-btn {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: var(--blue-700);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+
+.play-btn:hover:not(:disabled) {
+  background: var(--blue-600);
+  transform: scale(1.04);
+}
+
+.play-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.is-playing .play-btn {
+  background: #0277a8;
+}
+
+.audio-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.audio-copy strong {
+  color: var(--blue-900);
+}
+
+.audio-copy span {
+  font-size: 14px;
+}
+
+.audio-time {
+  color: var(--slate-700);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.waveform-shell {
+  padding: 8px 0;
+}
+
+.waveform {
+  min-height: 58px;
+}
+
+.audio-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.audio-actions button {
+  border: 1px solid var(--slate-300);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--slate-700);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.audio-actions button:hover:not(:disabled) {
+  border-color: var(--blue-600);
+  color: var(--blue-700);
+}
+
+.audio-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.audio-error {
+  margin-top: 12px;
+  border-radius: 8px;
+  background: var(--red-50);
+  color: var(--red);
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .audio-top {
+    align-items: flex-start;
+  }
+
+  .audio-time {
+    margin-left: auto;
+  }
+}

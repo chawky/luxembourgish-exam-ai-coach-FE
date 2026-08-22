@@ -132,14 +132,19 @@ export interface ExerciseDto {
 
 export type GeneratedExerciseDto = ExerciseDto;
 
-export interface SpeakingPracticeDto extends ExerciseDto {
-  questionsTranslations?: string;
+export interface AudioExerciseDto extends GeneratedExerciseDto {
   questionTranslation?: string;
-  questionEn?: string;
-  promptEn?: string;
   audio?: string | number[];
   audioContentType?: string;
   audioMimeType?: string;
+}
+
+export interface ListeningExerciseDto extends AudioExerciseDto {}
+
+export interface SpeakingPracticeDto extends AudioExerciseDto {
+  questionsTranslations?: string;
+  questionEn?: string;
+  promptEn?: string;
 }
 
 export interface SpeakingEvaluationDto {

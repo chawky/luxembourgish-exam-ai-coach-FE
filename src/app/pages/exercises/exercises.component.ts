@@ -105,6 +105,7 @@ interface NormalizedOption {
             [disabled]="loading()"
           >
             @if (loading()) {
+              <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
               Generating exercise...
             } @else {
               <app-icon name="sparkles" [size]="18"></app-icon>
@@ -118,7 +119,7 @@ interface NormalizedOption {
       <section class="card card-pad exercise">
         @if (loading()) {
           <div class="empty-state">
-            <span class="stat-icon sky">
+            <span class="stat-icon sky loading-icon">
               <app-icon name="sparkles" [size]="22"></app-icon>
             </span>
             <h2>Generating...</h2>

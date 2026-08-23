@@ -134,6 +134,7 @@ export type GeneratedExerciseDto = ExerciseDto;
 
 export interface AudioExerciseDto extends GeneratedExerciseDto {
   questionTranslation?: string;
+  hintTranslation?: string;
   audio?: string | number[];
   audioContentType?: string;
   audioMimeType?: string;

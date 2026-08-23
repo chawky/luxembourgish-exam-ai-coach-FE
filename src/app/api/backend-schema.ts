@@ -264,6 +264,7 @@ export interface components {
             expectedAnswer?: string;
             hint?: string;
             questionTranslation?: string;
+            hintTranslation?: string;
             /** Format: byte */
             audio?: string;
         };
@@ -279,6 +280,7 @@ export interface components {
             expectedAnswer?: string;
             hint?: string;
             questionTranslation?: string;
+            hintTranslation?: string;
             /** Format: byte */
             audio?: string;
         };

@@ -40,6 +40,7 @@ interface ListeningExerciseView {
   transcript: string;
   translation: string;
   hint: string;
+  hintTranslation: string;
   expectedAnswer: string;
   audioUrl: string;
   options: Array<string | ExerciseOptionDto>;
@@ -203,8 +204,26 @@ interface ListeningExerciseView {
             }
 
             <div class="question">
-              <span class="eyebrow">Your task</span>
+              <div class="task-heading">
+                <span class="eyebrow">Your task</span>
+                @if (exercise.hintTranslation) {
+                  <button
+                    class="link-btn"
+                    type="button"
+                    (click)="showTaskTranslation.update(toggle)"
+                  >
+                    {{ showTaskTranslation() ? 'Hide task translation' : 'Show task translation' }}
+                  </button>
+                }
+              </div>
               <h3>{{ exercise.hint || defaultTaskText }}</h3>
+
+              @if (showTaskTranslation() && exercise.hintTranslation) {
+                <div class="translation task-translation">
+                  <strong>Task translation</strong>
+                  <p>{{ exercise.hintTranslation }}</p>
+                </div>
+              }
 
               @if (normalizedOptions().length) {
                 <div class="options">
@@ -288,6 +307,7 @@ export class ListeningComponent implements OnDestroy {
   current = signal<ListeningExerciseView | null>(null);
   showTranscript = signal(false);
   showTranslation = signal(false);
+  showTaskTranslation = signal(false);
   showAnswer = signal(false);
   selectedOption = signal<number | null>(null);
   draftAnswer = '';
@@ -331,6 +351,7 @@ export class ListeningComponent implements OnDestroy {
     this.ensureTopicMatchesLevel();
     this.loading.set(true);
     this.current.set(null);
+    this.showTaskTranslation.set(false);
     this.resetAttempt();
     this.clearAudio();
 
@@ -431,6 +452,7 @@ export class ListeningComponent implements OnDestroy {
         'Generated exercise did not include a listening text.',
       translation: exercise.questionTranslation || '',
       hint: exercise.hint || '',
+      hintTranslation: exercise.hintTranslation || '',
       expectedAnswer:
         exercise.expectedAnswer || exercise.correctAnswer || exercise.answer || '',
       audioUrl: this.toAudioUrl(exercise),

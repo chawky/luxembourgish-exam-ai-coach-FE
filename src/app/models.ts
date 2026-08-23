@@ -11,7 +11,7 @@ export interface ApiResponse<T> {
 }
 
 export interface SkillProgress {
-  key: 'speaking' | 'listening' | 'vocabulary' | 'mock';
+  key: 'speaking' | 'listening' | 'vocabulary' | 'image';
   label: string;
   score: number; // 0-100
   target: number; // 0-100
@@ -44,14 +44,6 @@ export interface VocabCard {
   en: string; // English
   example: string;
   theme: string;
-}
-
-export interface MockExamQuestion {
-  id: string;
-  section: 'Listening' | 'Speaking' | 'Reading';
-  prompt: string;
-  options: string[];
-  answerIndex: number;
 }
 
 export interface ChatMessage {
@@ -146,6 +138,11 @@ export interface SpeakingPracticeDto extends AudioExerciseDto {
   questionsTranslations?: string;
   questionEn?: string;
   promptEn?: string;
+}
+
+export interface GeneratedImageDto {
+  image?: string | number[];
+  imageDescription?: string;
 }
 
 export interface SpeakingEvaluationDto {

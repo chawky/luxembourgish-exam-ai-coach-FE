@@ -34,7 +34,7 @@ interface Feature {
           </span>
           <h1>Pass the Sproochentest with your own AI language coach.</h1>
           <p class="lead text-pretty">
-            Practice speaking, listening, vocabulary and full mock exams modelled
+            Practice speaking, listening, vocabulary and image descriptions modelled
             on the official Luxembourgish language test — at your own pace, with
             instant feedback.
           </p>
@@ -52,7 +52,7 @@ interface Feature {
               <app-icon name="check" [size]="16"></app-icon> No credit card
             </div>
             <div class="flex items-center gap-1">
-              <app-icon name="check" [size]="16"></app-icon> Mock-exam ready
+              <app-icon name="check" [size]="16"></app-icon> Image-description ready
             </div>
             <div class="flex items-center gap-1">
               <app-icon name="check" [size]="16"></app-icon> Lëtzebuergesch focused
@@ -196,7 +196,7 @@ export class LandingComponent {
   features: Feature[] = [
     { icon: 'mic', title: 'Speaking practice', text: 'Answer real exam-style prompts and get structured coaching tips for each one.' },
     { icon: 'headphones', title: 'Listening comprehension', text: 'Authentic everyday dialogues with comprehension questions and transcripts.' },
-    { icon: 'clipboard', title: 'Mock exam simulator', text: 'Timed full exams that mirror the structure and pressure of the real test.' },
+    { icon: 'image', title: 'Image description', text: 'Describe generated scenes aloud and get feedback on your spoken answer.' },
     { icon: 'cards', title: 'Vocabulary & flashcards', text: 'Themed Luxembourgish vocab decks with examples to build lasting recall.' },
     { icon: 'chart', title: 'Progress dashboard', text: 'Track your scores, streaks and readiness toward your target levels.' },
     { icon: 'chat', title: 'AI chat tutor', text: 'Have a guided conversation in Luxembourgish and receive gentle corrections.' },
@@ -204,7 +204,7 @@ export class LandingComponent {
 
   steps = [
     { n: 1, title: 'Create your account', text: 'Sign up in seconds and tell the coach where you are starting from.' },
-    { n: 2, title: 'Practice every skill', text: 'Work through speaking, listening, vocabulary and mock exams at your pace.' },
+    { n: 2, title: 'Practice every skill', text: 'Work through speaking, listening, vocabulary and image descriptions at your pace.' },
     { n: 3, title: 'Track your readiness', text: 'Watch your dashboard climb toward exam-day confidence.' },
   ];
 

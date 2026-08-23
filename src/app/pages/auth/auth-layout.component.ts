@@ -15,13 +15,13 @@ import { Component } from '@angular/core';
           <span class="eyebrow light">Official language exam prep</span>
           <h2>Your path to Luxembourgish citizenship starts with the language.</h2>
           <p>
-            Practice speaking, listening, vocabulary and full mock exams with an
+            Practice speaking, listening, vocabulary and image descriptions with an
             AI coach modelled on the real Sproochentest.
           </p>
           <ul class="checklist">
             <li>Guided speaking drills with instant feedback</li>
             <li>Authentic listening exercises</li>
-            <li>Timed mock exams to build confidence</li>
+            <li>Image description tasks with spoken feedback</li>
           </ul>
           <div class="stat-row">
             <div>

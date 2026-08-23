@@ -18,8 +18,8 @@ import { IconComponent } from '../../components/icon.component';
           Here is where you stand on your road to the Sproochentest.
         </p>
       </div>
-      <a routerLink="/app/mock-exam" class="btn btn-primary">
-        <app-icon name="clipboard" [size]="18"></app-icon> Take a mock exam
+      <a routerLink="/app/image-description" class="btn btn-primary">
+        <app-icon name="image" [size]="18"></app-icon> Describe an image
       </a>
     </header>
 
@@ -117,6 +117,7 @@ export class DashboardComponent {
     { path: '/app/speaking', icon: 'mic', title: 'Speaking drill', text: 'Practice an exam-style prompt' },
     { path: '/app/listening', icon: 'headphones', title: 'Listening exercise', text: 'Sharpen your comprehension' },
     { path: '/app/exercises', icon: 'book', title: 'Topic exercises', text: 'Generate practice by level and topic' },
+    { path: '/app/image-description', icon: 'image', title: 'Image description', text: 'Describe a generated scene aloud' },
     { path: '/app/vocabulary', icon: 'cards', title: 'Flashcards', text: 'Review everyday vocabulary' },
     { path: '/app/chat', icon: 'chat', title: 'Chat with your tutor', text: 'Have a guided conversation' },
   ];

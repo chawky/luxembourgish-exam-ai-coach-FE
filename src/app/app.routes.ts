@@ -58,12 +58,13 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'mock-exam',
+        path: 'image-description',
         loadComponent: () =>
-          import('./pages/mock-exam/mock-exam.component').then(
-            (m) => m.MockExamComponent,
+          import('./pages/image-description/image-description.component').then(
+            (m) => m.ImageDescriptionComponent,
           ),
       },
+      { path: 'mock-exam', redirectTo: 'image-description' },
       {
         path: 'vocabulary',
         loadComponent: () =>

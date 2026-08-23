@@ -132,6 +132,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/exercises/image-description/recording": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["receiveImageDescriptionRecording"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/exercises/generate": {
         parameters: {
             query?: never;
@@ -142,6 +158,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["generateExercise"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exercises/generate-image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["generateImage"];
         delete?: never;
         options?: never;
         head?: never;
@@ -295,6 +327,16 @@ export interface components {
             options?: string[];
             expectedAnswer?: string;
             hint?: string;
+        };
+        ApiResponseGeneratedImageDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["GeneratedImageDto"];
+        };
+        GeneratedImageDto: {
+            /** Format: byte */
+            image?: string;
+            imageDescription?: string;
         };
         ApiResponseListResponseUserDto: {
             success?: boolean;
@@ -505,6 +547,35 @@ export interface operations {
             };
         };
     };
+    receiveImageDescriptionRecording: {
+        parameters: {
+            query: {
+                imageDescription: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    audio: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseSpeakingEvaluation"];
+                };
+            };
+        };
+    };
     generateExercise: {
         parameters: {
             query?: never;
@@ -525,6 +596,30 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseGeneratedExerciseDto"];
+                };
+            };
+        };
+    };
+    generateImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExerciseRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseGeneratedImageDto"];
                 };
             };
         };

@@ -4,7 +4,6 @@ import {
   SpeakingPrompt,
   ListeningExercise,
   VocabCard,
-  MockExamQuestion,
 } from '../models';
 
 @Injectable({ providedIn: 'root' })
@@ -14,7 +13,7 @@ export class DataService {
       { key: 'speaking', label: 'Speaking', score: 68, target: 80 },
       { key: 'listening', label: 'Listening', score: 74, target: 75 },
       { key: 'vocabulary', label: 'Vocabulary', score: 81, target: 85 },
-      { key: 'mock', label: 'Mock Exams', score: 62, target: 75 },
+      { key: 'image', label: 'Image Description', score: 62, target: 75 },
     ];
   }
 
@@ -128,56 +127,6 @@ export class DataService {
       { id: 'v6', lb: 'wann ech gelift', en: 'please', example: 'E Kaffi, wann ech gelift.', theme: 'Greetings' },
       { id: 'v7', lb: 'd’Wieder', en: 'the weather', example: 'D’Wieder ass haut schéin.', theme: 'Daily life' },
       { id: 'v8', lb: 'gären', en: 'gladly / to like', example: 'Ech sinn gär zu Lëtzebuerg.', theme: 'Daily life' },
-    ];
-  }
-
-  getMockExamQuestions(): MockExamQuestion[] {
-    return [
-      {
-        id: 'm1',
-        section: 'Listening',
-        prompt: '“Wéini fiert den Zuch?” — The speaker is asking about…',
-        options: ['a train time', 'the price', 'the weather', 'a name'],
-        answerIndex: 0,
-      },
-      {
-        id: 'm2',
-        section: 'Reading',
-        prompt: 'Choose the correct translation of “Ech wunnen zu Lëtzebuerg.”',
-        options: [
-          'I live in Luxembourg.',
-          'I work in Luxembourg.',
-          'I am from Germany.',
-          'I like Luxembourg.',
-        ],
-        answerIndex: 0,
-      },
-      {
-        id: 'm3',
-        section: 'Speaking',
-        prompt: 'Which is the most polite way to order a coffee?',
-        options: [
-          'E Kaffi, wann ech gelift.',
-          'Kaffi!',
-          'Ech wëll Kaffi elo.',
-          'Gëff Kaffi.',
-        ],
-        answerIndex: 0,
-      },
-      {
-        id: 'm4',
-        section: 'Reading',
-        prompt: 'What does “d’Gemeng” refer to?',
-        options: ['the municipality', 'the train', 'the doctor', 'the shop'],
-        answerIndex: 0,
-      },
-      {
-        id: 'm5',
-        section: 'Listening',
-        prompt: '“Dat mécht fënnef Euro.” — This sentence states…',
-        options: ['a price', 'a time', 'an address', 'a name'],
-        answerIndex: 0,
-      },
     ];
   }
 }

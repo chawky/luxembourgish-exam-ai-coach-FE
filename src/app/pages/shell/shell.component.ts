@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   Router,
@@ -9,6 +9,7 @@ import {
 import { AuthService } from '../../services/auth.service';
 import { LogoComponent } from '../../components/logo.component';
 import { IconComponent } from '../../components/icon.component';
+import { DashboardService } from '../../services/dashboard.service';
 
 interface NavItem {
   path: string;
@@ -76,9 +77,12 @@ interface NavItem {
           <a routerLink="/app/dashboard" class="mobile-logo">
             <app-logo></app-logo>
           </a>
-          <span class="badge badge-green streak">
-            <app-icon name="flame" [size]="14"></app-icon> 12-day streak
-          </span>
+          @if (currentStreakDays() !== null) {
+            <span class="badge badge-green streak">
+              <app-icon name="flame" [size]="14"></app-icon>
+              {{ streakLabel() }}
+            </span>
+          }
         </header>
         <main class="content">
           <router-outlet></router-outlet>
@@ -88,10 +92,13 @@ interface NavItem {
   `,
   styleUrl: './shell.component.css',
 })
-export class ShellComponent {
+export class ShellComponent implements OnInit {
   auth = inject(AuthService);
   private router = inject(Router);
+  private dashboardService = inject(DashboardService);
+
   menuOpen = signal(false);
+  currentStreakDays = signal<number | null>(null);
 
   nav: NavItem[] = [
     { path: '/app/dashboard', label: 'Dashboard', icon: 'chart' },
@@ -102,6 +109,22 @@ export class ShellComponent {
     { path: '/app/vocabulary', label: 'Vocabulary', icon: 'cards' },
     { path: '/app/chat', label: 'AI Tutor', icon: 'chat' },
   ];
+
+  ngOnInit(): void {
+    this.dashboardService.getMyProgress().subscribe({
+      next: (dashboard) => {
+        this.currentStreakDays.set(dashboard.currentStreakDays ?? 0);
+      },
+      error: () => {
+        this.currentStreakDays.set(null);
+      },
+    });
+  }
+
+  streakLabel(): string {
+    const days = this.currentStreakDays() ?? 0;
+    return `${days}-day streak`;
+  }
 
   initials(): string {
     const name = this.auth.currentUser()?.username ?? '';

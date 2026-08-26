@@ -95,6 +95,43 @@ export interface GenerateExerciseRequest {
   type: ExerciseType;
 }
 
+export interface GenerateVocabularyRequest {
+  level: ExerciseLevel;
+  topic: ExerciseTopic;
+}
+
+export interface VocabularySentenceDto {
+  vocabularyWord?: string;
+  wordTranslation?: string;
+  sentence?: string;
+  sentenceTranslation?: string;
+}
+
+export interface VocabularyExerciseDto {
+  usefulSentences?: VocabularySentenceDto[];
+}
+
+export interface SkillProgressDto {
+  exerciseType?: string;
+  totalActivities?: number;
+  evaluatedActivities?: number;
+  averageRatingOverall?: number;
+  latestExerciseName?: string;
+}
+
+export interface ProgressDashboardDto {
+  userId?: number;
+  username?: string;
+  email?: string;
+  loggedInDays?: number;
+  currentStreakDays?: number;
+  lastLoginDate?: string;
+  totalActivities?: number;
+  evaluatedActivities?: number;
+  averageRatingOverall?: number;
+  skillProgress?: SkillProgressDto[];
+}
+
 export interface ExerciseOptionDto {
   id?: string;
   label?: string;

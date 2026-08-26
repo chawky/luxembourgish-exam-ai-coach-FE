@@ -17,10 +17,6 @@ export class DataService {
     ];
   }
 
-  getStudyStreak(): number {
-    return 12;
-  }
-
   getSpeakingPrompts(): SpeakingPrompt[] {
     return [
       {

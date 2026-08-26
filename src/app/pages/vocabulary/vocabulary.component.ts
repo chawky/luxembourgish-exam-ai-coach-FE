@@ -1,99 +1,337 @@
-import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DataService } from '../../services/data.service';
+import { Component, computed, inject, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { IconComponent } from '../../components/icon.component';
+import {
+  ExerciseLevel,
+  ExerciseTopic,
+  GenerateVocabularyRequest,
+  VocabularyExerciseDto,
+} from '../../models';
+import {
+  PRACTICE_LEVELS,
+  PRACTICE_TOPICS,
+  TopicOption,
+  topicLabel,
+} from '../../practice-options';
+import { VocabularyService } from '../../services/vocabulary.service';
 
 @Component({
   selector: 'app-vocabulary',
   standalone: true,
-  imports: [CommonModule, IconComponent],
+  imports: [CommonModule, ReactiveFormsModule, IconComponent],
   template: `
     <header class="page-head">
       <div>
-        <span class="eyebrow">Vocabulary &amp; flashcards</span>
-        <h1>Everyday Luxembourgish</h1>
+        <span class="eyebrow">Vocabulary practice</span>
+        <h1>Build everyday Luxembourgish</h1>
         <p class="text-muted">
-          Flip through themed flashcards and test what you remember.
+          Choose a level and topic to create useful vocabulary with example
+          sentences.
         </p>
       </div>
     </header>
 
-    <div class="themes">
-      @for (t of themes; track t) {
-        <button class="theme-chip" [class.active]="theme() === t" (click)="setTheme(t)">
-          {{ t }}
-        </button>
-      }
-    </div>
-
-    <section class="flash-area">
-      <button class="arrow-btn" (click)="prev()" aria-label="Previous card">
-        <app-icon name="arrow" [size]="20" class="flip"></app-icon>
-      </button>
-
-      <div class="flashcard" [class.flipped]="flipped()" (click)="flip()">
-        <div class="face front">
-          <span class="badge badge-sky">{{ card().theme }}</span>
-          <strong class="lb-word">{{ card().lb }}</strong>
-          <span class="text-muted">Tap to reveal meaning</span>
+    <div class="layout">
+      <section class="card card-pad generator">
+        <div class="section-title">
+          <span class="stat-icon sky">
+            <app-icon name="cards" [size]="22"></app-icon>
+          </span>
+          <div>
+            <h2>Generate vocabulary</h2>
+            <p class="text-muted">
+              Topics follow the selected level, so each vocabulary set stays
+              appropriate for your current goal.
+            </p>
+          </div>
         </div>
-        <div class="face back">
-          <span class="en-word">{{ card().en }}</span>
-          <p class="example">“{{ card().example }}”</p>
-        </div>
-      </div>
 
-      <button class="arrow-btn" (click)="next()" aria-label="Next card">
-        <app-icon name="arrow" [size]="20"></app-icon>
-      </button>
-    </section>
+        <form [formGroup]="form" (ngSubmit)="generate()" novalidate>
+          <div class="field">
+            <label for="level">Level</label>
+            <select
+              id="level"
+              class="input"
+              formControlName="level"
+              (change)="onLevelChange()"
+            >
+              @for (level of levels; track level.value) {
+                <option [value]="level.value">{{ level.label }}</option>
+              }
+            </select>
+          </div>
 
-    <div class="counter">
-      <span class="text-muted">Card {{ index() + 1 }} of {{ filtered().length }}</span>
-      <div class="dots">
-        @for (c of filtered(); track c.id; let i = $index) {
-          <span class="dot" [class.active]="i === index()"></span>
+          <div class="field">
+            <label for="topic">Topic</label>
+            <select id="topic" class="input" formControlName="topic">
+              @for (topic of topicsForSelectedLevel(); track topic.value) {
+                <option [value]="topic.value">{{ topic.label }}</option>
+              }
+            </select>
+          </div>
+
+          @if (errorMsg()) {
+            <div class="form-error" role="alert">{{ errorMsg() }}</div>
+          }
+
+          <button
+            type="submit"
+            class="btn btn-primary btn-block"
+            [disabled]="loading()"
+          >
+            @if (loading()) {
+              <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
+              Generating vocabulary...
+            } @else {
+              <app-icon name="sparkles" [size]="18"></app-icon>
+              Generate vocabulary
+            }
+          </button>
+        </form>
+      </section>
+
+      <section class="card card-pad exercise">
+        @if (loading()) {
+          <div class="empty-state">
+            <span class="stat-icon sky loading-icon">
+              <app-icon name="sparkles" [size]="22"></app-icon>
+            </span>
+            <h2>Generating...</h2>
+            <p class="text-muted">
+              Preparing useful vocabulary and example sentences for your
+              selection.
+            </p>
+          </div>
+        } @else {
+          @if (vocabulary()) {
+            @if (currentSentence(); as sentence) {
+              <div class="exercise-head">
+                <div>
+                  <span class="eyebrow">Vocabulary deck</span>
+                  <h2>{{ exerciseTopicLabel() }} vocabulary</h2>
+                </div>
+                <div class="badges">
+                  <span class="badge badge-sky">{{ exerciseLevel() }}</span>
+                  <span class="badge">{{ exerciseTopicLabel() }}</span>
+                </div>
+              </div>
+
+              <div class="flash-area">
+                <button
+                  type="button"
+                  class="arrow-btn"
+                  [disabled]="sentences().length < 2"
+                  aria-label="Previous card"
+                  (click)="prev()"
+                >
+                  <app-icon name="arrow" [size]="20" class="flip"></app-icon>
+                </button>
+
+                <div
+                  class="flashcard"
+                  [class.flipped]="flipped()"
+                  role="button"
+                  tabindex="0"
+                  aria-label="Reveal translation"
+                  (click)="flip()"
+                  (keydown.enter)="flip()"
+                  (keydown.space)="$event.preventDefault(); flip()"
+                >
+                  <div class="face front">
+                    <span class="badge badge-sky">{{ exerciseTopicLabel() }}</span>
+                    <strong class="lb-word">
+                      {{ sentence.vocabularyWord || 'Vocabulary word' }}
+                    </strong>
+                    @if (sentence.sentence) {
+                      <p class="example">{{ sentence.sentence }}</p>
+                    }
+                    <span class="text-muted">Tap to reveal the translation</span>
+                  </div>
+                  <div class="face back">
+                    <span class="en-word">
+                      {{ sentence.wordTranslation || 'Translation unavailable' }}
+                    </span>
+                    @if (sentence.sentenceTranslation) {
+                      <p class="example">{{ sentence.sentenceTranslation }}</p>
+                    }
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  class="arrow-btn"
+                  [disabled]="sentences().length < 2"
+                  aria-label="Next card"
+                  (click)="next()"
+                >
+                  <app-icon name="arrow" [size]="20"></app-icon>
+                </button>
+              </div>
+
+              <div class="counter">
+                <span class="text-muted">
+                  Card {{ index() + 1 }} of {{ sentences().length }}
+                </span>
+                <div class="dots">
+                  @for (item of sentences(); track $index; let i = $index) {
+                    <span class="dot" [class.active]="i === index()"></span>
+                  }
+                </div>
+              </div>
+
+              <div class="answer-actions">
+                <button type="button" class="btn btn-outline" (click)="flip()">
+                  {{ flipped() ? 'Hide translation' : 'Reveal translation' }}
+                </button>
+                <button type="button" class="btn btn-ghost" (click)="generate()">
+                  Generate another set
+                </button>
+              </div>
+            } @else {
+              <div class="empty-state">
+                <span class="stat-icon sky">
+                  <app-icon name="cards" [size]="22"></app-icon>
+                </span>
+                <h2>No vocabulary returned</h2>
+                <p class="text-muted">
+                  Try generating a new set or choose another topic.
+                </p>
+              </div>
+            }
+          } @else {
+            <div class="empty-state">
+              <span class="stat-icon sky">
+                <app-icon name="cards" [size]="22"></app-icon>
+              </span>
+              <h2>No vocabulary generated yet</h2>
+              <p class="text-muted">
+                Start with A1 and Daily Routine, or choose another valid topic
+                for your current level.
+              </p>
+            </div>
+          }
         }
-      </div>
+      </section>
     </div>
   `,
   styleUrl: './vocabulary.component.css',
 })
 export class VocabularyComponent {
-  private data = inject(DataService);
+  private fb = inject(FormBuilder);
+  private vocabularyService = inject(VocabularyService);
 
-  allCards = this.data.getVocabCards();
-  themes = ['All', ...Array.from(new Set(this.allCards.map((c) => c.theme)))];
+  levels = PRACTICE_LEVELS;
+  topics = PRACTICE_TOPICS;
 
-  theme = signal('All');
+  loading = signal(false);
+  errorMsg = signal('');
+  vocabulary = signal<VocabularyExerciseDto | null>(null);
+  requestContext = signal<GenerateVocabularyRequest | null>(null);
   index = signal(0);
   flipped = signal(false);
 
-  filtered = computed(() =>
-    this.theme() === 'All'
-      ? this.allCards
-      : this.allCards.filter((c) => c.theme === this.theme()),
-  );
+  form = this.fb.nonNullable.group({
+    level: ['A1' as ExerciseLevel, [Validators.required]],
+    topic: ['DAILY_ROUTINE' as ExerciseTopic, [Validators.required]],
+  });
 
-  card = computed(() => this.filtered()[this.index()]);
+  sentences = computed(() => this.vocabulary()?.usefulSentences ?? []);
 
-  setTheme(t: string): void {
-    this.theme.set(t);
+  currentSentence = computed(() => this.sentences()[this.index()] ?? null);
+
+  generate(): void {
+    this.errorMsg.set('');
+
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    this.ensureTopicMatchesLevel();
+    this.loading.set(true);
     this.index.set(0);
     this.flipped.set(false);
+    const request = this.request();
+
+    this.vocabularyService.generateVocabulary(request).subscribe({
+      next: (vocabulary) => {
+        this.vocabulary.set(vocabulary);
+        this.requestContext.set(request);
+      },
+      error: (error) => {
+        this.errorMsg.set(this.errorMessage(error));
+        this.loading.set(false);
+      },
+      complete: () => {
+        this.loading.set(false);
+      },
+    });
   }
 
   flip(): void {
-    this.flipped.update((v) => !v);
+    this.flipped.update((value) => !value);
   }
 
   next(): void {
+    const count = this.sentences().length;
+    if (count < 2) {
+      return;
+    }
+
     this.flipped.set(false);
-    this.index.update((v) => (v + 1) % this.filtered().length);
+    this.index.update((value) => (value + 1) % count);
   }
 
   prev(): void {
+    const count = this.sentences().length;
+    if (count < 2) {
+      return;
+    }
+
     this.flipped.set(false);
-    this.index.update((v) => (v - 1 + this.filtered().length) % this.filtered().length);
+    this.index.update((value) => (value - 1 + count) % count);
+  }
+
+  onLevelChange(): void {
+    this.ensureTopicMatchesLevel();
+  }
+
+  topicsForSelectedLevel(): TopicOption[] {
+    const level = this.form.controls.level.value;
+    return this.topics.filter((topic) => topic.level === level);
+  }
+
+  exerciseLevel(): string {
+    return this.requestContext()?.level || this.form.controls.level.value;
+  }
+
+  exerciseTopicLabel(): string {
+    return topicLabel(this.requestContext()?.topic || this.form.controls.topic.value);
+  }
+
+  private request(): GenerateVocabularyRequest {
+    const { level, topic } = this.form.getRawValue();
+    return { level, topic };
+  }
+
+  private ensureTopicMatchesLevel(): void {
+    const availableTopics = this.topicsForSelectedLevel();
+    const selectedTopic = this.form.controls.topic.value;
+
+    if (availableTopics.some((topic) => topic.value === selectedTopic)) {
+      return;
+    }
+
+    const firstTopic = availableTopics[0];
+    if (firstTopic) {
+      this.form.controls.topic.setValue(firstTopic.value);
+    }
+  }
+
+  private errorMessage(error: unknown): string {
+    return error instanceof Error && error.message
+      ? error.message
+      : 'Something went wrong.';
   }
 }

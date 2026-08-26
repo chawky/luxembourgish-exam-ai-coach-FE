@@ -84,6 +84,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/exercises/vocabulary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["generateVocabExercise"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/exercises/recording": {
         parameters: {
             query?: never;
@@ -228,6 +244,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/progress/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getMyProgress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -264,6 +296,28 @@ export interface components {
             roles?: string[];
             jwt?: string;
         };
+        ExerciseRequestDto: {
+            /** @enum {string} */
+            level?: "A1" | "A2" | "B1";
+            /** @enum {string} */
+            topic?: "INTRODUCTION" | "FAMILY" | "HOME" | "FOOD_AND_DRINK" | "TIME_AND_DATES" | "DAILY_ROUTINE" | "WORK" | "SHOPPING" | "CLOTHES" | "HEALTH" | "SPORTS" | "HOBBIES" | "TRANSPORT" | "TRAVEL" | "WEATHER" | "NATURE" | "CITY_AND_PLACES" | "LUXEMBOURG" | "FRIENDS_AND_SOCIAL_LIFE" | "EVENTS_AND_CELEBRATIONS" | "PAST_EXPERIENCES" | "OPINIONS_AND_PREFERENCES" | "EDUCATION" | "PUBLIC_SERVICES" | "MEDIA_AND_TECHNOLOGY" | "FUTURE_PLANS";
+            /** @enum {string} */
+            type?: "TRANSLATION" | "MULTIPLE_CHOICE" | "FILL_IN_THE_BLANK" | "SHORT_ANSWER";
+        };
+        ApiResponseVocabularyDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["VocabularyDto"];
+        };
+        UsefulSentencesDto: {
+            vocabularyWord?: string;
+            wordTranslation?: string;
+            sentence?: string;
+            sentenceTranslation?: string;
+        };
+        VocabularyDto: {
+            usefulSentences?: components["schemas"]["UsefulSentencesDto"][];
+        };
         ApiResponseSpeakingEvaluation: {
             success?: boolean;
             message?: string;
@@ -275,14 +329,6 @@ export interface components {
             score?: number;
             feedback?: string;
             corrections?: string[];
-        };
-        ExerciseRequestDto: {
-            /** @enum {string} */
-            level?: "A1" | "A2" | "B1";
-            /** @enum {string} */
-            topic?: "INTRODUCTION" | "FAMILY" | "HOME" | "FOOD_AND_DRINK" | "TIME_AND_DATES" | "DAILY_ROUTINE" | "WORK" | "SHOPPING" | "CLOTHES" | "HEALTH" | "SPORTS" | "HOBBIES" | "TRANSPORT" | "TRAVEL" | "WEATHER" | "NATURE" | "CITY_AND_PLACES" | "LUXEMBOURG" | "FRIENDS_AND_SOCIAL_LIFE" | "EVENTS_AND_CELEBRATIONS" | "PAST_EXPERIENCES" | "OPINIONS_AND_PREFERENCES" | "EDUCATION" | "PUBLIC_SERVICES" | "MEDIA_AND_TECHNOLOGY" | "FUTURE_PLANS";
-            /** @enum {string} */
-            type?: "TRANSLATION" | "MULTIPLE_CHOICE" | "FILL_IN_THE_BLANK" | "SHORT_ANSWER";
         };
         ApiResponseSpeakingDto: {
             success?: boolean;
@@ -342,6 +388,40 @@ export interface components {
             success?: boolean;
             message?: string;
             data?: components["schemas"]["ResponseUserDto"][];
+        };
+        ApiResponseProgressDashboardDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["ProgressDashboardDto"];
+        };
+        ProgressDashboardDto: {
+            /** Format: int32 */
+            userId?: number;
+            username?: string;
+            email?: string;
+            /** Format: int32 */
+            loggedInDays?: number;
+            /** Format: int32 */
+            currentStreakDays?: number;
+            /** Format: date */
+            lastLoginDate?: string;
+            /** Format: int32 */
+            totalActivities?: number;
+            /** Format: int32 */
+            evaluatedActivities?: number;
+            /** Format: double */
+            averageRatingOverall?: number;
+            skillProgress?: components["schemas"]["SkillProgressDto"][];
+        };
+        SkillProgressDto: {
+            exerciseType?: string;
+            /** Format: int32 */
+            totalActivities?: number;
+            /** Format: int32 */
+            evaluatedActivities?: number;
+            /** Format: double */
+            averageRatingOverall?: number;
+            latestExerciseName?: string;
         };
     };
     responses: never;
@@ -468,6 +548,30 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseResponseUserDto"];
+                };
+            };
+        };
+    };
+    generateVocabExercise: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExerciseRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVocabularyDto"];
                 };
             };
         };
@@ -682,6 +786,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseResponseUserDto"];
+                };
+            };
+        };
+    };
+    getMyProgress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseProgressDashboardDto"];
                 };
             };
         };

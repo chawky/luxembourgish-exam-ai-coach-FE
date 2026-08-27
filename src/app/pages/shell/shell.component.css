@@ -64,7 +64,15 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  width: 100%;
+  padding: 8px;
   margin-bottom: 12px;
+  border-radius: 12px;
+  color: inherit;
+  transition: background 0.15s ease;
+}
+.user:hover {
+  background: var(--slate-100);
 }
 .avatar {
   display: inline-flex;

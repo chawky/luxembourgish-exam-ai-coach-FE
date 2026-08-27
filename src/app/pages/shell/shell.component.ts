@@ -48,13 +48,18 @@ interface NavItem {
           }
         </nav>
         <div class="side-foot">
-          <div class="user">
+          <a
+            routerLink="/app/profile"
+            class="user"
+            (click)="menuOpen.set(false)"
+            aria-label="Open profile"
+          >
             <span class="avatar">{{ initials() }}</span>
             <div class="user-meta">
               <strong>{{ auth.currentUser()?.username }}</strong>
               <small class="text-muted">{{ auth.currentUser()?.email }}</small>
             </div>
-          </div>
+          </a>
           <button class="btn btn-ghost btn-block logout" (click)="logout()">
             <app-icon name="logout" [size]="18"></app-icon> Sign out
           </button>
@@ -107,7 +112,6 @@ export class ShellComponent implements OnInit {
     { path: '/app/exercises', label: 'Exercises', icon: 'book' },
     { path: '/app/image-description', label: 'Image Description', icon: 'image' },
     { path: '/app/vocabulary', label: 'Vocabulary', icon: 'cards' },
-    { path: '/app/chat', label: 'AI Tutor', icon: 'chat' },
   ];
 
   ngOnInit(): void {

@@ -4,6 +4,22 @@
  */
 
 export interface paths {
+    "/api/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["findById"];
+        put: operations["updateUser"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/verifyOtp": {
         parameters: {
             query?: never;
@@ -212,22 +228,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/users/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["findById"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/users/me": {
         parameters: {
             query?: never;
@@ -236,6 +236,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["searchLocations"];
         put?: never;
         post?: never;
         delete?: never;
@@ -264,23 +280,17 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        VerifyOtpRequest: {
-            /** Format: int32 */
-            otp?: number;
-            email?: string;
-        };
-        ApiResponseVoid: {
-            success?: boolean;
-            message?: string;
-            data?: unknown;
-        };
-        SendOtpRequest: {
-            email?: string;
-        };
         RequestUserDto: {
             username?: string;
             password?: string;
             email?: string;
+            firstName?: string;
+            lastName?: string;
+            street?: string;
+            streetNumber?: string;
+            postalCode?: string;
+            city?: string;
+            addressInfo?: string;
             roles?: string[];
         };
         ApiResponseResponseUserDto: {
@@ -293,8 +303,28 @@ export interface components {
             id?: number;
             username?: string;
             email?: string;
+            firstName?: string;
+            lastName?: string;
+            street?: string;
+            streetNumber?: string;
+            postalCode?: string;
+            city?: string;
+            addressInfo?: string;
             roles?: string[];
             jwt?: string;
+        };
+        VerifyOtpRequest: {
+            /** Format: int32 */
+            otp?: number;
+            email?: string;
+        };
+        ApiResponseVoid: {
+            success?: boolean;
+            message?: string;
+            data?: unknown;
+        };
+        SendOtpRequest: {
+            email?: string;
         };
         ExerciseRequestDto: {
             /** @enum {string} */
@@ -389,6 +419,16 @@ export interface components {
             message?: string;
             data?: components["schemas"]["ResponseUserDto"][];
         };
+        ApiResponseListLocationSuggestionDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["LocationSuggestionDto"][];
+        };
+        LocationSuggestionDto: {
+            id?: string;
+            label?: string;
+            layerName?: string;
+        };
         ApiResponseProgressDashboardDto: {
             success?: boolean;
             message?: string;
@@ -432,6 +472,54 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    findById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseResponseUserDto"];
+                };
+            };
+        };
+    };
+    updateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestUserDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseResponseUserDto"];
+                };
+            };
+        };
+    };
     verifyOtp: {
         parameters: {
             query?: never;
@@ -748,28 +836,6 @@ export interface operations {
             };
         };
     };
-    findById: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ApiResponseResponseUserDto"];
-                };
-            };
-        };
-    };
     me: {
         parameters: {
             query?: never;
@@ -786,6 +852,29 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseResponseUserDto"];
+                };
+            };
+        };
+    };
+    searchLocations: {
+        parameters: {
+            query: {
+                query: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListLocationSuggestionDto"];
                 };
             };
         };

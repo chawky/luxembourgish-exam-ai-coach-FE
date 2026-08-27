@@ -1,13 +1,28 @@
 export interface User {
+  id?: number;
   username: string;
-  password: string;
+  password?: string;
   email: string;
+  firstName?: string;
+  lastName?: string;
+  street?: string;
+  streetNumber?: string;
+  postalCode?: string;
+  city?: string;
+  addressInfo?: string;
+  roles?: string[];
 }
 
 export interface ApiResponse<T> {
   success: boolean;
   message: string;
   data: T;
+}
+
+export interface LocationSuggestion {
+  id?: string;
+  label?: string;
+  layerName?: string;
 }
 
 export interface SkillProgress {

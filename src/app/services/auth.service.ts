@@ -10,13 +10,24 @@ import {
   throwError,
 } from 'rxjs';
 import { ApiResponse, User } from '../models';
+import type { components } from '../api/backend-schema';
+import { displayName } from '../location-utils';
 
-interface ResponseUserDto {
+type RequestUserDto = components['schemas']['RequestUserDto'];
+type ResponseUserDto = components['schemas']['ResponseUserDto'];
+
+interface UpdateProfileRequest {
   id?: number;
   username?: string;
-  email?: string;
-  jwt?: string;
-  roles?: string[];
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  street?: string;
+  streetNumber?: string;
+  postalCode?: string;
+  city?: string;
+  addressInfo?: string;
+  password?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -35,7 +46,7 @@ export class AuthService {
     }
 
     return firstValueFrom(
-      this.fetchCurrentUser().pipe(
+      this.loadCurrentUser().pipe(
         map(() => undefined),
         catchError(() => {
           this.currentUser.set(null);
@@ -67,11 +78,12 @@ export class AuthService {
       );
   }
 
-  signup(data: User) {
-    console.log(data);
-    //console.log(this.https.post(this.url+'/addUser', data));
+  signup(data: RequestUserDto) {
     return this.https
-      .post<ApiResponse<User | null>>(this.url + '/addUser', data)
+      .post<ApiResponse<ResponseUserDto | null>>(
+        this.url + '/addUser',
+        this.toUserRequest(data),
+      )
       .pipe(this.requireSuccess('Could not create account.'));
   }
 
@@ -99,15 +111,51 @@ export class AuthService {
     return of(null);
   }
 
-  private fetchCurrentUser() {
+  loadCurrentUser() {
     return this.https
       .get<ApiResponse<ResponseUserDto | null>>(this.url + '/me')
       .pipe(
         this.requireSuccess('Could not load current user.'),
-        tap((response) => {
-          this.currentUser.set(
-            response.data ? this.toCurrentUser(response.data) : null,
-          );
+        map((response) => {
+          const user = response.data ? this.toCurrentUser(response.data) : null;
+          this.currentUser.set(user);
+          return user;
+        }),
+      );
+  }
+
+  updateProfile(data: UpdateProfileRequest) {
+    const userId = data.id ?? this.currentUser()?.id;
+    if (userId === undefined) {
+      return throwError(
+        () => new Error('Could not update profile. Please sign in again.'),
+      );
+    }
+
+    const request = this.toUserRequest(data);
+
+    return this.https
+      .put<ApiResponse<ResponseUserDto | null>>(
+        `${this.url}/${userId}`,
+        request,
+      )
+      .pipe(
+        this.requireSuccess('Could not update profile.'),
+        map((response) => {
+          const updatedUser = response.data;
+          if (!updatedUser) {
+            throw new Error(
+              response.message || 'Profile update did not return your account.',
+            );
+          }
+
+          if (updatedUser.jwt) {
+            this.saveToken(updatedUser.jwt);
+          }
+
+          const user = this.toCurrentUser(updatedUser, request.email);
+          this.currentUser.set(user);
+          return user;
         }),
       );
   }
@@ -133,13 +181,47 @@ export class AuthService {
     return token.replace(/^Bearer\s+/i, '').trim();
   }
 
+  private toUserRequest(data: RequestUserDto): RequestUserDto {
+    const request: RequestUserDto = {
+      username:
+        data.username?.trim() ||
+        displayName({
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+        }),
+      email: data.email?.trim(),
+      firstName: data.firstName?.trim(),
+      lastName: data.lastName?.trim(),
+      street: data.street?.trim(),
+      streetNumber: data.streetNumber?.trim(),
+      postalCode: data.postalCode?.trim(),
+      city: data.city?.trim(),
+      addressInfo: data.addressInfo?.trim(),
+    };
+
+    if (data.password) {
+      request.password = data.password;
+    }
+
+    return request;
+  }
+
   private toCurrentUser(user: ResponseUserDto, fallbackEmail = user.email): User {
     const email = user.email || fallbackEmail || '';
 
     return {
-      username: user.username || email,
+      id: user.id,
+      username: displayName(user) || email,
       email,
-      password: '',
+      firstName: user.firstName,
+      lastName: user.lastName,
+      street: user.street,
+      streetNumber: user.streetNumber,
+      postalCode: user.postalCode,
+      city: user.city,
+      addressInfo: user.addressInfo,
+      roles: user.roles,
     };
   }
 

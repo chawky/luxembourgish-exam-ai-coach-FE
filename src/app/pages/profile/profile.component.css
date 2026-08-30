@@ -26,6 +26,32 @@
   margin-bottom: 22px;
 }
 
+.profile-tabs {
+  display: inline-flex;
+  gap: 6px;
+  padding: 5px;
+  margin-bottom: 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.profile-tab {
+  border: 0;
+  border-radius: 9px;
+  padding: 9px 14px;
+  background: transparent;
+  color: var(--slate-500);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.profile-tab.active {
+  background: var(--blue-700);
+  color: var(--white);
+  box-shadow: var(--shadow-sm);
+}
+
 .profile-avatar,
 .profile-icon {
   display: inline-flex;
@@ -146,6 +172,7 @@
 }
 
 .form-error,
+.form-info,
 .form-success {
   border-radius: 10px;
   padding: 10px 12px;
@@ -161,6 +188,85 @@
 .form-success {
   background: #143525;
   color: var(--green);
+}
+
+.form-info {
+  background: var(--blue-50);
+  color: var(--blue-900);
+}
+
+.subscription-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.subscription-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at top right, rgba(90, 162, 255, 0.2), transparent 34%),
+    var(--surface-2);
+}
+
+.subscription-hero h3 {
+  font-size: 24px;
+  margin-top: 4px;
+}
+
+.subscription-hero p {
+  max-width: 520px;
+  margin: 8px 0 0;
+}
+
+.subscription-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  background: var(--blue-100);
+  color: var(--blue-700);
+}
+
+.subscription-features {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.subscription-features li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.subscription-features app-icon {
+  color: var(--green);
+}
+
+.subscription-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.subscription-actions p {
+  flex: 1;
+  min-width: 220px;
+  margin: 0;
 }
 
 .actions {
@@ -182,6 +288,23 @@
   }
 
   .actions .btn {
+    width: 100%;
+  }
+
+  .profile-tabs {
+    display: flex;
+    width: 100%;
+  }
+
+  .profile-tab {
+    flex: 1;
+  }
+
+  .subscription-hero {
+    flex-direction: column-reverse;
+  }
+
+  .subscription-actions .btn {
     width: 100%;
   }
 

@@ -19,10 +19,14 @@ import {
   formatAddress,
   parseLocationSuggestion,
 } from '../../location-utils';
+import { ActivatedRoute } from '@angular/router';
 import { IconComponent } from '../../components/icon.component';
 import { LocationSuggestion, User } from '../../models';
 import { AuthService } from '../../services/auth.service';
 import { LocationService } from '../../services/location.service';
+import { PaymentService } from '../../services/payment.service';
+
+type ProfileTab = 'account' | 'subscription';
 
 function profilePasswordValidator(
   group: AbstractControl,
@@ -79,257 +83,345 @@ function profilePasswordValidator(
               <h2>{{ displayUserName(user) }}</h2>
               <p class="text-muted">{{ user.email }}</p>
             </div>
-            @if (!editMode()) {
+            @if (activeTab() === 'account' && !editMode()) {
               <button type="button" class="btn btn-outline" (click)="startEdit()">
                 Edit profile
               </button>
             }
           </div>
 
-          @if (errorMsg()) {
-            <div class="form-error" role="alert">{{ errorMsg() }}</div>
-          }
+          <div class="profile-tabs" role="tablist" aria-label="Profile sections">
+            <button
+              type="button"
+              class="profile-tab"
+              role="tab"
+              [class.active]="activeTab() === 'account'"
+              [attr.aria-selected]="activeTab() === 'account'"
+              (click)="showTab('account')"
+            >
+              Account
+            </button>
+            <button
+              type="button"
+              class="profile-tab"
+              role="tab"
+              [class.active]="activeTab() === 'subscription'"
+              [attr.aria-selected]="activeTab() === 'subscription'"
+              (click)="showTab('subscription')"
+            >
+              Subscription
+            </button>
+          </div>
 
-          @if (successMsg()) {
-            <div class="form-success" role="status">{{ successMsg() }}</div>
-          }
+          @if (activeTab() === 'account') {
+            @if (errorMsg()) {
+              <div class="form-error" role="alert">{{ errorMsg() }}</div>
+            }
 
-          @if (!editMode()) {
-            <dl class="profile-details">
-              <div>
-                <dt>First name</dt>
-                <dd>{{ user.firstName || 'Not added yet' }}</dd>
-              </div>
-              <div>
-                <dt>Last name</dt>
-                <dd>{{ user.lastName || 'Not added yet' }}</dd>
-              </div>
-              <div>
-                <dt>Email</dt>
-                <dd>{{ user.email }}</dd>
-              </div>
-              <div>
-                <dt>Address</dt>
-                <dd>{{ addressText(user) || 'Not added yet' }}</dd>
-              </div>
-            </dl>
-          } @else {
-            <form [formGroup]="form" (ngSubmit)="save()" novalidate>
-              <div class="form-grid">
-                <div class="field">
-                  <label for="profile-first-name">First name</label>
-                  <input
-                    id="profile-first-name"
-                    type="text"
-                    class="input"
-                    formControlName="firstName"
-                    [class.error]="invalid('firstName')"
-                    autocomplete="given-name"
-                    placeholder="Jean"
-                  />
-                  @if (invalid('firstName')) {
-                    <span class="field-error">Please enter your first name.</span>
-                  }
+            @if (successMsg()) {
+              <div class="form-success" role="status">{{ successMsg() }}</div>
+            }
+
+            @if (!editMode()) {
+              <dl class="profile-details">
+                <div>
+                  <dt>First name</dt>
+                  <dd>{{ user.firstName || 'Not added yet' }}</dd>
                 </div>
-
-                <div class="field">
-                  <label for="profile-last-name">Last name</label>
-                  <input
-                    id="profile-last-name"
-                    type="text"
-                    class="input"
-                    formControlName="lastName"
-                    [class.error]="invalid('lastName')"
-                    autocomplete="family-name"
-                    placeholder="Weber"
-                  />
-                  @if (invalid('lastName')) {
-                    <span class="field-error">Please enter your last name.</span>
-                  }
+                <div>
+                  <dt>Last name</dt>
+                  <dd>{{ user.lastName || 'Not added yet' }}</dd>
                 </div>
-
-                <div class="field span-2">
-                  <label for="profile-email">Email</label>
-                  <input
-                    id="profile-email"
-                    type="email"
-                    class="input"
-                    formControlName="email"
-                    [class.error]="invalid('email')"
-                    autocomplete="email"
-                    placeholder="you@example.com"
-                  />
-                  @if (invalid('email')) {
-                    <span class="field-error">Enter a valid email address.</span>
-                  }
+                <div>
+                  <dt>Email</dt>
+                  <dd>{{ user.email }}</dd>
                 </div>
-              </div>
-
-              <div class="address-section">
-                <h3>Address in Luxembourg</h3>
-                <p class="text-muted">
-                  Search for an address, street, or commune to fill the fields.
-                </p>
-
-                <div class="field">
-                  <label for="profile-location-search">Find address</label>
-                  <input
-                    id="profile-location-search"
-                    type="text"
-                    class="input"
-                    [value]="locationQuery()"
-                    (input)="onLocationInput($event)"
-                    (change)="applyLocationInput($event)"
-                    list="profile-location-options"
-                    autocomplete="off"
-                    placeholder="Start typing a Luxembourg address"
-                  />
-                  <datalist id="profile-location-options">
-                    @for (location of locationSuggestions(); track locationTrack(location, $index)) {
-                      <option [value]="location.label || ''">
-                        {{ location.layerName }}
-                      </option>
-                    }
-                  </datalist>
-                  @if (locationLoading()) {
-                    <span class="field-help">Searching locations...</span>
-                  } @else if (locationError()) {
-                    <span class="field-error">{{ locationError() }}</span>
-                  } @else {
-                    <span class="field-help">
-                      Select a result to auto-fill address details.
-                    </span>
-                  }
+                <div>
+                  <dt>Address</dt>
+                  <dd>{{ addressText(user) || 'Not added yet' }}</dd>
                 </div>
-
+              </dl>
+            } @else {
+              <form [formGroup]="form" (ngSubmit)="save()" novalidate>
                 <div class="form-grid">
-                  <div class="field small-field">
-                    <label for="profile-street-number">No.</label>
-                    <input
-                      id="profile-street-number"
-                      type="text"
-                      class="input"
-                      formControlName="streetNumber"
-                      autocomplete="address-line2"
-                      placeholder="23"
-                    />
-                  </div>
-
-                  <div class="field wide-field">
-                    <label for="profile-street">Street</label>
-                    <input
-                      id="profile-street"
-                      type="text"
-                      class="input"
-                      formControlName="street"
-                      autocomplete="address-line1"
-                      placeholder="Rue Emile Lux"
-                    />
-                  </div>
-
                   <div class="field">
-                    <label for="profile-postal-code">Postal code</label>
+                    <label for="profile-first-name">First name</label>
                     <input
-                      id="profile-postal-code"
+                      id="profile-first-name"
                       type="text"
                       class="input"
-                      formControlName="postalCode"
-                      [class.error]="invalid('postalCode')"
-                      autocomplete="postal-code"
-                      placeholder="3738"
+                      formControlName="firstName"
+                      [class.error]="invalid('firstName')"
+                      autocomplete="given-name"
+                      placeholder="Jean"
                     />
-                    @if (invalid('postalCode')) {
-                      <span class="field-error">Use a 4-digit postal code.</span>
+                    @if (invalid('firstName')) {
+                      <span class="field-error">Please enter your first name.</span>
                     }
                   </div>
 
                   <div class="field">
-                    <label for="profile-city">City</label>
+                    <label for="profile-last-name">Last name</label>
                     <input
-                      id="profile-city"
+                      id="profile-last-name"
                       type="text"
                       class="input"
-                      formControlName="city"
-                      autocomplete="address-level2"
-                      placeholder="Rumelange"
+                      formControlName="lastName"
+                      [class.error]="invalid('lastName')"
+                      autocomplete="family-name"
+                      placeholder="Weber"
                     />
+                    @if (invalid('lastName')) {
+                      <span class="field-error">Please enter your last name.</span>
+                    }
                   </div>
 
                   <div class="field span-2">
-                    <label for="profile-address-info">Additional address info</label>
+                    <label for="profile-email">Email</label>
                     <input
-                      id="profile-address-info"
+                      id="profile-email"
+                      type="email"
+                      class="input"
+                      formControlName="email"
+                      [class.error]="invalid('email')"
+                      autocomplete="email"
+                      placeholder="you@example.com"
+                    />
+                    @if (invalid('email')) {
+                      <span class="field-error">Enter a valid email address.</span>
+                    }
+                  </div>
+                </div>
+
+                <div class="address-section">
+                  <h3>Address in Luxembourg</h3>
+                  <p class="text-muted">
+                    Search for an address, street, or commune to fill the fields.
+                  </p>
+
+                  <div class="field">
+                    <label for="profile-location-search">Find address</label>
+                    <input
+                      id="profile-location-search"
                       type="text"
                       class="input"
-                      formControlName="addressInfo"
-                      autocomplete="address-line3"
-                      placeholder="Apartment, floor, or building"
+                      [value]="locationQuery()"
+                      (input)="onLocationInput($event)"
+                      (change)="applyLocationInput($event)"
+                      list="profile-location-options"
+                      autocomplete="off"
+                      placeholder="Start typing a Luxembourg address"
                     />
-                  </div>
-                </div>
-              </div>
-
-              <div class="password-section">
-                <h3>Change password</h3>
-                <p class="text-muted">
-                  Leave these fields empty to keep your current password.
-                </p>
-
-                <div class="form-grid">
-                  <div class="field">
-                    <label for="profile-password">New password</label>
-                    <input
-                      id="profile-password"
-                      type="password"
-                      class="input"
-                      formControlName="password"
-                      [class.error]="passwordInvalid()"
-                      autocomplete="new-password"
-                      placeholder="At least 8 characters"
-                    />
-                    @if (passwordInvalid()) {
-                      <span class="field-error">Use at least 8 characters.</span>
+                    <datalist id="profile-location-options">
+                      @for (location of locationSuggestions(); track locationTrack(location, $index)) {
+                        <option [value]="location.label || ''">
+                          {{ location.layerName }}
+                        </option>
+                      }
+                    </datalist>
+                    @if (locationLoading()) {
+                      <span class="field-help">Searching locations...</span>
+                    } @else if (locationError()) {
+                      <span class="field-error">{{ locationError() }}</span>
+                    } @else {
+                      <span class="field-help">
+                        Select a result to auto-fill address details.
+                      </span>
                     }
                   </div>
 
-                  <div class="field">
-                    <label for="profile-confirm-password">Confirm new password</label>
-                    <input
-                      id="profile-confirm-password"
-                      type="password"
-                      class="input"
-                      formControlName="confirmPassword"
-                      [class.error]="confirmPasswordInvalid()"
-                      autocomplete="new-password"
-                      placeholder="Re-enter the new password"
-                    />
-                    @if (form.hasError('confirmPasswordRequired') && confirmPasswordTouched()) {
-                      <span class="field-error">Confirm the new password.</span>
-                    } @else if (form.hasError('passwordMismatch') && confirmPasswordTouched()) {
-                      <span class="field-error">Passwords do not match.</span>
-                    }
+                  <div class="form-grid">
+                    <div class="field small-field">
+                      <label for="profile-street-number">No.</label>
+                      <input
+                        id="profile-street-number"
+                        type="text"
+                        class="input"
+                        formControlName="streetNumber"
+                        autocomplete="address-line2"
+                        placeholder="23"
+                      />
+                    </div>
+
+                    <div class="field wide-field">
+                      <label for="profile-street">Street</label>
+                      <input
+                        id="profile-street"
+                        type="text"
+                        class="input"
+                        formControlName="street"
+                        autocomplete="address-line1"
+                        placeholder="Rue Emile Lux"
+                      />
+                    </div>
+
+                    <div class="field">
+                      <label for="profile-postal-code">Postal code</label>
+                      <input
+                        id="profile-postal-code"
+                        type="text"
+                        class="input"
+                        formControlName="postalCode"
+                        [class.error]="invalid('postalCode')"
+                        autocomplete="postal-code"
+                        placeholder="3738"
+                      />
+                      @if (invalid('postalCode')) {
+                        <span class="field-error">Use a 4-digit postal code.</span>
+                      }
+                    </div>
+
+                    <div class="field">
+                      <label for="profile-city">City</label>
+                      <input
+                        id="profile-city"
+                        type="text"
+                        class="input"
+                        formControlName="city"
+                        autocomplete="address-level2"
+                        placeholder="Rumelange"
+                      />
+                    </div>
+
+                    <div class="field span-2">
+                      <label for="profile-address-info">Additional address info</label>
+                      <input
+                        id="profile-address-info"
+                        type="text"
+                        class="input"
+                        formControlName="addressInfo"
+                        autocomplete="address-line3"
+                        placeholder="Apartment, floor, or building"
+                      />
+                    </div>
                   </div>
                 </div>
+
+                <div class="password-section">
+                  <h3>Change password</h3>
+                  <p class="text-muted">
+                    Leave these fields empty to keep your current password.
+                  </p>
+
+                  <div class="form-grid">
+                    <div class="field">
+                      <label for="profile-password">New password</label>
+                      <input
+                        id="profile-password"
+                        type="password"
+                        class="input"
+                        formControlName="password"
+                        [class.error]="passwordInvalid()"
+                        autocomplete="new-password"
+                        placeholder="At least 8 characters"
+                      />
+                      @if (passwordInvalid()) {
+                        <span class="field-error">Use at least 8 characters.</span>
+                      }
+                    </div>
+
+                    <div class="field">
+                      <label for="profile-confirm-password">Confirm new password</label>
+                      <input
+                        id="profile-confirm-password"
+                        type="password"
+                        class="input"
+                        formControlName="confirmPassword"
+                        [class.error]="confirmPasswordInvalid()"
+                        autocomplete="new-password"
+                        placeholder="Re-enter the new password"
+                      />
+                      @if (form.hasError('confirmPasswordRequired') && confirmPasswordTouched()) {
+                        <span class="field-error">Confirm the new password.</span>
+                      } @else if (form.hasError('passwordMismatch') && confirmPasswordTouched()) {
+                        <span class="field-error">Passwords do not match.</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                <div class="actions">
+                  <button
+                    type="submit"
+                    class="btn btn-primary"
+                    [disabled]="saving()"
+                  >
+                    {{ saving() ? 'Saving...' : 'Save changes' }}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-ghost"
+                    (click)="cancelEdit()"
+                    [disabled]="saving()"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            }
+          } @else {
+            <section class="subscription-panel" aria-label="Subscription">
+              @if (subscriptionSuccess()) {
+                <div class="form-success" role="status">
+                  {{ subscriptionSuccess() }}
+                </div>
+              }
+
+              @if (subscriptionInfo()) {
+                <div class="form-info" role="status">
+                  {{ subscriptionInfo() }}
+                </div>
+              }
+
+              @if (subscriptionError()) {
+                <div class="form-error" role="alert">
+                  {{ subscriptionError() }}
+                </div>
+              }
+
+              <div class="subscription-hero">
+                <div>
+                  <span class="eyebrow">Subscription</span>
+                  <h3>Unlock the full practice plan</h3>
+                  <p class="text-muted">
+                    Start your subscription to keep using guided practice for
+                    speaking, listening, vocabulary, and exam-style exercises.
+                  </p>
+                </div>
+                <span class="subscription-icon">
+                  <app-icon name="shield" [size]="24"></app-icon>
+                </span>
               </div>
 
-              <div class="actions">
-                <button
-                  type="submit"
-                  class="btn btn-primary"
-                  [disabled]="saving()"
-                >
-                  {{ saving() ? 'Saving...' : 'Save changes' }}
-                </button>
+              <ul class="subscription-features">
+                @for (feature of subscriptionFeatures; track feature) {
+                  <li>
+                    <app-icon name="check" [size]="18"></app-icon>
+                    <span>{{ feature }}</span>
+                  </li>
+                }
+              </ul>
+
+              <div class="subscription-actions">
                 <button
                   type="button"
-                  class="btn btn-ghost"
-                  (click)="cancelEdit()"
-                  [disabled]="saving()"
+                  class="btn btn-primary btn-lg"
+                  (click)="startSubscription()"
+                  [disabled]="subscriptionLoading()"
                 >
-                  Cancel
+                  @if (subscriptionLoading()) {
+                    <span class="inline-loading-icon">
+                      <app-icon name="sparkles" [size]="16"></app-icon>
+                    </span>
+                  }
+                  {{ subscriptionLoading() ? 'Opening checkout...' : 'Start subscription' }}
                 </button>
+                <p class="text-muted">
+                  Payment is completed on a secure checkout page. You will return
+                  here afterwards.
+                </p>
               </div>
-            </form>
+            </section>
           }
         } @else {
           <div class="empty-state">
@@ -349,18 +441,30 @@ export class ProfileComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private auth = inject(AuthService);
   private locationService = inject(LocationService);
+  private paymentService = inject(PaymentService);
+  private route = inject(ActivatedRoute);
   private locationSearchTimer: ReturnType<typeof setTimeout> | null = null;
 
   currentUser = computed(() => this.auth.currentUser());
+  activeTab = signal<ProfileTab>('account');
   loading = signal(false);
   saving = signal(false);
+  subscriptionLoading = signal(false);
   editMode = signal(false);
   errorMsg = signal('');
   successMsg = signal('');
+  subscriptionError = signal('');
+  subscriptionInfo = signal('');
+  subscriptionSuccess = signal('');
   locationQuery = signal('');
   locationLoading = signal(false);
   locationError = signal('');
   locationSuggestions = signal<LocationSuggestion[]>([]);
+  readonly subscriptionFeatures = [
+    'Unlimited speaking and listening practice',
+    'AI-generated exam-style exercises',
+    'Vocabulary support for exam topics',
+  ];
 
   form = this.fb.nonNullable.group(
     {
@@ -379,6 +483,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   );
 
   ngOnInit(): void {
+    this.applyRouteState();
     this.patchForm(this.currentUser());
     this.loadProfile();
   }
@@ -392,6 +497,20 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this.successMsg.set('');
     this.patchForm(this.currentUser());
     this.editMode.set(true);
+  }
+
+  showTab(tab: ProfileTab): void {
+    if (this.activeTab() === tab) {
+      return;
+    }
+
+    if (tab === 'subscription' && this.editMode()) {
+      this.cancelEdit();
+    }
+
+    this.errorMsg.set('');
+    this.successMsg.set('');
+    this.activeTab.set(tab);
   }
 
   cancelEdit(): void {
@@ -440,6 +559,25 @@ export class ProfileComponent implements OnInit, OnDestroy {
           this.saving.set(false);
         },
       });
+  }
+
+  startSubscription(): void {
+    this.subscriptionError.set('');
+    this.subscriptionInfo.set('');
+    this.subscriptionSuccess.set('');
+    this.subscriptionLoading.set(true);
+
+    this.paymentService.startSubscriptionCheckout().subscribe({
+      next: (checkoutUrl) => {
+        window.location.assign(checkoutUrl);
+      },
+      error: () => {
+        this.subscriptionError.set(
+          'Could not open checkout. Please try again or sign in again.',
+        );
+        this.subscriptionLoading.set(false);
+      },
+    });
   }
 
   invalid(
@@ -547,7 +685,30 @@ export class ProfileComponent implements OnInit, OnDestroy {
       complete: () => {
         this.loading.set(false);
       },
-    });
+      });
+  }
+
+  private applyRouteState(): void {
+    const queryParams = this.route.snapshot.queryParamMap;
+
+    if (queryParams.get('tab') === 'subscription') {
+      this.activeTab.set('subscription');
+    }
+
+    const checkout = queryParams.get('checkout');
+    if (checkout === 'success') {
+      this.subscriptionSuccess.set(
+        'Checkout completed. Your access may take a moment to update.',
+      );
+      this.subscriptionInfo.set('');
+      this.subscriptionError.set('');
+    } else if (checkout === 'cancel') {
+      this.subscriptionInfo.set(
+        'Checkout was cancelled. You can start again whenever you are ready.',
+      );
+      this.subscriptionSuccess.set('');
+      this.subscriptionError.set('');
+    }
   }
 
   private patchForm(user: User | null): void {

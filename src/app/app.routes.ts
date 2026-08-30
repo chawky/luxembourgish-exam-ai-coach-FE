@@ -23,6 +23,22 @@ export const routes: Routes = [
       import('./pages/auth/otp.component').then((m) => m.OtpComponent),
   },
   {
+    path: 'payment/success',
+    loadComponent: () =>
+      import('./pages/payment/payment-return.component').then(
+        (m) => m.PaymentReturnComponent,
+      ),
+    data: { checkout: 'success' },
+  },
+  {
+    path: 'payment/cancel',
+    loadComponent: () =>
+      import('./pages/payment/payment-return.component').then(
+        (m) => m.PaymentReturnComponent,
+      ),
+    data: { checkout: 'cancel' },
+  },
+  {
     path: 'app',
     canActivate: [authGuard],
     loadComponent: () =>

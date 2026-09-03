@@ -16,6 +16,7 @@ type IconName =
   | 'logout'
   | 'menu'
   | 'shield'
+  | 'search'
   | 'sparkles'
   | 'clock'
   | 'pause'
@@ -36,6 +37,7 @@ const PATHS: Record<IconName, string> = {
   logout: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
   menu: 'M3 12h18M3 6h18M3 18h18',
   shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
+  search: 'M21 21l-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z',
   sparkles: 'M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17l-1.9-5.1L4.5 10l5.6-1.4z',
   clock: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2',
   pause: 'M8 5v14M16 5v14',

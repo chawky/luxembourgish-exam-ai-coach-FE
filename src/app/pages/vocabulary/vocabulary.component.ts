@@ -1,19 +1,18 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { IconComponent } from '../../components/icon.component';
 import {
-  ExerciseLevel,
-  ExerciseTopic,
   GenerateVocabularyRequest,
   VocabularyExerciseDto,
 } from '../../models';
 import {
-  PRACTICE_LEVELS,
-  PRACTICE_TOPICS,
+  SelectOption,
   TopicOption,
   topicLabel,
 } from '../../practice-options';
+import { ExerciseService } from '../../services/exercise.service';
+import { PracticeConfigService } from '../../services/practice-config.service';
 import { VocabularyService } from '../../services/vocabulary.service';
 
 @Component({
@@ -78,9 +77,12 @@ import { VocabularyService } from '../../services/vocabulary.service';
           <button
             type="submit"
             class="btn btn-primary btn-block"
-            [disabled]="loading()"
+            [disabled]="loading() || configLoading()"
           >
-            @if (loading()) {
+            @if (configLoading()) {
+              <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
+              Loading options...
+            } @else if (loading()) {
               <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
               Generating vocabulary...
             } @else {
@@ -217,28 +219,36 @@ import { VocabularyService } from '../../services/vocabulary.service';
   `,
   styleUrl: './vocabulary.component.css',
 })
-export class VocabularyComponent {
+export class VocabularyComponent implements OnInit {
   private fb = inject(FormBuilder);
   private vocabularyService = inject(VocabularyService);
+  private practiceConfig = inject(PracticeConfigService);
+  private exercises = inject(ExerciseService);
 
-  levels = PRACTICE_LEVELS;
-  topics = PRACTICE_TOPICS;
+  levels: SelectOption[] = [];
+  topics: TopicOption[] = [];
 
+  configLoading = signal(false);
   loading = signal(false);
   errorMsg = signal('');
   vocabulary = signal<VocabularyExerciseDto | null>(null);
   requestContext = signal<GenerateVocabularyRequest | null>(null);
   index = signal(0);
   flipped = signal(false);
+  completedAttemptIds = new Set<number>();
 
   form = this.fb.nonNullable.group({
-    level: ['A1' as ExerciseLevel, [Validators.required]],
-    topic: ['DAILY_ROUTINE' as ExerciseTopic, [Validators.required]],
+    level: ['', [Validators.required]],
+    topic: ['', [Validators.required]],
   });
 
   sentences = computed(() => this.vocabulary()?.usefulSentences ?? []);
 
   currentSentence = computed(() => this.sentences()[this.index()] ?? null);
+
+  ngOnInit(): void {
+    this.loadPracticeConfig();
+  }
 
   generate(): void {
     this.errorMsg.set('');
@@ -271,6 +281,10 @@ export class VocabularyComponent {
 
   flip(): void {
     this.flipped.update((value) => !value);
+
+    if (this.flipped()) {
+      this.completeCurrentAttempt();
+    }
   }
 
   next(): void {
@@ -307,12 +321,42 @@ export class VocabularyComponent {
   }
 
   exerciseTopicLabel(): string {
-    return topicLabel(this.requestContext()?.topic || this.form.controls.topic.value);
+    return topicLabel(
+      this.requestContext()?.topic || this.form.controls.topic.value,
+      this.topics,
+    );
   }
 
   private request(): GenerateVocabularyRequest {
     const { level, topic } = this.form.getRawValue();
     return { level, topic };
+  }
+
+  private loadPracticeConfig(): void {
+    this.configLoading.set(true);
+
+    this.practiceConfig.getConfig().subscribe({
+      next: (config) => {
+        this.levels = config.levels;
+        this.topics = config.topics;
+        this.applySelectionDefaults();
+      },
+      error: (error) => {
+        this.errorMsg.set(this.errorMessage(error));
+        this.configLoading.set(false);
+      },
+      complete: () => {
+        this.configLoading.set(false);
+      },
+    });
+  }
+
+  private applySelectionDefaults(): void {
+    if (!this.form.controls.level.value && this.levels[0]) {
+      this.form.controls.level.setValue(this.levels[0].value);
+    }
+
+    this.ensureTopicMatchesLevel();
   }
 
   private ensureTopicMatchesLevel(): void {
@@ -327,6 +371,22 @@ export class VocabularyComponent {
     if (firstTopic) {
       this.form.controls.topic.setValue(firstTopic.value);
     }
+  }
+
+  private completeCurrentAttempt(): void {
+    const attemptId = this.vocabulary()?.attemptId;
+
+    if (!attemptId || this.completedAttemptIds.has(attemptId)) {
+      return;
+    }
+
+    this.completedAttemptIds.add(attemptId);
+    this.exercises.completeAttempt(attemptId).subscribe({
+      error: (error) => {
+        this.completedAttemptIds.delete(attemptId);
+        this.errorMsg.set(this.errorMessage(error));
+      },
+    });
   }
 
   private errorMessage(error: unknown): string {

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import {
   FormBuilder,
   FormsModule,
@@ -9,21 +9,18 @@ import {
 import { IconComponent } from '../../components/icon.component';
 import {
   AudioExerciseDto,
-  ExerciseLevel,
   ExerciseOptionDto,
-  ExerciseTopic,
-  ExerciseType,
   GenerateExerciseRequest,
 } from '../../models';
 import {
-  EXERCISE_TYPES,
-  PRACTICE_LEVELS,
-  PRACTICE_TOPICS,
+  SelectOption,
   TopicOption,
   formatPracticeLabel,
   topicLabel,
 } from '../../practice-options';
+import { ExerciseService } from '../../services/exercise.service';
 import { ListeningService } from '../../services/listening.service';
+import { PracticeConfigService } from '../../services/practice-config.service';
 import { AudioPlayerComponent } from '../../components/audio-player.component';
 
 interface NormalizedOption {
@@ -34,6 +31,7 @@ interface NormalizedOption {
 
 interface ListeningExerciseView {
   id: string;
+  attemptId?: number;
   level: string;
   topic: string;
   type: string;
@@ -120,8 +118,11 @@ interface ListeningExerciseView {
             <div class="form-error" role="alert">{{ errorMsg() }}</div>
           }
 
-          <button class="btn btn-primary btn-block" type="submit" [disabled]="loading()">
-            @if (loading()) {
+          <button class="btn btn-primary btn-block" type="submit" [disabled]="loading() || configLoading()">
+            @if (configLoading()) {
+              <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
+              Loading options...
+            } @else if (loading()) {
               <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
               Generating audio...
             } @else {
@@ -256,7 +257,7 @@ interface ListeningExerciseView {
               <button
                 class="btn btn-outline"
                 type="button"
-                (click)="showAnswer.set(true)"
+                (click)="revealAnswer()"
                 [disabled]="showAnswer()"
               >
                 Show model answer
@@ -290,17 +291,20 @@ interface ListeningExerciseView {
   `,
   styleUrl: './listening.component.css',
 })
-export class ListeningComponent implements OnDestroy {
+export class ListeningComponent implements OnDestroy, OnInit {
   private fb = inject(FormBuilder);
   private listening = inject(ListeningService);
+  private exercises = inject(ExerciseService);
+  private practiceConfig = inject(PracticeConfigService);
 
-  levels = PRACTICE_LEVELS;
-  topics = PRACTICE_TOPICS;
-  exerciseTypes = EXERCISE_TYPES;
+  levels: SelectOption[] = [];
+  topics: TopicOption[] = [];
+  exerciseTypes: SelectOption[] = [];
   letters = ['A', 'B', 'C', 'D'];
   defaultTaskText = 'Listen to the audio and answer from what you hear.';
   toggle = (value: boolean): boolean => !value;
 
+  configLoading = signal(false);
   loading = signal(false);
   errorMsg = signal('');
   audioError = signal('');
@@ -311,13 +315,14 @@ export class ListeningComponent implements OnDestroy {
   showAnswer = signal(false);
   selectedOption = signal<number | null>(null);
   draftAnswer = '';
+  completedAttemptIds = new Set<number>();
 
   private audioObjectUrl: string | null = null;
 
   form = this.fb.nonNullable.group({
-    level: ['B1' as ExerciseLevel, [Validators.required]],
-    topic: ['PUBLIC_SERVICES' as ExerciseTopic, [Validators.required]],
-    type: ['MULTIPLE_CHOICE' as ExerciseType, [Validators.required]],
+    level: ['', [Validators.required]],
+    topic: ['', [Validators.required]],
+    type: ['', [Validators.required]],
   });
 
   normalizedOptions = computed<NormalizedOption[]>(() => {
@@ -338,6 +343,10 @@ export class ListeningComponent implements OnDestroy {
       };
     });
   });
+
+  ngOnInit(): void {
+    this.loadPracticeConfig();
+  }
 
   generate(): void {
     this.errorMsg.set('');
@@ -381,7 +390,7 @@ export class ListeningComponent implements OnDestroy {
   }
 
   topicLabel(topic: string): string {
-    return topicLabel(topic);
+    return topicLabel(topic, this.topics);
   }
 
   typeLabel(type: string): string {
@@ -394,7 +403,7 @@ export class ListeningComponent implements OnDestroy {
     }
 
     this.selectedOption.set(index);
-    this.showAnswer.set(true);
+    this.revealAnswer();
   }
 
   optionState(option: NormalizedOption, index: number): string {
@@ -415,9 +424,51 @@ export class ListeningComponent implements OnDestroy {
     this.draftAnswer = '';
   }
 
+  revealAnswer(): void {
+    this.showAnswer.set(true);
+    this.completeCurrentAttempt();
+  }
+
   private request(): GenerateExerciseRequest {
     const { level, topic, type } = this.form.getRawValue();
     return { level, topic, type };
+  }
+
+  private loadPracticeConfig(): void {
+    this.configLoading.set(true);
+
+    this.practiceConfig.getConfig().subscribe({
+      next: (config) => {
+        this.levels = config.levels;
+        this.topics = config.topics;
+        this.exerciseTypes = config.exerciseTypes;
+        this.applySelectionDefaults();
+      },
+      error: (error) => {
+        this.errorMsg.set(this.errorMessage(error));
+        this.configLoading.set(false);
+      },
+      complete: () => {
+        this.configLoading.set(false);
+      },
+    });
+  }
+
+  private applySelectionDefaults(): void {
+    if (!this.form.controls.level.value && this.levels[0]) {
+      this.form.controls.level.setValue(this.levels[0].value);
+    }
+
+    const multipleChoice = this.exerciseTypes.find(
+      (type) => type.value === 'MULTIPLE_CHOICE',
+    );
+    if (!this.form.controls.type.value && (multipleChoice || this.exerciseTypes[0])) {
+      this.form.controls.type.setValue(
+        multipleChoice?.value || this.exerciseTypes[0].value,
+      );
+    }
+
+    this.ensureTopicMatchesLevel();
   }
 
   private ensureTopicMatchesLevel(): void {
@@ -442,6 +493,7 @@ export class ListeningComponent implements OnDestroy {
 
     return {
       id: exercise.id || `${request.level}-${request.topic}-${Date.now()}`,
+      attemptId: exercise.attemptId,
       level: exercise.level || request.level,
       topic: exerciseTopic,
       type: exercise.type || request.type,
@@ -524,6 +576,32 @@ export class ListeningComponent implements OnDestroy {
       expectedAnswer.startsWith(`${optionLabel}.`) ||
       expectedAnswer.startsWith(`${optionLabel})`)
     );
+  }
+
+  private completeCurrentAttempt(): void {
+    const attemptId = this.current()?.attemptId;
+
+    if (!attemptId || this.completedAttemptIds.has(attemptId)) {
+      return;
+    }
+
+    this.completedAttemptIds.add(attemptId);
+    this.exercises.completeAttempt(attemptId, this.learnerAnswer()).subscribe({
+      error: (error) => {
+        this.completedAttemptIds.delete(attemptId);
+        this.errorMsg.set(this.errorMessage(error));
+      },
+    });
+  }
+
+  private learnerAnswer(): string {
+    const selectedOption = this.selectedOption();
+
+    if (selectedOption !== null) {
+      return this.normalizedOptions()[selectedOption]?.text || '';
+    }
+
+    return this.draftAnswer.trim();
   }
 
   private errorMessage(error: unknown): string {

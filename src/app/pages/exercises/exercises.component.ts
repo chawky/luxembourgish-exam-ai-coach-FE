@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
@@ -10,20 +10,16 @@ import { ExerciseService } from '../../services/exercise.service';
 import { IconComponent } from '../../components/icon.component';
 import {
   ExerciseDto,
-  ExerciseLevel,
-  ExerciseTopic,
   ExerciseOptionDto,
-  ExerciseType,
   GenerateExerciseRequest,
 } from '../../models';
 import {
-  EXERCISE_TYPES,
-  PRACTICE_LEVELS,
-  PRACTICE_TOPICS,
+  SelectOption,
   TopicOption,
   formatPracticeLabel,
   topicLabel,
 } from '../../practice-options';
+import { PracticeConfigService } from '../../services/practice-config.service';
 
 interface NormalizedOption {
   label: string;
@@ -71,9 +67,9 @@ interface NormalizedOption {
               formControlName="level"
               (change)="onLevelChange()"
             >
-              @for (level of levels; track level.value) {
-                <option [value]="level.value">{{ level.label }}</option>
-              }
+                @for (level of levels; track level.value) {
+                  <option [value]="level.value">{{ level.label }}</option>
+                }
             </select>
           </div>
 
@@ -102,9 +98,12 @@ interface NormalizedOption {
           <button
             type="submit"
             class="btn btn-primary btn-block"
-            [disabled]="loading()"
+            [disabled]="loading() || configLoading()"
           >
-            @if (loading()) {
+            @if (configLoading()) {
+              <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
+              Loading options...
+            } @else if (loading()) {
               <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
               Generating exercise...
             } @else {
@@ -211,7 +210,7 @@ interface NormalizedOption {
                 <button
                   type="button"
                   class="btn btn-outline"
-                  (click)="showAnswer.set(!showAnswer())"
+                  (click)="toggleAnswer()"
                 >
                   {{ showAnswer() ? 'Hide answer' : 'Reveal answer' }}
                 </button>
@@ -245,25 +244,28 @@ interface NormalizedOption {
   `,
   styleUrl: './exercises.component.css',
 })
-export class ExercisesComponent {
+export class ExercisesComponent implements OnInit {
   private fb = inject(FormBuilder);
   private exercises = inject(ExerciseService);
+  private practiceConfig = inject(PracticeConfigService);
 
-  levels = PRACTICE_LEVELS;
-  topics = PRACTICE_TOPICS;
-  exerciseTypes = EXERCISE_TYPES;
+  levels: SelectOption[] = [];
+  topics: TopicOption[] = [];
+  exerciseTypes: SelectOption[] = [];
 
+  configLoading = signal(false);
   loading = signal(false);
   errorMsg = signal('');
   exercise = signal<ExerciseDto | null>(null);
   selectedOption = signal<number | null>(null);
   showAnswer = signal(false);
   draftAnswer = '';
+  completedAttemptIds = new Set<number>();
 
   form = this.fb.nonNullable.group({
-    level: ['A1' as ExerciseLevel, [Validators.required]],
-    topic: ['DAILY_ROUTINE' as ExerciseTopic, [Validators.required]],
-    type: ['TRANSLATION' as ExerciseType, [Validators.required]],
+    level: ['', [Validators.required]],
+    topic: ['', [Validators.required]],
+    type: ['', [Validators.required]],
   });
 
   normalizedOptions = computed<NormalizedOption[]>(() => {
@@ -294,6 +296,10 @@ export class ExercisesComponent {
     const hints = exercise.hints ?? [];
     return exercise.hint ? [exercise.hint, ...hints] : hints;
   });
+
+  ngOnInit(): void {
+    this.loadPracticeConfig();
+  }
 
   generate(): void {
     this.errorMsg.set('');
@@ -331,6 +337,7 @@ export class ExercisesComponent {
 
   selectOption(index: number): void {
     this.selectedOption.set(index);
+    this.completeCurrentAttempt();
   }
 
   onLevelChange(): void {
@@ -363,7 +370,16 @@ export class ExercisesComponent {
   }
 
   topicLabel(topic: string): string {
-    return topicLabel(topic);
+    return topicLabel(topic, this.topics);
+  }
+
+  toggleAnswer(): void {
+    const nextValue = !this.showAnswer();
+    this.showAnswer.set(nextValue);
+
+    if (nextValue) {
+      this.completeCurrentAttempt();
+    }
   }
 
   answerText(): string {
@@ -391,6 +407,38 @@ export class ExercisesComponent {
   private request(): GenerateExerciseRequest {
     const { level, topic, type } = this.form.getRawValue();
     return { level, topic, type };
+  }
+
+  private loadPracticeConfig(): void {
+    this.configLoading.set(true);
+
+    this.practiceConfig.getConfig().subscribe({
+      next: (config) => {
+        this.levels = config.levels;
+        this.topics = config.topics;
+        this.exerciseTypes = config.exerciseTypes;
+        this.applySelectionDefaults();
+      },
+      error: (error) => {
+        this.errorMsg.set(this.errorMessage(error));
+        this.configLoading.set(false);
+      },
+      complete: () => {
+        this.configLoading.set(false);
+      },
+    });
+  }
+
+  private applySelectionDefaults(): void {
+    if (!this.form.controls.level.value && this.levels[0]) {
+      this.form.controls.level.setValue(this.levels[0].value);
+    }
+
+    if (!this.form.controls.type.value && this.exerciseTypes[0]) {
+      this.form.controls.type.setValue(this.exerciseTypes[0].value);
+    }
+
+    this.ensureTopicMatchesLevel();
   }
 
   private ensureTopicMatchesLevel(): void {
@@ -427,6 +475,32 @@ export class ExercisesComponent {
         (value) => value.trim().toLowerCase() === answer,
       )
     );
+  }
+
+  private completeCurrentAttempt(): void {
+    const attemptId = this.exercise()?.attemptId;
+
+    if (!attemptId || this.completedAttemptIds.has(attemptId)) {
+      return;
+    }
+
+    this.completedAttemptIds.add(attemptId);
+    this.exercises.completeAttempt(attemptId, this.learnerAnswer()).subscribe({
+      error: (error) => {
+        this.completedAttemptIds.delete(attemptId);
+        this.errorMsg.set(this.errorMessage(error));
+      },
+    });
+  }
+
+  private learnerAnswer(): string {
+    const selectedOption = this.selectedOption();
+
+    if (selectedOption !== null) {
+      return this.normalizedOptions()[selectedOption]?.text || '';
+    }
+
+    return this.draftAnswer.trim();
   }
 
   private errorMessage(error: unknown): string {

@@ -78,8 +78,8 @@ import { formatPracticeLabel } from '../../practice-options';
           <app-icon name="check" [size]="20"></app-icon>
         </span>
         <div>
-          <strong>{{ averageRating() }}</strong>
-          <span class="text-muted">Average rating</span>
+          <strong>{{ completedActivities() }}</strong>
+          <span class="text-muted">Completed activities</span>
         </div>
       </div>
     </section>
@@ -98,13 +98,14 @@ import { formatPracticeLabel } from '../../practice-options';
                 <div class="flex items-center justify-between">
                   <span class="skill-label">{{ skillLabel(p) }}</span>
                   <span class="text-muted small">
-                    {{ evaluatedCount(p) }}/{{ totalCount(p) }} evaluated
+                    {{ completedCount(p) }}/{{ totalCount(p) }} completed
                   </span>
                 </div>
                 <div class="progress">
-                  <span [style.width.%]="evaluatedPercent(p)"></span>
+                  <span [style.width.%]="completedPercent(p)"></span>
                 </div>
                 <div class="skill-meta">
+                  <span>{{ evaluatedCount(p) }} evaluated</span>
                   <span>Average rating: {{ skillAverageRating(p) }}</span>
                   @if (p.latestExerciseName) {
                     <span>Latest: {{ latestExerciseLabel(p) }}</span>
@@ -272,6 +273,10 @@ export class DashboardComponent implements OnInit {
     return this.dashboard()?.evaluatedActivities ?? 0;
   }
 
+  completedActivities(): number {
+    return this.dashboard()?.completedActivities ?? 0;
+  }
+
   averageRating(): string {
     return this.formatRating(this.dashboard()?.averageRatingOverall);
   }
@@ -290,13 +295,17 @@ export class DashboardComponent implements OnInit {
     return progress.evaluatedActivities ?? 0;
   }
 
-  evaluatedPercent(progress: SkillProgressDto): number {
+  completedCount(progress: SkillProgressDto): number {
+    return progress.completedActivities ?? 0;
+  }
+
+  completedPercent(progress: SkillProgressDto): number {
     const total = this.totalCount(progress);
     if (total <= 0) {
       return 0;
     }
 
-    return Math.min(100, Math.round((this.evaluatedCount(progress) / total) * 100));
+    return Math.min(100, Math.round((this.completedCount(progress) / total) * 100));
   }
 
   skillAverageRating(progress: SkillProgressDto): string {

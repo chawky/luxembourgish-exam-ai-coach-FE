@@ -1,0 +1,301 @@
+.page-head {
+  margin-bottom: 24px;
+}
+
+.page-head h1 {
+  font-size: 28px;
+  margin: 4px 0 6px;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  align-items: end;
+  margin-bottom: 20px;
+}
+
+.filters .field {
+  margin: 0;
+}
+
+.admin-error {
+  background: var(--red-50);
+  color: var(--red);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.admin-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.users-panel {
+  overflow: hidden;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-head h2 {
+  font-size: 18px;
+}
+
+.user-list,
+.table-list,
+.detail-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-row,
+.table-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  padding: 14px 18px;
+}
+
+.user-row:hover,
+.user-row.active {
+  background: var(--blue-50);
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--blue-700);
+  color: #fff;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.user-main,
+.table-row span:first-child,
+.usage-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.user-main small,
+.table-row small {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detail-stack {
+  gap: 20px;
+}
+
+.loading-panel,
+.loading-row,
+.empty-state {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.loading-row {
+  padding: 18px;
+  color: var(--muted);
+}
+
+.empty-state {
+  min-height: 220px;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+
+.profile-head,
+.status-actions {
+  display: flex;
+  gap: 14px;
+}
+
+.profile-head {
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.profile-head h2 {
+  font-size: 24px;
+  margin: 4px 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.stat-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  background: var(--surface-2);
+}
+
+.stat-card strong {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 22px;
+  color: var(--blue-900);
+}
+
+.status-actions {
+  align-items: center;
+}
+
+.status-actions .input {
+  flex: 1;
+}
+
+.usage-meta {
+  align-items: flex-end;
+}
+
+.admin-section {
+  margin-top: 20px;
+}
+
+.panel-head.inline {
+  padding: 0 0 18px;
+  margin-bottom: 18px;
+}
+
+.panel-head.inline h2 {
+  margin: 4px 0 6px;
+}
+
+.panel-head.inline p {
+  margin: 0;
+}
+
+.editor-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+
+.list-card,
+.editor-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  background: var(--surface-2);
+}
+
+.editor-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-card .field {
+  margin-bottom: 14px;
+}
+
+.editor-textarea {
+  min-height: 220px;
+  resize: vertical;
+}
+
+.config-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: inherit;
+  padding: 12px 4px;
+  text-align: left;
+}
+
+.config-row:hover,
+.config-row.active {
+  color: var(--blue-700);
+}
+
+.config-row span:first-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.config-lists {
+  max-height: 620px;
+  overflow: auto;
+}
+
+.config-lists h3 {
+  font-size: 15px;
+  margin: 16px 0 4px;
+}
+
+.config-lists h3:first-child {
+  margin-top: 0;
+}
+
+.check-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  color: var(--slate-700);
+  font-weight: 600;
+}
+
+.button-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (min-width: 760px) {
+  .filters {
+    grid-template-columns: 1fr 180px auto;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1120px) {
+  .admin-layout {
+    grid-template-columns: 380px 1fr;
+    align-items: start;
+  }
+
+  .editor-grid {
+    grid-template-columns: 0.9fr 1.1fr;
+  }
+}

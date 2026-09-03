@@ -8,6 +8,7 @@ import {
 } from '../models';
 
 type GenerateExerciseResponse = ApiResponse<GeneratedExerciseDto | null>;
+type CompleteExerciseResponse = ApiResponse<unknown>;
 
 @Injectable({ providedIn: 'root' })
 export class ExerciseService {
@@ -27,6 +28,25 @@ export class ExerciseService {
       );
   }
 
+  completeAttempt(
+    attemptId: number,
+    learnerAnswer?: string,
+  ): Observable<void> {
+    return this.http
+      .post<CompleteExerciseResponse>(
+        `http://localhost:8080/api/progress/exercises/${attemptId}/complete`,
+        learnerAnswer ? { learnerAnswer } : {},
+      )
+      .pipe(
+        map((response) => this.unwrapCompletedAttempt(response)),
+        catchError((error) =>
+          throwError(() =>
+            this.toApiError(error, 'Could not save exercise progress.'),
+          ),
+        ),
+      );
+  }
+
   private unwrapExercise(response: GenerateExerciseResponse): GeneratedExerciseDto {
     if (!response.success) {
       throw new Error(response.message || 'Could not generate exercise.');
@@ -37,6 +57,14 @@ export class ExerciseService {
     }
 
     return response.data;
+  }
+
+  private unwrapCompletedAttempt(
+    response: CompleteExerciseResponse,
+  ): void {
+    if (!response.success) {
+      throw new Error(response.message || 'Could not save exercise progress.');
+    }
   }
 
   private toApiError(error: unknown, fallbackMessage: string): Error {

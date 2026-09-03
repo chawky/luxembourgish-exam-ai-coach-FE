@@ -10,3 +10,18 @@ export const authGuard: CanActivateFn = () => {
   }
   return router.createUrlTree(['/login']);
 };
+
+export const adminGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+
+  if (!auth.isLoggedIn()) {
+    return router.createUrlTree(['/login']);
+  }
+
+  if (auth.isAdmin()) {
+    return true;
+  }
+
+  return router.createUrlTree(['/app/dashboard']);
+};

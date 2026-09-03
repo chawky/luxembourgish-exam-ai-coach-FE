@@ -34,11 +34,21 @@ export class ImageDescriptionService {
   uploadRecording(
     audio: Blob,
     imageDescription: string,
+    attemptId?: number,
+    durationSeconds?: number,
   ): Observable<SpeakingEvaluationDto> {
     const formData = new FormData();
     formData.append('audio', this.toRecordingFile(audio));
 
-    const params = new HttpParams().set('imageDescription', imageDescription);
+    let params = new HttpParams().set('imageDescription', imageDescription);
+
+    if (attemptId !== undefined) {
+      params = params.set('attemptId', attemptId);
+    }
+
+    if (durationSeconds !== undefined) {
+      params = params.set('durationSeconds', durationSeconds);
+    }
 
     return this.http
       .post<ImageDescriptionEvaluationResponse>(this.recordingUrl, formData, {

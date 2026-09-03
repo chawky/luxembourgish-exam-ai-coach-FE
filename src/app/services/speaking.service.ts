@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, throwError } from 'rxjs';
 import {
@@ -32,12 +32,27 @@ export class SpeakingService {
       );
   }
 
-  uploadRecording(audio: Blob): Observable<SpeakingEvaluationDto> {
+  uploadRecording(
+    audio: Blob,
+    attemptId?: number,
+    durationSeconds?: number,
+  ): Observable<SpeakingEvaluationDto> {
     const formData = new FormData();
     formData.append('audio', this.toRecordingFile(audio));
+    let params = new HttpParams();
+
+    if (attemptId !== undefined) {
+      params = params.set('attemptId', attemptId);
+    }
+
+    if (durationSeconds !== undefined) {
+      params = params.set('durationSeconds', durationSeconds);
+    }
 
     return this.http
-      .post<SpeakingEvaluationResponse>(this.recordingUrl, formData)
+      .post<SpeakingEvaluationResponse>(this.recordingUrl, formData, {
+        params,
+      })
       .pipe(
         map((response) => this.unwrapEvaluation(response)),
         catchError((error) =>

@@ -39,6 +39,7 @@ export class VocabularyService {
     }
 
     return {
+      attemptId: response.data.attemptId,
       usefulSentences: response.data.usefulSentences ?? [],
     };
   }

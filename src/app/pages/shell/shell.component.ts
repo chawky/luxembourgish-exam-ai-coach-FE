@@ -15,6 +15,7 @@ interface NavItem {
   path: string;
   label: string;
   icon: string;
+  adminOnly?: boolean;
 }
 
 @Component({
@@ -38,6 +39,7 @@ interface NavItem {
         <nav class="side-nav" aria-label="App sections">
           @for (item of nav; track item.path) {
             <a
+              *ngIf="!item.adminOnly || auth.isAdmin()"
               [routerLink]="item.path"
               routerLinkActive="active"
               (click)="menuOpen.set(false)"
@@ -107,6 +109,7 @@ export class ShellComponent implements OnInit {
 
   nav: NavItem[] = [
     { path: '/app/dashboard', label: 'Dashboard', icon: 'chart' },
+    { path: '/app/admin', label: 'Admin', icon: 'shield', adminOnly: true },
     { path: '/app/speaking', label: 'Speaking', icon: 'mic' },
     { path: '/app/listening', label: 'Listening', icon: 'headphones' },
     { path: '/app/exercises', label: 'Exercises', icon: 'book' },

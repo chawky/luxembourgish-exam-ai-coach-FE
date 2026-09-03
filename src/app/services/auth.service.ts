@@ -38,6 +38,9 @@ export class AuthService {
 
   readonly currentUser = signal<User | null>(null);
   readonly isLoggedIn = computed(() => this.currentUser() !== null);
+  readonly isAdmin = computed(() =>
+    (this.currentUser()?.roles ?? []).some((role) => role === 'ADMIN' || role === 'ROLE_ADMIN'),
+  );
 
   initializeSession(): Promise<void> {
     const token = this.getToken();
@@ -221,6 +224,8 @@ export class AuthService {
       postalCode: user.postalCode,
       city: user.city,
       addressInfo: user.addressInfo,
+      emailVerified: user.emailVerified,
+      adminDisabled: user.adminDisabled,
       roles: user.roles,
       subscription: user.subscription,
     };

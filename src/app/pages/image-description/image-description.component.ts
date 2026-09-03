@@ -1,24 +1,23 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { IconComponent } from '../../components/icon.component';
 import {
-  ExerciseLevel,
-  ExerciseTopic,
   GenerateExerciseRequest,
   GeneratedImageDto,
   SpeakingEvaluationDto,
 } from '../../models';
 import {
-  PRACTICE_LEVELS,
-  PRACTICE_TOPICS,
+  SelectOption,
   TopicOption,
   topicLabel,
 } from '../../practice-options';
 import { ImageDescriptionService } from '../../services/image-description.service';
+import { PracticeConfigService } from '../../services/practice-config.service';
 
 interface ImageDescriptionExerciseView {
   id: string;
+  attemptId?: number;
   level: string;
   topic: string;
   imageUrl: string;
@@ -87,9 +86,12 @@ interface ImageDescriptionExerciseView {
           <button
             class="btn btn-primary btn-block"
             type="submit"
-            [disabled]="loading() || recording() || uploadingRecording()"
+            [disabled]="loading() || configLoading() || recording() || uploadingRecording()"
           >
-            @if (loading()) {
+            @if (configLoading()) {
+              <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
+              Loading options...
+            } @else if (loading()) {
               <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
               Generating image...
             } @else {
@@ -280,12 +282,15 @@ interface ImageDescriptionExerciseView {
   `,
   styleUrl: './image-description.component.css',
 })
-export class ImageDescriptionComponent implements OnDestroy {
+export class ImageDescriptionComponent implements OnDestroy, OnInit {
   private fb = inject(FormBuilder);
   private imageDescription = inject(ImageDescriptionService);
+  private practiceConfig = inject(PracticeConfigService);
 
-  levels = PRACTICE_LEVELS;
-  topics = PRACTICE_TOPICS;
+  levels: SelectOption[] = [];
+  topics: TopicOption[] = [];
+  exerciseTypes: SelectOption[] = [];
+  configLoading = signal(false);
   loading = signal(false);
   errorMsg = signal('');
   imageError = signal('');
@@ -296,6 +301,7 @@ export class ImageDescriptionComponent implements OnDestroy {
   recordingError = signal('');
   retryableRecording = signal(false);
   elapsed = signal(0);
+  answerTypeCode = signal('');
 
   private timer: ReturnType<typeof setInterval> | null = null;
   private imageObjectUrl: string | null = null;
@@ -306,9 +312,13 @@ export class ImageDescriptionComponent implements OnDestroy {
   private shouldUploadStoppedRecording = false;
 
   form = this.fb.nonNullable.group({
-    level: ['B1' as ExerciseLevel, [Validators.required]],
-    topic: ['CITY_AND_PLACES' as ExerciseTopic, [Validators.required]],
+    level: ['', [Validators.required]],
+    topic: ['', [Validators.required]],
   });
+
+  ngOnInit(): void {
+    this.loadPracticeConfig();
+  }
 
   generate(): void {
     this.errorMsg.set('');
@@ -351,7 +361,7 @@ export class ImageDescriptionComponent implements OnDestroy {
   }
 
   topicLabel(topic: string): string {
-    return topicLabel(topic);
+    return topicLabel(topic, this.topics);
   }
 
   toggleRecord(): void {
@@ -405,7 +415,40 @@ export class ImageDescriptionComponent implements OnDestroy {
 
   private request(): GenerateExerciseRequest {
     const { level, topic } = this.form.getRawValue();
-    return { level, topic, type: 'SHORT_ANSWER' };
+    return { level, topic, type: this.answerTypeCode() };
+  }
+
+  private loadPracticeConfig(): void {
+    this.configLoading.set(true);
+
+    this.practiceConfig.getConfig().subscribe({
+      next: (config) => {
+        this.levels = config.levels;
+        this.topics = config.topics;
+        this.exerciseTypes = config.exerciseTypes;
+        this.answerTypeCode.set(
+          this.exerciseTypes.find((type) => type.value === 'SHORT_ANSWER')?.value ||
+            this.exerciseTypes[0]?.value ||
+            '',
+        );
+        this.applySelectionDefaults();
+      },
+      error: (error) => {
+        this.errorMsg.set(this.errorMessage(error));
+        this.configLoading.set(false);
+      },
+      complete: () => {
+        this.configLoading.set(false);
+      },
+    });
+  }
+
+  private applySelectionDefaults(): void {
+    if (!this.form.controls.level.value && this.levels[0]) {
+      this.form.controls.level.setValue(this.levels[0].value);
+    }
+
+    this.ensureTopicMatchesLevel();
   }
 
   private ensureTopicMatchesLevel(): void {
@@ -428,6 +471,7 @@ export class ImageDescriptionComponent implements OnDestroy {
   ): ImageDescriptionExerciseView {
     return {
       id: `${request.level}-${request.topic}-${Date.now()}`,
+      attemptId: image.attemptId,
       level: request.level,
       topic: request.topic,
       imageUrl: this.toImageUrl(image),
@@ -618,7 +662,12 @@ export class ImageDescriptionComponent implements OnDestroy {
     this.recordingError.set('');
 
     this.imageDescription
-      .uploadRecording(audio, currentExercise.imageDescription)
+      .uploadRecording(
+        audio,
+        currentExercise.imageDescription,
+        currentExercise.attemptId,
+        this.elapsed(),
+      )
       .subscribe({
         next: (evaluation) => {
           this.evaluation.set(evaluation);

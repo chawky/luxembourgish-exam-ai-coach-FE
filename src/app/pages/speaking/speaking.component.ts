@@ -1,4 +1,4 @@
-import { Component, OnDestroy, ViewChild, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SpeakingService } from '../../services/speaking.service';
@@ -6,18 +6,16 @@ import { IconComponent } from '../../components/icon.component';
 import { AudioPlayerComponent } from '../../components/audio-player.component';
 import {
   GenerateExerciseRequest,
-  ExerciseLevel,
-  ExerciseTopic,
   SpeakingEvaluationDto,
   SpeakingPracticeDto,
   SpeakingPrompt,
 } from '../../models';
 import {
-  PRACTICE_LEVELS,
-  PRACTICE_TOPICS,
+  SelectOption,
   TopicOption,
   topicLabel,
 } from '../../practice-options';
+import { PracticeConfigService } from '../../services/practice-config.service';
 
 @Component({
   selector: 'app-speaking',
@@ -80,9 +78,12 @@ import {
           <button
             type="submit"
             class="btn btn-primary btn-block"
-            [disabled]="loading() || recording() || uploadingRecording()"
+            [disabled]="loading() || configLoading() || recording() || uploadingRecording()"
           >
-            @if (loading()) {
+            @if (configLoading()) {
+              <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
+              Loading options...
+            } @else if (loading()) {
               <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
               Generating prompt...
             } @else {
@@ -272,15 +273,18 @@ import {
   `,
   styleUrl: './speaking.component.css',
 })
-export class SpeakingComponent implements OnDestroy {
+export class SpeakingComponent implements OnDestroy, OnInit {
   private fb = inject(FormBuilder);
   private speaking = inject(SpeakingService);
+  private practiceConfig = inject(PracticeConfigService);
 
   @ViewChild(AudioPlayerComponent)
   private promptAudioPlayer?: AudioPlayerComponent;
 
-  levels = PRACTICE_LEVELS;
-  topics = PRACTICE_TOPICS;
+  levels: SelectOption[] = [];
+  topics: TopicOption[] = [];
+  exerciseTypes: SelectOption[] = [];
+  configLoading = signal(false);
   loading = signal(false);
   errorMsg = signal('');
   current = signal<SpeakingPrompt | null>(null);
@@ -293,6 +297,7 @@ export class SpeakingComponent implements OnDestroy {
   showQuestion = signal(false);
   showTranslation = signal(false);
   promptAudioError = signal('');
+  answerTypeCode = signal('');
 
   private timer: ReturnType<typeof setInterval> | null = null;
   private promptAudioObjectUrl: string | null = null;
@@ -303,9 +308,13 @@ export class SpeakingComponent implements OnDestroy {
   private shouldUploadStoppedRecording = false;
 
   form = this.fb.nonNullable.group({
-    level: ['A2' as ExerciseLevel, [Validators.required]],
-    topic: ['WORK' as ExerciseTopic, [Validators.required]],
+    level: ['', [Validators.required]],
+    topic: ['', [Validators.required]],
   });
+
+  ngOnInit(): void {
+    this.loadPracticeConfig();
+  }
 
   generate(): void {
     this.errorMsg.set('');
@@ -346,7 +355,7 @@ export class SpeakingComponent implements OnDestroy {
   }
 
   promptTopicLabel(prompt: SpeakingPrompt): string {
-    return topicLabel(prompt.topic);
+    return topicLabel(prompt.topic, this.topics);
   }
 
   toggleRecord(): void {
@@ -497,7 +506,9 @@ export class SpeakingComponent implements OnDestroy {
     this.evaluation.set(null);
     this.recordingError.set('');
 
-    this.speaking.uploadRecording(audio).subscribe({
+    this.speaking
+      .uploadRecording(audio, this.current()?.attemptId, this.elapsed())
+      .subscribe({
       next: (evaluation) => {
         this.evaluation.set(evaluation);
         this.lastRecordingAudio = null;
@@ -529,7 +540,40 @@ export class SpeakingComponent implements OnDestroy {
 
   private request(): GenerateExerciseRequest {
     const { level, topic } = this.form.getRawValue();
-    return { level, topic, type: 'SHORT_ANSWER' };
+    return { level, topic, type: this.answerTypeCode() };
+  }
+
+  private loadPracticeConfig(): void {
+    this.configLoading.set(true);
+
+    this.practiceConfig.getConfig().subscribe({
+      next: (config) => {
+        this.levels = config.levels;
+        this.topics = config.topics;
+        this.exerciseTypes = config.exerciseTypes;
+        this.answerTypeCode.set(
+          this.exerciseTypes.find((type) => type.value === 'SHORT_ANSWER')?.value ||
+            this.exerciseTypes[0]?.value ||
+            '',
+        );
+        this.applySelectionDefaults();
+      },
+      error: (error) => {
+        this.errorMsg.set(this.errorMessage(error));
+        this.configLoading.set(false);
+      },
+      complete: () => {
+        this.configLoading.set(false);
+      },
+    });
+  }
+
+  private applySelectionDefaults(): void {
+    if (!this.form.controls.level.value && this.levels[0]) {
+      this.form.controls.level.setValue(this.levels[0].value);
+    }
+
+    this.ensureTopicMatchesLevel();
   }
 
   private ensureTopicMatchesLevel(): void {
@@ -554,6 +598,7 @@ export class SpeakingComponent implements OnDestroy {
 
     return {
       id: practice.id || `${request.level}-${request.topic}-${Date.now()}`,
+      attemptId: practice.attemptId,
       topic: practiceTopic,
       level: practice.level || request.level,
       question:

@@ -10,6 +10,8 @@ export interface User {
   postalCode?: string;
   city?: string;
   addressInfo?: string;
+  emailVerified?: boolean;
+  adminDisabled?: boolean;
   roles?: string[];
   subscription?: SubscriptionInfo;
 }
@@ -42,6 +44,7 @@ export interface SkillProgress {
 
 export interface SpeakingPrompt {
   id: string;
+  attemptId?: number;
   topic: string;
   level: string;
   question: string;
@@ -76,41 +79,11 @@ export interface ChatMessage {
   correction?: string;
 }
 
-export type ExerciseLevel = 'A1' | 'A2' | 'B1';
+export type ExerciseLevel = string;
 
-export type ExerciseTopic =
-  | 'INTRODUCTION'
-  | 'FAMILY'
-  | 'HOME'
-  | 'DAILY_ROUTINE'
-  | 'WORK'
-  | 'EDUCATION'
-  | 'FOOD_AND_DRINK'
-  | 'SHOPPING'
-  | 'CLOTHES'
-  | 'HEALTH'
-  | 'SPORTS'
-  | 'HOBBIES'
-  | 'TRANSPORT'
-  | 'TRAVEL'
-  | 'WEATHER'
-  | 'NATURE'
-  | 'CITY_AND_PLACES'
-  | 'PUBLIC_SERVICES'
-  | 'LUXEMBOURG'
-  | 'FRIENDS_AND_SOCIAL_LIFE'
-  | 'MEDIA_AND_TECHNOLOGY'
-  | 'EVENTS_AND_CELEBRATIONS'
-  | 'TIME_AND_DATES'
-  | 'PAST_EXPERIENCES'
-  | 'FUTURE_PLANS'
-  | 'OPINIONS_AND_PREFERENCES';
+export type ExerciseTopic = string;
 
-export type ExerciseType =
-  | 'TRANSLATION'
-  | 'MULTIPLE_CHOICE'
-  | 'FILL_IN_THE_BLANK'
-  | 'SHORT_ANSWER';
+export type ExerciseType = string;
 
 export interface GenerateExerciseRequest {
   level: ExerciseLevel;
@@ -131,12 +104,14 @@ export interface VocabularySentenceDto {
 }
 
 export interface VocabularyExerciseDto {
+  attemptId?: number;
   usefulSentences?: VocabularySentenceDto[];
 }
 
 export interface SkillProgressDto {
   exerciseType?: string;
   totalActivities?: number;
+  completedActivities?: number;
   evaluatedActivities?: number;
   averageRatingOverall?: number;
   latestExerciseName?: string;
@@ -150,8 +125,10 @@ export interface ProgressDashboardDto {
   currentStreakDays?: number;
   lastLoginDate?: string;
   totalActivities?: number;
+  completedActivities?: number;
   evaluatedActivities?: number;
   averageRatingOverall?: number;
+  latestExerciseName?: string;
   skillProgress?: SkillProgressDto[];
 }
 
@@ -163,6 +140,7 @@ export interface ExerciseOptionDto {
 }
 
 export interface ExerciseDto {
+  attemptId?: number;
   id?: string;
   level?: ExerciseLevel | string;
   topic?: string;
@@ -201,6 +179,7 @@ export interface SpeakingPracticeDto extends AudioExerciseDto {
 }
 
 export interface GeneratedImageDto {
+  attemptId?: number;
   image?: string | number[];
   imageDescription?: string;
 }

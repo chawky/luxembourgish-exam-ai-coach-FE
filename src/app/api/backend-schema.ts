@@ -20,6 +20,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/prompts/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPrompt"];
+        put: operations["updatePrompt"];
+        post?: never;
+        delete: operations["deletePrompt"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/exercise-config/types/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateType"];
+        post?: never;
+        delete: operations["deleteType"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/exercise-config/topics/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateTopic"];
+        post?: never;
+        delete: operations["deleteTopic"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/exercise-config/levels/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateLevel"];
+        post?: never;
+        delete: operations["deleteLevel"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/verifyOtp": {
         parameters: {
             query?: never;
@@ -94,6 +158,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["createUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/progress/exercises/{attemptId}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["completeExercise"];
         delete?: never;
         options?: never;
         head?: never;
@@ -260,6 +340,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/prompts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPrompts"];
+        put?: never;
+        post: operations["createPrompt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/exercise-config/types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createType"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/exercise-config/topics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createTopic"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/exercise-config/levels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createLevel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["updateUserStatus"];
+        trace?: never;
+    };
     "/api/users": {
         parameters: {
             query?: never;
@@ -324,6 +484,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getUser"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getUserProgress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}/ai-usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getUserAiUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}/ai-usage/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getUserAiUsageSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/exercise-config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getExerciseConfig"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/audit-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAuditLogs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -358,6 +630,8 @@ export interface components {
             postalCode?: string;
             city?: string;
             addressInfo?: string;
+            emailVerified?: boolean;
+            adminDisabled?: boolean;
             roles?: string[];
             subscription?: components["schemas"]["SubscriptionInfoDto"];
             jwt?: string;
@@ -369,6 +643,77 @@ export interface components {
             startedAt?: string;
             /** Format: date */
             currentPeriodEnd?: string;
+        };
+        AdminPromptUpdateRequest: {
+            title?: string;
+            editableContent?: string;
+            enabled?: boolean;
+        };
+        AdminPromptDto: {
+            /** Format: int64 */
+            id?: number;
+            key?: string;
+            title?: string;
+            editableContent?: string;
+            enabled?: boolean;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        ApiResponseAdminPromptDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["AdminPromptDto"];
+        };
+        AdminExerciseTypeConfigRequest: {
+            code?: string;
+            label: string;
+            enabled?: boolean;
+        };
+        AdminExerciseTypeOptionDto: {
+            code?: string;
+            label?: string;
+            enabled?: boolean;
+        };
+        ApiResponseAdminExerciseTypeOptionDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["AdminExerciseTypeOptionDto"];
+        };
+        AdminTopicConfigRequest: {
+            code?: string;
+            label: string;
+            levelCode: string;
+            enabled?: boolean;
+        };
+        AdminTopicOptionDto: {
+            code?: string;
+            label?: string;
+            levelCode?: string;
+            enabled?: boolean;
+        };
+        ApiResponseAdminTopicOptionDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["AdminTopicOptionDto"];
+        };
+        AdminLevelConfigRequest: {
+            code?: string;
+            label: string;
+            description: string;
+            enabled?: boolean;
+        };
+        AdminLevelOptionDto: {
+            code?: string;
+            label?: string;
+            description?: string;
+            enabled?: boolean;
+        };
+        ApiResponseAdminLevelOptionDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["AdminLevelOptionDto"];
         };
         VerifyOtpRequest: {
             /** Format: int32 */
@@ -383,6 +728,34 @@ export interface components {
         SendOtpRequest: {
             email?: string;
         };
+        CompleteExerciseRequest: {
+            learnerAnswer?: string;
+        };
+        ApiResponseExerciseAttemptDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["ExerciseAttemptDto"];
+        };
+        ExerciseAttemptDto: {
+            /** Format: int64 */
+            id?: number;
+            exerciseType?: string;
+            exerciseName?: string;
+            /** @enum {string} */
+            status?: "GENERATED" | "COMPLETED" | "EVALUATED";
+            level?: string;
+            topic?: string;
+            answerType?: string;
+            learnerAnswer?: string;
+            /** Format: double */
+            averageRatingOverall?: number;
+            /** Format: date-time */
+            generatedAt?: string;
+            /** Format: date-time */
+            completedAt?: string;
+            /** Format: date-time */
+            evaluatedAt?: string;
+        };
         ApiResponseStripeSessionURLDto: {
             success?: boolean;
             message?: string;
@@ -392,12 +765,9 @@ export interface components {
             stripeSessionUrl?: string;
         };
         ExerciseRequestDto: {
-            /** @enum {string} */
-            level?: "A1" | "A2" | "B1";
-            /** @enum {string} */
-            topic?: "INTRODUCTION" | "FAMILY" | "HOME" | "FOOD_AND_DRINK" | "TIME_AND_DATES" | "DAILY_ROUTINE" | "WORK" | "SHOPPING" | "CLOTHES" | "HEALTH" | "SPORTS" | "HOBBIES" | "TRANSPORT" | "TRAVEL" | "WEATHER" | "NATURE" | "CITY_AND_PLACES" | "LUXEMBOURG" | "FRIENDS_AND_SOCIAL_LIFE" | "EVENTS_AND_CELEBRATIONS" | "PAST_EXPERIENCES" | "OPINIONS_AND_PREFERENCES" | "EDUCATION" | "PUBLIC_SERVICES" | "MEDIA_AND_TECHNOLOGY" | "FUTURE_PLANS";
-            /** @enum {string} */
-            type?: "TRANSLATION" | "MULTIPLE_CHOICE" | "FILL_IN_THE_BLANK" | "SHORT_ANSWER";
+            level: string;
+            topic: string;
+            type: string;
         };
         ApiResponseVocabularyDto: {
             success?: boolean;
@@ -411,6 +781,8 @@ export interface components {
             sentenceTranslation?: string;
         };
         VocabularyDto: {
+            /** Format: int64 */
+            attemptId?: number;
             usefulSentences?: components["schemas"]["UsefulSentencesDto"][];
         };
         ApiResponseSpeakingEvaluation: {
@@ -431,6 +803,8 @@ export interface components {
             data?: components["schemas"]["SpeakingDto"];
         };
         SpeakingDto: {
+            /** Format: int64 */
+            attemptId?: number;
             question?: string;
             type?: string;
             options?: string[];
@@ -447,6 +821,8 @@ export interface components {
             data?: components["schemas"]["AudioExerciseDto"];
         };
         AudioExerciseDto: {
+            /** Format: int64 */
+            attemptId?: number;
             question?: string;
             type?: string;
             options?: string[];
@@ -463,6 +839,8 @@ export interface components {
             data?: components["schemas"]["GeneratedExerciseDto"];
         };
         GeneratedExerciseDto: {
+            /** Format: int64 */
+            attemptId?: number;
             question?: string;
             type?: string;
             options?: string[];
@@ -475,9 +853,77 @@ export interface components {
             data?: components["schemas"]["GeneratedImageDto"];
         };
         GeneratedImageDto: {
+            /** Format: int64 */
+            attemptId?: number;
             /** Format: byte */
             image?: string;
             imageDescription?: string;
+        };
+        AdminPromptCreateRequest: {
+            key: string;
+            title?: string;
+            editableContent?: string;
+        };
+        AdminUserStatusUpdateRequest: {
+            adminDisabled: boolean;
+            reason?: string;
+        };
+        AdminAiUsageSummaryDto: {
+            /** Format: int32 */
+            userId?: number;
+            /** Format: int64 */
+            totalRequests?: number;
+            /** Format: int64 */
+            totalInputTokens?: number;
+            /** Format: int64 */
+            totalOutputTokens?: number;
+            /** Format: int64 */
+            totalTokens?: number;
+            totalEstimatedCostUsd?: number;
+        };
+        AdminUserDetailDto: {
+            user?: components["schemas"]["ResponseUserDto"];
+            progress?: components["schemas"]["ProgressDashboardDto"];
+            aiUsage?: components["schemas"]["AdminAiUsageSummaryDto"];
+        };
+        ApiResponseAdminUserDetailDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["AdminUserDetailDto"];
+        };
+        ProgressDashboardDto: {
+            /** Format: int32 */
+            userId?: number;
+            username?: string;
+            email?: string;
+            /** Format: int32 */
+            loggedInDays?: number;
+            /** Format: int32 */
+            currentStreakDays?: number;
+            /** Format: date */
+            lastLoginDate?: string;
+            /** Format: int32 */
+            totalActivities?: number;
+            /** Format: int32 */
+            completedActivities?: number;
+            /** Format: int32 */
+            evaluatedActivities?: number;
+            /** Format: double */
+            averageRatingOverall?: number;
+            latestExerciseName?: string;
+            skillProgress?: components["schemas"]["SkillProgressDto"][];
+        };
+        SkillProgressDto: {
+            exerciseType?: string;
+            /** Format: int32 */
+            totalActivities?: number;
+            /** Format: int32 */
+            completedActivities?: number;
+            /** Format: int32 */
+            evaluatedActivities?: number;
+            /** Format: double */
+            averageRatingOverall?: number;
+            latestExerciseName?: string;
         };
         ApiResponseListResponseUserDto: {
             success?: boolean;
@@ -499,34 +945,143 @@ export interface components {
             message?: string;
             data?: components["schemas"]["ProgressDashboardDto"];
         };
-        ProgressDashboardDto: {
-            /** Format: int32 */
-            userId?: number;
-            username?: string;
-            email?: string;
-            /** Format: int32 */
-            loggedInDays?: number;
-            /** Format: int32 */
-            currentStreakDays?: number;
-            /** Format: date */
-            lastLoginDate?: string;
-            /** Format: int32 */
-            totalActivities?: number;
-            /** Format: int32 */
-            evaluatedActivities?: number;
-            /** Format: double */
-            averageRatingOverall?: number;
-            skillProgress?: components["schemas"]["SkillProgressDto"][];
+        ApiResponsePageResponseDtoResponseUserDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["PageResponseDtoResponseUserDto"];
         };
-        SkillProgressDto: {
+        PageResponseDtoResponseUserDto: {
+            items?: components["schemas"]["ResponseUserDto"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int64 */
+            totalItems?: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
+        AdminUserProgressDto: {
+            /** Format: int64 */
+            id?: number;
             exerciseType?: string;
-            /** Format: int32 */
-            totalActivities?: number;
-            /** Format: int32 */
-            evaluatedActivities?: number;
+            exerciseName?: string;
+            status?: string;
+            level?: string;
+            topic?: string;
+            answerType?: string;
             /** Format: double */
             averageRatingOverall?: number;
-            latestExerciseName?: string;
+            /** Format: date-time */
+            generatedAt?: string;
+            /** Format: date-time */
+            completedAt?: string;
+            /** Format: date-time */
+            evaluatedAt?: string;
+        };
+        ApiResponsePageResponseDtoAdminUserProgressDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["PageResponseDtoAdminUserProgressDto"];
+        };
+        PageResponseDtoAdminUserProgressDto: {
+            items?: components["schemas"]["AdminUserProgressDto"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int64 */
+            totalItems?: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
+        AdminAiUsageDto: {
+            /** Format: int64 */
+            id?: number;
+            provider?: string;
+            model?: string;
+            requestName?: string;
+            /** Format: int32 */
+            inputTokens?: number;
+            /** Format: int32 */
+            outputTokens?: number;
+            /** Format: int32 */
+            totalTokens?: number;
+            usageUnit?: string;
+            /** Format: int64 */
+            usageAmount?: number;
+            estimatedCostUsd?: number;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        ApiResponsePageResponseDtoAdminAiUsageDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["PageResponseDtoAdminAiUsageDto"];
+        };
+        PageResponseDtoAdminAiUsageDto: {
+            items?: components["schemas"]["AdminAiUsageDto"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int64 */
+            totalItems?: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
+        ApiResponseAdminAiUsageSummaryDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["AdminAiUsageSummaryDto"];
+        };
+        ApiResponseListAdminPromptDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["AdminPromptDto"][];
+        };
+        AdminExerciseConfigDto: {
+            editable?: boolean;
+            levels?: components["schemas"]["AdminLevelOptionDto"][];
+            topics?: components["schemas"]["AdminTopicOptionDto"][];
+            exerciseTypes?: components["schemas"]["AdminExerciseTypeOptionDto"][];
+        };
+        ApiResponseAdminExerciseConfigDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["AdminExerciseConfigDto"];
+        };
+        AdminAuditLogDto: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: int32 */
+            actorUserId?: number;
+            /** Format: int32 */
+            targetUserId?: number;
+            targetType?: string;
+            targetId?: string;
+            action?: string;
+            oldValue?: string;
+            newValue?: string;
+            reason?: string;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        ApiResponsePageResponseDtoAdminAuditLogDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["PageResponseDtoAdminAuditLogDto"];
+        };
+        PageResponseDtoAdminAuditLogDto: {
+            items?: components["schemas"]["AdminAuditLogDto"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int64 */
+            totalItems?: number;
+            /** Format: int32 */
+            totalPages?: number;
         };
     };
     responses: never;
@@ -581,6 +1136,220 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseResponseUserDto"];
+                };
+            };
+        };
+    };
+    getPrompt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminPromptDto"];
+                };
+            };
+        };
+    };
+    updatePrompt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminPromptUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminPromptDto"];
+                };
+            };
+        };
+    };
+    deletePrompt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    updateType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminExerciseTypeConfigRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminExerciseTypeOptionDto"];
+                };
+            };
+        };
+    };
+    deleteType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    updateTopic: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminTopicConfigRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminTopicOptionDto"];
+                };
+            };
+        };
+    };
+    deleteTopic: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    updateLevel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminLevelConfigRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminLevelOptionDto"];
+                };
+            };
+        };
+    };
+    deleteLevel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
                 };
             };
         };
@@ -705,6 +1474,32 @@ export interface operations {
             };
         };
     };
+    completeExercise: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attemptId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CompleteExerciseRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseExerciseAttemptDto"];
+                };
+            };
+        };
+    };
     handleWebhook: {
         parameters: {
             query?: never;
@@ -793,7 +1588,10 @@ export interface operations {
     };
     receiveRecording: {
         parameters: {
-            query?: never;
+            query?: {
+                durationSeconds?: number;
+                attemptId?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -870,6 +1668,8 @@ export interface operations {
         parameters: {
             query: {
                 imageDescription: string;
+                durationSeconds?: number;
+                attemptId?: number;
             };
             header?: never;
             path?: never;
@@ -939,6 +1739,148 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseGeneratedImageDto"];
+                };
+            };
+        };
+    };
+    getPrompts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListAdminPromptDto"];
+                };
+            };
+        };
+    };
+    createPrompt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminPromptCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminPromptDto"];
+                };
+            };
+        };
+    };
+    createType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminExerciseTypeConfigRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminExerciseTypeOptionDto"];
+                };
+            };
+        };
+    };
+    createTopic: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminTopicConfigRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminTopicOptionDto"];
+                };
+            };
+        };
+    };
+    createLevel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminLevelConfigRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminLevelOptionDto"];
+                };
+            };
+        };
+    };
+    updateUserStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUserStatusUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminUserDetailDto"];
                 };
             };
         };
@@ -1022,6 +1964,178 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseProgressDashboardDto"];
+                };
+            };
+        };
+    };
+    getUsers: {
+        parameters: {
+            query?: {
+                search?: string;
+                subscribed?: boolean;
+                adminDisabled?: boolean;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResponseDtoResponseUserDto"];
+                };
+            };
+        };
+    };
+    getUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminUserDetailDto"];
+                };
+            };
+        };
+    };
+    getUserProgress: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResponseDtoAdminUserProgressDto"];
+                };
+            };
+        };
+    };
+    getUserAiUsage: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+                provider?: string;
+                model?: string;
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResponseDtoAdminAiUsageDto"];
+                };
+            };
+        };
+    };
+    getUserAiUsageSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminAiUsageSummaryDto"];
+                };
+            };
+        };
+    };
+    getExerciseConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminExerciseConfigDto"];
+                };
+            };
+        };
+    };
+    getAuditLogs: {
+        parameters: {
+            query?: {
+                actorUserId?: number;
+                targetUserId?: number;
+                targetType?: string;
+                targetId?: string;
+                action?: string;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePageResponseDtoAdminAuditLogDto"];
                 };
             };
         };

@@ -222,6 +222,7 @@ export class AuthService {
       city: user.city,
       addressInfo: user.addressInfo,
       roles: user.roles,
+      subscription: user.subscription,
     };
   }
 

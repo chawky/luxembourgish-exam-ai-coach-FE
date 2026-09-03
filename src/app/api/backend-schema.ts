@@ -116,6 +116,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/payments/subscription/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancelSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/payments/checkout": {
         parameters: {
             query?: never;
@@ -343,7 +359,16 @@ export interface components {
             city?: string;
             addressInfo?: string;
             roles?: string[];
+            subscription?: components["schemas"]["SubscriptionInfoDto"];
             jwt?: string;
+        };
+        SubscriptionInfoDto: {
+            subscribed?: boolean;
+            status?: string;
+            /** Format: date */
+            startedAt?: string;
+            /** Format: date */
+            currentPeriodEnd?: string;
         };
         VerifyOtpRequest: {
             /** Format: int32 */
@@ -694,6 +719,24 @@ export interface operations {
                 "application/json": string;
             };
         };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    cancelSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {

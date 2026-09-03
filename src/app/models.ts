@@ -11,12 +11,20 @@ export interface User {
   city?: string;
   addressInfo?: string;
   roles?: string[];
+  subscription?: SubscriptionInfo;
 }
 
 export interface ApiResponse<T> {
   success: boolean;
   message: string;
   data: T;
+}
+
+export interface SubscriptionInfo {
+  subscribed?: boolean;
+  status?: string;
+  startedAt?: string;
+  currentPeriodEnd?: string;
 }
 
 export interface LocationSuggestion {

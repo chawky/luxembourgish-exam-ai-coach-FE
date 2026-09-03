@@ -25,6 +25,19 @@ export class PaymentService {
       );
   }
 
+  cancelSubscription(): Observable<void> {
+    return this.http
+      .post<void>(`${this.url}/subscription/cancel`, null)
+      .pipe(
+        map(() => undefined),
+        catchError((error) =>
+          throwError(() =>
+            this.toApiError(error, 'Could not cancel subscription.'),
+          ),
+        ),
+      );
+  }
+
   private unwrapCheckoutUrl(response: CheckoutSessionResponse): string {
     if (!response.success) {
       throw new Error(

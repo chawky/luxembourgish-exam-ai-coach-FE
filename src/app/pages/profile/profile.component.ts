@@ -27,6 +27,7 @@ import { LocationService } from '../../services/location.service';
 import { PaymentService } from '../../services/payment.service';
 
 type ProfileTab = 'account' | 'subscription';
+type SubscriptionStatus = 'active' | 'canceled' | 'inactive';
 
 function profilePasswordValidator(
   group: AbstractControl,
@@ -382,11 +383,42 @@ function profilePasswordValidator(
               <div class="subscription-hero">
                 <div>
                   <span class="eyebrow">Subscription</span>
-                  <h3>Unlock the full practice plan</h3>
-                  <p class="text-muted">
-                    Start your subscription to keep using guided practice for
-                    speaking, listening, vocabulary, and exam-style exercises.
-                  </p>
+                  @if (subscriptionCancellationPending()) {
+                    <h3>
+                      {{
+                        subscriptionCancellationLoading()
+                          ? 'Cancelling subscription...'
+                          : 'Cancellation requested'
+                      }}
+                    </h3>
+                    <p class="text-muted">
+                      We are checking your latest subscription status.
+                    </p>
+                  } @else if (hasCanceledSubscription()) {
+                    <h3>Subscription canceled</h3>
+                    @if (subscriptionPeriodEnd()) {
+                      <p class="text-muted">
+                        Your access remains available until
+                        {{ subscriptionPeriodEnd() }}.
+                      </p>
+                    } @else {
+                      <p class="text-muted">
+                        Your subscription is no longer set to renew.
+                      </p>
+                    }
+                  } @else if (hasActiveSubscription()) {
+                    <h3>Your practice plan is active</h3>
+                    <p class="text-muted">
+                      You currently have access to guided speaking, listening,
+                      vocabulary, and exam-style exercises.
+                    </p>
+                  } @else {
+                    <h3>Unlock the full practice plan</h3>
+                    <p class="text-muted">
+                      Start your subscription to keep using guided practice for
+                      speaking, listening, vocabulary, and exam-style exercises.
+                    </p>
+                  }
                 </div>
                 <span class="subscription-icon">
                   <app-icon name="shield" [size]="24"></app-icon>
@@ -402,24 +434,102 @@ function profilePasswordValidator(
                 }
               </ul>
 
-              <div class="subscription-actions">
-                <button
-                  type="button"
-                  class="btn btn-primary btn-lg"
-                  (click)="startSubscription()"
-                  [disabled]="subscriptionLoading()"
-                >
-                  @if (subscriptionLoading()) {
-                    <span class="inline-loading-icon">
-                      <app-icon name="sparkles" [size]="16"></app-icon>
-                    </span>
+              @if (showSubscriptionDetails()) {
+                <dl class="subscription-details" aria-label="Subscription details">
+                  <div>
+                    <dt>Status</dt>
+                    <dd>
+                      <span
+                        class="subscription-status"
+                        [class.active]="hasActiveSubscription()"
+                        [class.canceled]="hasCanceledSubscription()"
+                      >
+                        {{ subscriptionStatusLabel() }}
+                      </span>
+                    </dd>
+                  </div>
+
+                  @if (subscriptionStartedAt()) {
+                    <div>
+                      <dt>Started</dt>
+                      <dd>{{ subscriptionStartedAt() }}</dd>
+                    </div>
                   }
-                  {{ subscriptionLoading() ? 'Opening checkout...' : 'Start subscription' }}
-                </button>
-                <p class="text-muted">
-                  Payment is completed on a secure checkout page. You will return
-                  here afterwards.
-                </p>
+
+                  @if (subscriptionPeriodEnd()) {
+                    <div>
+                      <dt>{{ subscriptionPeriodEndLabel() }}</dt>
+                      <dd>{{ subscriptionPeriodEnd() }}</dd>
+                    </div>
+                  }
+                </dl>
+              }
+
+              <div class="subscription-actions">
+                @if (subscriptionCancellationPending()) {
+                  <button
+                    type="button"
+                    class="btn btn-outline btn-lg subscription-cancel-button"
+                    disabled
+                  >
+                    @if (subscriptionCancellationLoading()) {
+                      <span class="inline-loading-icon">
+                        <app-icon name="sparkles" [size]="16"></app-icon>
+                      </span>
+                    }
+                    {{
+                      subscriptionCancellationLoading()
+                        ? 'Cancelling...'
+                        : 'Cancellation requested'
+                    }}
+                  </button>
+                  <p class="text-muted">
+                    This may take a moment to update.
+                  </p>
+                } @else if (hasActiveSubscription()) {
+                  <button
+                    type="button"
+                    class="btn btn-outline btn-lg subscription-cancel-button"
+                    (click)="cancelSubscription()"
+                    [disabled]="subscriptionBusy()"
+                  >
+                    @if (subscriptionCancellationLoading()) {
+                      <span class="inline-loading-icon">
+                        <app-icon name="sparkles" [size]="16"></app-icon>
+                      </span>
+                    }
+                    {{
+                      subscriptionCancellationLoading()
+                        ? 'Cancelling...'
+                        : 'Cancel subscription'
+                    }}
+                  </button>
+                  <p class="text-muted">
+                    Cancel here if you no longer want your subscription to renew.
+                  </p>
+                } @else if (canStartSubscription()) {
+                  <button
+                    type="button"
+                    class="btn btn-primary btn-lg"
+                    (click)="startSubscription()"
+                    [disabled]="subscriptionBusy()"
+                  >
+                    @if (subscriptionLoading()) {
+                      <span class="inline-loading-icon">
+                        <app-icon name="sparkles" [size]="16"></app-icon>
+                      </span>
+                    }
+                    {{ subscriptionLoading() ? 'Opening checkout...' : 'Start subscription' }}
+                  </button>
+                  <p class="text-muted">
+                    Payment is completed on a secure checkout page. You will
+                    return here afterwards.
+                  </p>
+                } @else {
+                  <p class="text-muted">
+                    Your subscription status is being updated.
+                  </p>
+                }
               </div>
             </section>
           }
@@ -444,12 +554,53 @@ export class ProfileComponent implements OnInit, OnDestroy {
   private paymentService = inject(PaymentService);
   private route = inject(ActivatedRoute);
   private locationSearchTimer: ReturnType<typeof setTimeout> | null = null;
+  private subscriptionRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly subscriptionRefreshDelayMs = 1500;
+  private readonly subscriptionRefreshMaxAttempts = 6;
 
   currentUser = computed(() => this.auth.currentUser());
+  subscriptionStatus = computed(() => this.currentSubscriptionStatus());
   activeTab = signal<ProfileTab>('account');
   loading = signal(false);
   saving = signal(false);
   subscriptionLoading = signal(false);
+  subscriptionCancellationLoading = signal(false);
+  subscriptionCancellationPending = signal(false);
+  subscriptionBusy = computed(
+    () => this.subscriptionLoading() || this.subscriptionCancellationLoading(),
+  );
+  hasActiveSubscription = computed(
+    () =>
+      this.subscriptionStatus() === 'active' ||
+      (this.currentUser()?.subscription?.subscribed === true &&
+        this.subscriptionStatus() !== 'canceled'),
+  );
+  hasCanceledSubscription = computed(
+    () => this.subscriptionStatus() === 'canceled',
+  );
+  showSubscriptionDetails = computed(
+    () => this.hasActiveSubscription() || this.hasCanceledSubscription(),
+  );
+  subscriptionStatusLabel = computed(() =>
+    this.toSubscriptionStatusLabel(
+      this.currentUser()?.subscription?.status,
+      this.subscriptionStatus(),
+    ),
+  );
+  subscriptionStartedAt = computed(() =>
+    this.formatSubscriptionDate(this.currentUser()?.subscription?.startedAt),
+  );
+  canStartSubscription = computed(
+    () => this.currentUser()?.subscription?.subscribed !== true,
+  );
+  subscriptionPeriodEnd = computed(() =>
+    this.formatSubscriptionDate(
+      this.currentUser()?.subscription?.currentPeriodEnd,
+    ),
+  );
+  subscriptionPeriodEndLabel = computed(() =>
+    this.hasCanceledSubscription() ? 'Access until' : 'Current period ends',
+  );
   editMode = signal(false);
   errorMsg = signal('');
   successMsg = signal('');
@@ -490,6 +641,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.clearLocationSearchTimer();
+    this.clearSubscriptionRefreshTimer();
   }
 
   startEdit(): void {
@@ -562,6 +714,12 @@ export class ProfileComponent implements OnInit, OnDestroy {
   }
 
   startSubscription(): void {
+    if (!this.canStartSubscription()) {
+      return;
+    }
+
+    this.clearSubscriptionRefreshTimer();
+    this.subscriptionCancellationPending.set(false);
     this.subscriptionError.set('');
     this.subscriptionInfo.set('');
     this.subscriptionSuccess.set('');
@@ -576,6 +734,40 @@ export class ProfileComponent implements OnInit, OnDestroy {
           'Could not open checkout. Please try again or sign in again.',
         );
         this.subscriptionLoading.set(false);
+      },
+    });
+  }
+
+  cancelSubscription(): void {
+    if (!this.hasActiveSubscription()) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      'Cancel your subscription? Your access may change after the current billing period.',
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.clearSubscriptionRefreshTimer();
+    this.subscriptionError.set('');
+    this.subscriptionInfo.set('');
+    this.subscriptionSuccess.set('');
+    this.subscriptionCancellationPending.set(true);
+    this.subscriptionCancellationLoading.set(true);
+
+    this.paymentService.cancelSubscription().subscribe({
+      next: () => {
+        this.scheduleSubscriptionRefresh(1);
+      },
+      error: () => {
+        this.subscriptionCancellationPending.set(false);
+        this.subscriptionError.set(
+          'Could not cancel your subscription. Please try again or sign in again.',
+        );
+        this.subscriptionCancellationLoading.set(false);
       },
     });
   }
@@ -755,6 +947,130 @@ export class ProfileComponent implements OnInit, OnDestroy {
       clearTimeout(this.locationSearchTimer);
       this.locationSearchTimer = null;
     }
+  }
+
+  private scheduleSubscriptionRefresh(attempt: number): void {
+    this.clearSubscriptionRefreshTimer();
+    this.subscriptionRefreshTimer = setTimeout(() => {
+      this.refreshSubscriptionAfterCancellation(attempt);
+    }, this.subscriptionRefreshDelayMs);
+  }
+
+  private refreshSubscriptionAfterCancellation(attempt: number): void {
+    this.auth.loadCurrentUser().subscribe({
+      next: () => {
+        if (
+          this.hasCanceledSubscription() ||
+          this.currentUser()?.subscription?.subscribed === false
+        ) {
+          this.subscriptionCancellationPending.set(false);
+          this.subscriptionCancellationLoading.set(false);
+          this.subscriptionInfo.set('');
+          this.subscriptionSuccess.set('Subscription canceled.');
+          return;
+        }
+
+        if (attempt < this.subscriptionRefreshMaxAttempts) {
+          this.scheduleSubscriptionRefresh(attempt + 1);
+          return;
+        }
+
+        this.subscriptionCancellationLoading.set(false);
+        this.subscriptionInfo.set(
+          'Cancellation is still processing. Check again in a moment.',
+        );
+      },
+      error: () => {
+        if (attempt < this.subscriptionRefreshMaxAttempts) {
+          this.scheduleSubscriptionRefresh(attempt + 1);
+          return;
+        }
+
+        this.subscriptionCancellationLoading.set(false);
+        this.subscriptionInfo.set(
+          'Cancellation was requested, but the latest status could not be loaded. Check again in a moment.',
+        );
+      },
+    });
+  }
+
+  private clearSubscriptionRefreshTimer(): void {
+    if (this.subscriptionRefreshTimer) {
+      clearTimeout(this.subscriptionRefreshTimer);
+      this.subscriptionRefreshTimer = null;
+    }
+  }
+
+  private currentSubscriptionStatus(): SubscriptionStatus {
+    const subscription = this.currentUser()?.subscription;
+    const normalizedStatus = this.normalizeSubscriptionStatus(
+      subscription?.status,
+    );
+
+    if (normalizedStatus === 'active' || normalizedStatus === 'canceled') {
+      return normalizedStatus;
+    }
+
+    return subscription?.subscribed === true ? 'active' : 'inactive';
+  }
+
+  private normalizeSubscriptionStatus(
+    status: string | undefined,
+  ): SubscriptionStatus | null {
+    const normalizedStatus = status?.trim().toLowerCase();
+
+    if (normalizedStatus === 'active') {
+      return 'active';
+    }
+
+    if (normalizedStatus === 'canceled' || normalizedStatus === 'cancelled') {
+      return 'canceled';
+    }
+
+    return null;
+  }
+
+  private formatSubscriptionDate(value: string | undefined): string {
+    if (!value) {
+      return '';
+    }
+
+    const date = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: 'medium',
+    }).format(date);
+  }
+
+  private toSubscriptionStatusLabel(
+    rawStatus: string | undefined,
+    fallbackStatus: SubscriptionStatus,
+  ): string {
+    if (rawStatus?.trim()) {
+      return this.toTitleCase(rawStatus);
+    }
+
+    if (fallbackStatus === 'active') {
+      return 'Active';
+    }
+
+    if (fallbackStatus === 'canceled') {
+      return 'Canceled';
+    }
+
+    return 'Inactive';
+  }
+
+  private toTitleCase(value: string): string {
+    return value
+      .trim()
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
   }
 
   private errorMessage(error: unknown): string {

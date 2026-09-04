@@ -9,12 +9,12 @@ import {
   formatPracticeLabel,
 } from '../practice-options';
 
-type AdminExerciseConfigDto =
-  components['schemas']['AdminExerciseConfigDto'];
-type AdminLevelOptionDto = components['schemas']['AdminLevelOptionDto'];
-type AdminTopicOptionDto = components['schemas']['AdminTopicOptionDto'];
-type AdminExerciseTypeOptionDto =
-  components['schemas']['AdminExerciseTypeOptionDto'];
+type ExerciseConfigDto =
+  components['schemas']['ExerciseConfigDto'];
+type LevelOptionDto = components['schemas']['LevelOptionDto'];
+type TopicOptionDto = components['schemas']['TopicOptionDto'];
+type ExerciseTypeOptionDto =
+  components['schemas']['ExerciseTypeOptionDto'];
 
 export interface PracticeConfig {
   levels: SelectOption[];
@@ -24,11 +24,11 @@ export interface PracticeConfig {
 
 @Injectable({ providedIn: 'root' })
 export class PracticeConfigService {
-  private readonly url = 'http://localhost:8080/api/admin/exercise-config';
+  private readonly url = 'http://localhost:8080/api/exercise-config';
   private readonly http = inject(HttpClient);
 
   getConfig(): Observable<PracticeConfig> {
-    return this.http.get<ApiResponse<AdminExerciseConfigDto | null>>(this.url).pipe(
+    return this.http.get<ApiResponse<ExerciseConfigDto | null>>(this.url).pipe(
       map((response) => this.unwrapConfig(response)),
       catchError((error) =>
         throwError(() =>
@@ -39,7 +39,7 @@ export class PracticeConfigService {
   }
 
   private unwrapConfig(
-    response: ApiResponse<AdminExerciseConfigDto | null>,
+    response: ApiResponse<ExerciseConfigDto | null>,
   ): PracticeConfig {
     if (!response.success) {
       throw new Error(response.message || 'Could not load practice options.');
@@ -62,7 +62,7 @@ export class PracticeConfigService {
     return { levels, topics, exerciseTypes };
   }
 
-  private toLevelOption(level: AdminLevelOptionDto): SelectOption {
+  private toLevelOption(level: LevelOptionDto): SelectOption {
     const value = level.code ?? '';
     const description = level.description?.trim();
 
@@ -71,35 +71,32 @@ export class PracticeConfigService {
       label: description
         ? `${level.label || formatPracticeLabel(value)} - ${description}`
         : level.label || formatPracticeLabel(value),
-      enabled: level.enabled,
     };
   }
 
-  private toTopicOption(topic: AdminTopicOptionDto): TopicOption {
+  private toTopicOption(topic: TopicOptionDto): TopicOption {
     const value = topic.code ?? '';
 
     return {
       value,
       label: topic.label || formatPracticeLabel(value),
       level: topic.levelCode ?? '',
-      enabled: topic.enabled,
     };
   }
 
   private toExerciseTypeOption(
-    type: AdminExerciseTypeOptionDto,
+    type: ExerciseTypeOptionDto,
   ): SelectOption {
     const value = type.code ?? '';
 
     return {
       value,
       label: type.label || formatPracticeLabel(value),
-      enabled: type.enabled,
     };
   }
 
-  private isEnabled(option: { code?: string; enabled?: boolean }): boolean {
-    return !!option.code && option.enabled !== false;
+  private isEnabled(option: { code?: string }): boolean {
+    return !!option.code;
   }
 
   private toApiError(error: unknown, fallbackMessage: string): Error {

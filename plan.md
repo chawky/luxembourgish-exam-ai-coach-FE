@@ -30,7 +30,7 @@ Recommendation:
 
 ### 2. Dynamic Exercise Config
 
-Status: implemented for learner generation forms, with one backend-contract caveat.
+Status: implemented for learner generation forms.
 
 Implemented:
 
@@ -39,16 +39,15 @@ Implemented:
 - Updated text exercises, vocabulary, listening, speaking, and image-description pages to load enabled config rows dynamically.
 - Topic filtering now uses backend `levelCode` relationships instead of hardcoded topic-to-level mappings.
 - Speaking and image-description flows choose `SHORT_ANSWER` dynamically from backend exercise types, falling back to the first configured type if needed.
+- Learner pages now read enabled-only config from public authenticated `GET /api/exercise-config`.
+- Admin config editing remains protected under `/api/admin/exercise-config`.
 
 Still future scope:
 
-- Learner pages currently read config from `GET /api/admin/exercise-config` because this is the only exercise-config read endpoint exposed in the OpenAPI contract.
-- If the backend protects `/api/admin/exercise-config` for admins only, non-admin learners will not be able to load generation options.
 - There is no UI display ordering because the backend does not expose an ordering/display-priority field yet.
 
 Recommendation:
 
-- Add a public read-only backend endpoint such as `GET /api/exercise-config` for learner forms.
 - Keep admin CRUD under `/api/admin/exercise-config`.
 - Add ordering on the backend before implementing drag-and-drop ordering in the admin UI.
 
@@ -208,9 +207,9 @@ Recommendation:
 
 ### Phase 1: Stabilize Backend Config Access
 
-- Add or confirm a public read-only exercise config endpoint for learner forms.
-- Switch `PracticeConfigService` away from `/api/admin/exercise-config` if admin authorization blocks learners.
-- Re-run `npm run api:types` after the backend endpoint is added.
+- Completed: public read-only `GET /api/exercise-config` is available for learner forms.
+- Completed: `PracticeConfigService` now reads from `/api/exercise-config`.
+- Completed: `npm run api:types` was re-run after the backend endpoint was added.
 
 ### Phase 2: Improve Admin Prompt UX
 

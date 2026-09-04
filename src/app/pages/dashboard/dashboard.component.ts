@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { AiQuotaSummaryComponent } from '../../components/ai-quota-summary.component';
 import { IconComponent } from '../../components/icon.component';
 import { ProgressDashboardDto, SkillProgressDto } from '../../models';
+import { AiQuotaService, AiQuotaStatus } from '../../services/ai-quota.service';
 import { AuthService } from '../../services/auth.service';
 import { DashboardService } from '../../services/dashboard.service';
 import { formatPracticeLabel } from '../../practice-options';
@@ -10,7 +12,7 @@ import { formatPracticeLabel } from '../../practice-options';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, IconComponent],
+  imports: [CommonModule, RouterLink, AiQuotaSummaryComponent, IconComponent],
   template: `
     <header class="page-head">
       <div>
@@ -83,6 +85,15 @@ import { formatPracticeLabel } from '../../practice-options';
         </div>
       </div>
     </section>
+
+    <app-ai-quota-summary
+      [quota]="quota()"
+      [loading]="quotaLoading()"
+      [error]="quotaError()"
+      title="Practice usage"
+      subtitle="Your current AI-powered practice allowance."
+      emptyText="No practice usage limits were returned yet."
+    ></app-ai-quota-summary>
 
     <div class="cols">
       <section class="card card-pad">
@@ -165,10 +176,14 @@ import { formatPracticeLabel } from '../../practice-options';
 export class DashboardComponent implements OnInit {
   private auth = inject(AuthService);
   private dashboardService = inject(DashboardService);
+  private quotaService = inject(AiQuotaService);
 
   loading = signal(false);
+  quotaLoading = signal(false);
   errorMsg = signal('');
+  quotaError = signal('');
   dashboard = signal<ProgressDashboardDto | null>(null);
+  quota = signal<AiQuotaStatus | null>(null);
 
   skillProgress = computed(() => this.dashboard()?.skillProgress ?? []);
 
@@ -213,6 +228,7 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadDashboard();
+    this.loadQuota();
   }
 
   loadDashboard(): void {
@@ -230,6 +246,20 @@ export class DashboardComponent implements OnInit {
       complete: () => {
         this.loading.set(false);
       },
+    });
+  }
+
+  loadQuota(): void {
+    this.quotaLoading.set(true);
+    this.quotaError.set('');
+
+    this.quotaService.getMyQuota().subscribe({
+      next: (quota) => this.quota.set(quota),
+      error: (error) => {
+        this.quotaError.set(this.errorMessage(error));
+        this.quotaLoading.set(false);
+      },
+      complete: () => this.quotaLoading.set(false),
     });
   }
 

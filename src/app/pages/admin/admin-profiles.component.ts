@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { AiQuotaSummaryComponent } from '../../components/ai-quota-summary.component';
 import { IconComponent } from '../../components/icon.component';
 import { formatPracticeLabel } from '../../practice-options';
 import {
@@ -24,7 +25,7 @@ type ConfigKind = 'level' | 'topic' | 'type';
 @Component({
   selector: 'app-admin-profiles',
   standalone: true,
-  imports: [CommonModule, FormsModule, IconComponent],
+  imports: [CommonModule, FormsModule, AiQuotaSummaryComponent, IconComponent],
   template: `
     <header class="page-head">
       <div>
@@ -215,6 +216,13 @@ type ConfigKind = 'level' | 'topic' | 'type';
                   </button>
                 </div>
               </section>
+
+              <app-ai-quota-summary
+                [quota]="profile.aiQuota ?? null"
+                title="Learner quota"
+                subtitle="Current usage and remaining allowance for this learner."
+                emptyText="No quota data was returned for this learner."
+              ></app-ai-quota-summary>
 
               <section class="card card-pad">
                 <div class="panel-head">

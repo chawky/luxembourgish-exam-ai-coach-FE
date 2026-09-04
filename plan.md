@@ -216,6 +216,8 @@ Implemented:
 - Regenerated OpenAPI types after adding `GET /api/users/me/ai-quota`.
 - Added `AiQuotaService` for current-user quota status.
 - API calls now use Angular environment API base URL configuration instead of hardcoded localhost service URLs.
+- Added learner dashboard quota display showing used, limit, and remaining allowance by AI category.
+- Added admin learner detail quota display showing each selected user's used, limit, and remaining allowance by AI category.
 - Text exercises, vocabulary, and chat send controls respect the `CHAT` quota.
 - Speaking and listening prompt/audio generation respect the `TTS` quota.
 - Speaking and image-description recording evaluation controls respect the `STT` quota.
@@ -225,7 +227,7 @@ Implemented:
 
 Still future scope:
 
-- There is no frontend-facing usage meter showing learners how much premium practice remains.
+- Quota display is summary-only; it does not yet include trend charts or historical usage drill-downs.
 - Admin AI usage filters for provider and model are not implemented yet.
 - Chat is still a local mock conversation; quota gating is present, but usage will only decrement once chat sends real backend AI requests.
 

@@ -1,8 +1,9 @@
-import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IconComponent } from '../../components/icon.component';
 import { ChatMessage } from '../../models';
+import { AiQuotaService, AiQuotaStatus } from '../../services/ai-quota.service';
 
 @Component({
   selector: 'app-chat',
@@ -47,18 +48,29 @@ import { ChatMessage } from '../../models';
 
       <div class="suggestions">
         @for (s of suggestions; track s) {
-          <button class="suggestion" (click)="send(s)">{{ s }}</button>
+          <button class="suggestion" [disabled]="quotaBlocked()" (click)="send(s)">
+            {{ s }}
+          </button>
         }
       </div>
+
+      @if (quotaMessage()) {
+        <div class="form-error" role="alert">{{ quotaMessage() }}</div>
+      }
 
       <form class="composer" (submit)="$event.preventDefault(); send(draft)">
         <input
           [(ngModel)]="draft"
           name="draft"
-          placeholder="Schreift eppes op Lëtzebuergesch…"
+          placeholder="Schreift eppes op Lëtzebuergesch..."
           autocomplete="off"
         />
-        <button type="submit" class="send-btn" [disabled]="!draft.trim()" aria-label="Send message">
+        <button
+          type="submit"
+          class="send-btn"
+          [disabled]="!draft.trim() || quotaBlocked()"
+          aria-label="Send message"
+        >
           <app-icon name="arrow" [size]="20"></app-icon>
         </button>
       </form>
@@ -66,9 +78,12 @@ import { ChatMessage } from '../../models';
   `,
   styleUrl: './chat.component.css',
 })
-export class ChatComponent {
+export class ChatComponent implements OnInit {
+  private aiQuota = inject(AiQuotaService);
+
   draft = '';
   typing = signal(false);
+  quota = signal<AiQuotaStatus | null>(null);
 
   suggestions = [
     'Moien! Wéi geet et?',
@@ -87,13 +102,13 @@ export class ChatComponent {
   private replies: { text: string; correction?: string }[] = [
     {
       text: 'Flott! Freet mech, Iech kennenzeléieren. Wou wunnt Dir genau?',
-      correction: 'Tip: “Ech heeschen…” is the natural way to say your name.',
+      correction: 'Tip: “Ech heeschen...” is the natural way to say your name.',
     },
     {
       text: 'Ah, interessant! A wat maacht Dir am Liewen — schafft Dir oder studéiert Dir?',
     },
     {
-      text: 'Super gemaach! Probéiert d’nächste Kéier e längere Saz mat “well” (because).',
+      text: 'Super gemaach! Probéiert d’nächst Kéier e längere Saz mat “well” (because).',
       correction: 'Small fix: word order after “well” puts the verb at the end.',
     },
     {
@@ -102,12 +117,18 @@ export class ChatComponent {
   ];
   private replyIndex = 0;
 
+  ngOnInit(): void {
+    this.loadQuota();
+  }
+
   send(text: string): void {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed || this.quotaBlocked()) {
+      return;
+    }
 
-    this.messages.update((m) => [
-      ...m,
+    this.messages.update((messages) => [
+      ...messages,
       { id: 'u' + Date.now(), role: 'user', text: trimmed },
     ]);
     this.draft = '';
@@ -118,8 +139,8 @@ export class ChatComponent {
 
     setTimeout(() => {
       this.typing.set(false);
-      this.messages.update((m) => [
-        ...m,
+      this.messages.update((messages) => [
+        ...messages,
         {
           id: 'c' + Date.now(),
           role: 'coach',
@@ -128,5 +149,22 @@ export class ChatComponent {
         },
       ]);
     }, 900);
+  }
+
+  quotaBlocked(): boolean {
+    return this.aiQuota.isExhausted(this.quota(), 'CHAT');
+  }
+
+  quotaMessage(): string {
+    return this.quotaBlocked()
+      ? this.aiQuota.blockedMessage(this.quota(), 'CHAT')
+      : '';
+  }
+
+  private loadQuota(): void {
+    this.aiQuota.getMyQuota().subscribe({
+      next: (quota) => this.quota.set(quota),
+      error: () => undefined,
+    });
   }
 }

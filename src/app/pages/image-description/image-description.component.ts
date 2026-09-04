@@ -12,6 +12,7 @@ import {
   TopicOption,
   topicLabel,
 } from '../../practice-options';
+import { AiQuotaService, AiQuotaStatus } from '../../services/ai-quota.service';
 import { ImageDescriptionService } from '../../services/image-description.service';
 import { PracticeConfigService } from '../../services/practice-config.service';
 
@@ -82,11 +83,14 @@ interface ImageDescriptionExerciseView {
           @if (errorMsg()) {
             <div class="form-error" role="alert">{{ errorMsg() }}</div>
           }
+          @if (imageQuotaMessage()) {
+            <div class="form-error" role="alert">{{ imageQuotaMessage() }}</div>
+          }
 
           <button
             class="btn btn-primary btn-block"
             type="submit"
-            [disabled]="loading() || configLoading() || recording() || uploadingRecording()"
+            [disabled]="loading() || configLoading() || recording() || uploadingRecording() || imageQuotaBlocked()"
           >
             @if (configLoading()) {
               <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
@@ -156,7 +160,7 @@ interface ImageDescriptionExerciseView {
                 class="record-btn"
                 [class.recording]="recording()"
                 (click)="toggleRecord()"
-                [disabled]="uploadingRecording() || !exercise.imageDescription"
+                [disabled]="uploadingRecording() || !exercise.imageDescription || (!recording() && recordingQuotaBlocked())"
                 [attr.aria-label]="recording() ? 'Stop recording' : 'Start recording'"
               >
                 <app-icon [name]="recording() ? 'check' : 'mic'" [size]="26"></app-icon>
@@ -182,12 +186,17 @@ interface ImageDescriptionExerciseView {
                 {{ recordingError() }}
               </div>
             }
+            @if (recordingQuotaMessage()) {
+              <div class="form-error recording-error" role="alert">
+                {{ recordingQuotaMessage() }}
+              </div>
+            }
 
             @if (retryableRecording()) {
               <button
                 type="button"
                 class="btn btn-outline retry-recording-btn"
-                [disabled]="uploadingRecording()"
+                [disabled]="uploadingRecording() || recordingQuotaBlocked()"
                 (click)="resendRecording()"
               >
                 Resend recording
@@ -229,7 +238,7 @@ interface ImageDescriptionExerciseView {
                 <button
                   type="button"
                   class="btn btn-primary"
-                  [disabled]="recording() || uploadingRecording()"
+                  [disabled]="recording() || uploadingRecording() || recordingQuotaBlocked()"
                   (click)="recordNewAnswer()"
                 >
                   <app-icon name="mic" [size]="18"></app-icon>
@@ -286,6 +295,7 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
   private fb = inject(FormBuilder);
   private imageDescription = inject(ImageDescriptionService);
   private practiceConfig = inject(PracticeConfigService);
+  private aiQuota = inject(AiQuotaService);
 
   levels: SelectOption[] = [];
   topics: TopicOption[] = [];
@@ -294,6 +304,7 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
   loading = signal(false);
   errorMsg = signal('');
   imageError = signal('');
+  quota = signal<AiQuotaStatus | null>(null);
   current = signal<ImageDescriptionExerciseView | null>(null);
   recording = signal(false);
   uploadingRecording = signal(false);
@@ -318,11 +329,17 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
 
   ngOnInit(): void {
     this.loadPracticeConfig();
+    this.loadQuota();
   }
 
   generate(): void {
     this.errorMsg.set('');
     this.imageError.set('');
+
+    if (this.imageQuotaBlocked()) {
+      this.errorMsg.set(this.imageQuotaMessage());
+      return;
+    }
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -340,9 +357,11 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
     this.imageDescription.generateImage(request).subscribe({
       next: (image) => {
         this.current.set(this.toView(image, request));
+        this.loadQuota();
       },
       error: (error) => {
         this.errorMsg.set(this.errorMessage(error));
+        this.loadQuota();
         this.loading.set(false);
       },
       complete: () => {
@@ -372,6 +391,11 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
     if (this.recording()) {
       this.stopRecording(true);
     } else {
+      if (this.recordingQuotaBlocked()) {
+        this.recordingError.set(this.recordingQuotaMessage());
+        return;
+      }
+
       void this.startRecording();
     }
   }
@@ -381,11 +405,21 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
       return;
     }
 
+    if (this.recordingQuotaBlocked()) {
+      this.recordingError.set(this.recordingQuotaMessage());
+      return;
+    }
+
     this.uploadRecordedAudio(this.lastRecordingAudio);
   }
 
   recordNewAnswer(): void {
     if (!this.current() || this.loading() || this.recording() || this.uploadingRecording()) {
+      return;
+    }
+
+    if (this.recordingQuotaBlocked()) {
+      this.recordingError.set(this.recordingQuotaMessage());
       return;
     }
 
@@ -405,6 +439,26 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
       .padStart(2, '0');
     const remainingSeconds = (seconds % 60).toString().padStart(2, '0');
     return `${minutes}:${remainingSeconds}`;
+  }
+
+  imageQuotaBlocked(): boolean {
+    return this.aiQuota.isExhausted(this.quota(), 'IMAGE');
+  }
+
+  imageQuotaMessage(): string {
+    return this.imageQuotaBlocked()
+      ? this.aiQuota.blockedMessage(this.quota(), 'IMAGE')
+      : '';
+  }
+
+  recordingQuotaBlocked(): boolean {
+    return this.aiQuota.isExhausted(this.quota(), 'STT');
+  }
+
+  recordingQuotaMessage(): string {
+    return this.recordingQuotaBlocked()
+      ? this.aiQuota.blockedMessage(this.quota(), 'STT')
+      : '';
   }
 
   correctionItems(evaluation: SpeakingEvaluationDto): string[] {
@@ -440,6 +494,13 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
       complete: () => {
         this.configLoading.set(false);
       },
+    });
+  }
+
+  private loadQuota(): void {
+    this.aiQuota.getMyQuota().subscribe({
+      next: (quota) => this.quota.set(quota),
+      error: () => undefined,
     });
   }
 
@@ -655,6 +716,11 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
       return;
     }
 
+    if (this.recordingQuotaBlocked()) {
+      this.recordingError.set(this.recordingQuotaMessage());
+      return;
+    }
+
     this.lastRecordingAudio = audio;
     this.uploadingRecording.set(true);
     this.retryableRecording.set(false);
@@ -672,9 +738,11 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
         next: (evaluation) => {
           this.evaluation.set(evaluation);
           this.lastRecordingAudio = null;
+          this.loadQuota();
         },
         error: (error) => {
           this.recordingError.set(this.errorMessage(error));
+          this.loadQuota();
           this.retryableRecording.set(true);
           this.uploadingRecording.set(false);
         },

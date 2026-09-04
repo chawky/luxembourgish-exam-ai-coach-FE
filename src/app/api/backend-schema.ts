@@ -452,6 +452,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/me/ai-quota": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["myAiQuota"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/locations": {
         parameters: {
             query?: never;
@@ -572,6 +588,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["getUserAiUsageSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}/ai-quota": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getUserAiQuota"];
         put?: never;
         post?: never;
         delete?: never;
@@ -901,6 +933,25 @@ export interface components {
             user?: components["schemas"]["ResponseUserDto"];
             progress?: components["schemas"]["ProgressDashboardDto"];
             aiUsage?: components["schemas"]["AdminAiUsageSummaryDto"];
+            aiQuota?: components["schemas"]["AiQuotaStatusDto"];
+        };
+        AiQuotaCategoryStatusDto: {
+            category?: string;
+            window?: string;
+            /** Format: int32 */
+            limit?: number;
+            /** Format: int64 */
+            used?: number;
+            /** Format: int64 */
+            remaining?: number;
+            /** Format: date-time */
+            windowStart?: string;
+            /** Format: date-time */
+            windowEnd?: string;
+        };
+        AiQuotaStatusDto: {
+            tier?: string;
+            categories?: components["schemas"]["AiQuotaCategoryStatusDto"][];
         };
         ApiResponseAdminUserDetailDto: {
             success?: boolean;
@@ -945,6 +996,11 @@ export interface components {
             success?: boolean;
             message?: string;
             data?: components["schemas"]["ResponseUserDto"][];
+        };
+        ApiResponseAiQuotaStatusDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["AiQuotaStatusDto"];
         };
         ApiResponseListLocationSuggestionDto: {
             success?: boolean;
@@ -1965,6 +2021,26 @@ export interface operations {
             };
         };
     };
+    myAiQuota: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAiQuotaStatusDto"];
+                };
+            };
+        };
+    };
     searchLocations: {
         parameters: {
             query: {
@@ -2148,6 +2224,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseAdminAiUsageSummaryDto"];
+                };
+            };
+        };
+    };
+    getUserAiQuota: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAiQuotaStatusDto"];
                 };
             };
         };

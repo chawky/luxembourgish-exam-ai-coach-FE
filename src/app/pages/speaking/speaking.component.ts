@@ -15,6 +15,7 @@ import {
   TopicOption,
   topicLabel,
 } from '../../practice-options';
+import { AiQuotaService, AiQuotaStatus } from '../../services/ai-quota.service';
 import { PracticeConfigService } from '../../services/practice-config.service';
 
 @Component({
@@ -74,11 +75,14 @@ import { PracticeConfigService } from '../../services/practice-config.service';
           @if (errorMsg()) {
             <div class="form-error" role="alert">{{ errorMsg() }}</div>
           }
+          @if (promptQuotaMessage()) {
+            <div class="form-error" role="alert">{{ promptQuotaMessage() }}</div>
+          }
 
           <button
             type="submit"
             class="btn btn-primary btn-block"
-            [disabled]="loading() || configLoading() || recording() || uploadingRecording()"
+            [disabled]="loading() || configLoading() || recording() || uploadingRecording() || promptQuotaBlocked()"
           >
             @if (configLoading()) {
               <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
@@ -164,7 +168,7 @@ import { PracticeConfigService } from '../../services/practice-config.service';
                 class="record-btn"
                 [class.recording]="recording()"
                 (click)="toggleRecord()"
-                [disabled]="uploadingRecording()"
+                [disabled]="uploadingRecording() || (!recording() && recordingQuotaBlocked())"
                 [attr.aria-label]="recording() ? 'Stop recording' : 'Start recording'"
               >
                 <app-icon [name]="recording() ? 'check' : 'mic'" [size]="26"></app-icon>
@@ -190,12 +194,17 @@ import { PracticeConfigService } from '../../services/practice-config.service';
                 {{ recordingError() }}
               </div>
             }
+            @if (recordingQuotaMessage()) {
+              <div class="form-error recording-error" role="alert">
+                {{ recordingQuotaMessage() }}
+              </div>
+            }
 
             @if (retryableRecording()) {
               <button
                 type="button"
                 class="btn btn-outline retry-recording-btn"
-                [disabled]="uploadingRecording()"
+                [disabled]="uploadingRecording() || recordingQuotaBlocked()"
                 (click)="resendRecording()"
               >
                 Resend recording
@@ -237,7 +246,7 @@ import { PracticeConfigService } from '../../services/practice-config.service';
                 <button
                   type="button"
                   class="btn btn-primary"
-                  [disabled]="recording() || uploadingRecording()"
+                  [disabled]="recording() || uploadingRecording() || recordingQuotaBlocked()"
                   (click)="recordNewAnswer()"
                 >
                   <app-icon name="mic" [size]="18"></app-icon>
@@ -277,6 +286,7 @@ export class SpeakingComponent implements OnDestroy, OnInit {
   private fb = inject(FormBuilder);
   private speaking = inject(SpeakingService);
   private practiceConfig = inject(PracticeConfigService);
+  private aiQuota = inject(AiQuotaService);
 
   @ViewChild(AudioPlayerComponent)
   private promptAudioPlayer?: AudioPlayerComponent;
@@ -287,6 +297,7 @@ export class SpeakingComponent implements OnDestroy, OnInit {
   configLoading = signal(false);
   loading = signal(false);
   errorMsg = signal('');
+  quota = signal<AiQuotaStatus | null>(null);
   current = signal<SpeakingPrompt | null>(null);
   recording = signal(false);
   uploadingRecording = signal(false);
@@ -314,10 +325,16 @@ export class SpeakingComponent implements OnDestroy, OnInit {
 
   ngOnInit(): void {
     this.loadPracticeConfig();
+    this.loadQuota();
   }
 
   generate(): void {
     this.errorMsg.set('');
+
+    if (this.promptQuotaBlocked()) {
+      this.errorMsg.set(this.promptQuotaMessage());
+      return;
+    }
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -334,9 +351,11 @@ export class SpeakingComponent implements OnDestroy, OnInit {
     this.speaking.generatePractice(request).subscribe({
       next: (practice) => {
         this.current.set(this.toPrompt(practice, request));
+        this.loadQuota();
       },
       error: (error) => {
         this.errorMsg.set(this.errorMessage(error));
+        this.loadQuota();
         this.loading.set(false);
       },
       complete: () => {
@@ -366,6 +385,11 @@ export class SpeakingComponent implements OnDestroy, OnInit {
     if (this.recording()) {
       this.stopRecording(true);
     } else {
+      if (this.recordingQuotaBlocked()) {
+        this.recordingError.set(this.recordingQuotaMessage());
+        return;
+      }
+
       void this.startRecording();
     }
   }
@@ -375,11 +399,21 @@ export class SpeakingComponent implements OnDestroy, OnInit {
       return;
     }
 
+    if (this.recordingQuotaBlocked()) {
+      this.recordingError.set(this.recordingQuotaMessage());
+      return;
+    }
+
     this.uploadRecordedAudio(this.lastRecordingAudio);
   }
 
   recordNewAnswer(): void {
     if (!this.current() || this.loading() || this.recording() || this.uploadingRecording()) {
+      return;
+    }
+
+    if (this.recordingQuotaBlocked()) {
+      this.recordingError.set(this.recordingQuotaMessage());
       return;
     }
 
@@ -400,6 +434,26 @@ export class SpeakingComponent implements OnDestroy, OnInit {
       .padStart(2, '0');
     const remainingSeconds = (seconds % 60).toString().padStart(2, '0');
     return `${minutes}:${remainingSeconds}`;
+  }
+
+  promptQuotaBlocked(): boolean {
+    return this.aiQuota.isExhausted(this.quota(), 'TTS');
+  }
+
+  promptQuotaMessage(): string {
+    return this.promptQuotaBlocked()
+      ? this.aiQuota.blockedMessage(this.quota(), 'TTS')
+      : '';
+  }
+
+  recordingQuotaBlocked(): boolean {
+    return this.aiQuota.isExhausted(this.quota(), 'STT');
+  }
+
+  recordingQuotaMessage(): string {
+    return this.recordingQuotaBlocked()
+      ? this.aiQuota.blockedMessage(this.quota(), 'STT')
+      : '';
   }
 
   private clearTimer(): void {
@@ -500,6 +554,11 @@ export class SpeakingComponent implements OnDestroy, OnInit {
   }
 
   private uploadRecordedAudio(audio: Blob): void {
+    if (this.recordingQuotaBlocked()) {
+      this.recordingError.set(this.recordingQuotaMessage());
+      return;
+    }
+
     this.lastRecordingAudio = audio;
     this.uploadingRecording.set(true);
     this.retryableRecording.set(false);
@@ -512,9 +571,11 @@ export class SpeakingComponent implements OnDestroy, OnInit {
       next: (evaluation) => {
         this.evaluation.set(evaluation);
         this.lastRecordingAudio = null;
+        this.loadQuota();
       },
       error: (error) => {
         this.recordingError.set(this.errorMessage(error));
+        this.loadQuota();
         this.retryableRecording.set(true);
         this.uploadingRecording.set(false);
       },
@@ -565,6 +626,13 @@ export class SpeakingComponent implements OnDestroy, OnInit {
       complete: () => {
         this.configLoading.set(false);
       },
+    });
+  }
+
+  private loadQuota(): void {
+    this.aiQuota.getMyQuota().subscribe({
+      next: (quota) => this.quota.set(quota),
+      error: () => undefined,
     });
   }
 

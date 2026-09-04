@@ -11,6 +11,7 @@ import {
   TopicOption,
   topicLabel,
 } from '../../practice-options';
+import { AiQuotaService, AiQuotaStatus } from '../../services/ai-quota.service';
 import { ExerciseService } from '../../services/exercise.service';
 import { PracticeConfigService } from '../../services/practice-config.service';
 import { VocabularyService } from '../../services/vocabulary.service';
@@ -73,11 +74,14 @@ import { VocabularyService } from '../../services/vocabulary.service';
           @if (errorMsg()) {
             <div class="form-error" role="alert">{{ errorMsg() }}</div>
           }
+          @if (quotaMessage()) {
+            <div class="form-error" role="alert">{{ quotaMessage() }}</div>
+          }
 
           <button
             type="submit"
             class="btn btn-primary btn-block"
-            [disabled]="loading() || configLoading()"
+            [disabled]="loading() || configLoading() || quotaBlocked()"
           >
             @if (configLoading()) {
               <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
@@ -224,6 +228,7 @@ export class VocabularyComponent implements OnInit {
   private vocabularyService = inject(VocabularyService);
   private practiceConfig = inject(PracticeConfigService);
   private exercises = inject(ExerciseService);
+  private aiQuota = inject(AiQuotaService);
 
   levels: SelectOption[] = [];
   topics: TopicOption[] = [];
@@ -231,6 +236,7 @@ export class VocabularyComponent implements OnInit {
   configLoading = signal(false);
   loading = signal(false);
   errorMsg = signal('');
+  quota = signal<AiQuotaStatus | null>(null);
   vocabulary = signal<VocabularyExerciseDto | null>(null);
   requestContext = signal<GenerateVocabularyRequest | null>(null);
   index = signal(0);
@@ -248,10 +254,16 @@ export class VocabularyComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadPracticeConfig();
+    this.loadQuota();
   }
 
   generate(): void {
     this.errorMsg.set('');
+
+    if (this.quotaBlocked()) {
+      this.errorMsg.set(this.quotaMessage());
+      return;
+    }
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -268,9 +280,11 @@ export class VocabularyComponent implements OnInit {
       next: (vocabulary) => {
         this.vocabulary.set(vocabulary);
         this.requestContext.set(request);
+        this.loadQuota();
       },
       error: (error) => {
         this.errorMsg.set(this.errorMessage(error));
+        this.loadQuota();
         this.loading.set(false);
       },
       complete: () => {
@@ -327,6 +341,16 @@ export class VocabularyComponent implements OnInit {
     );
   }
 
+  quotaBlocked(): boolean {
+    return this.aiQuota.isExhausted(this.quota(), 'CHAT');
+  }
+
+  quotaMessage(): string {
+    return this.quotaBlocked()
+      ? this.aiQuota.blockedMessage(this.quota(), 'CHAT')
+      : '';
+  }
+
   private request(): GenerateVocabularyRequest {
     const { level, topic } = this.form.getRawValue();
     return { level, topic };
@@ -348,6 +372,13 @@ export class VocabularyComponent implements OnInit {
       complete: () => {
         this.configLoading.set(false);
       },
+    });
+  }
+
+  private loadQuota(): void {
+    this.aiQuota.getMyQuota().subscribe({
+      next: (quota) => this.quota.set(quota),
+      error: () => undefined,
     });
   }
 

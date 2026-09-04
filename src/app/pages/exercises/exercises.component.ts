@@ -19,6 +19,7 @@ import {
   formatPracticeLabel,
   topicLabel,
 } from '../../practice-options';
+import { AiQuotaService, AiQuotaStatus } from '../../services/ai-quota.service';
 import { PracticeConfigService } from '../../services/practice-config.service';
 
 interface NormalizedOption {
@@ -94,11 +95,14 @@ interface NormalizedOption {
           @if (errorMsg()) {
             <div class="form-error" role="alert">{{ errorMsg() }}</div>
           }
+          @if (quotaMessage()) {
+            <div class="form-error" role="alert">{{ quotaMessage() }}</div>
+          }
 
           <button
             type="submit"
             class="btn btn-primary btn-block"
-            [disabled]="loading() || configLoading()"
+            [disabled]="loading() || configLoading() || quotaBlocked()"
           >
             @if (configLoading()) {
               <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
@@ -248,6 +252,7 @@ export class ExercisesComponent implements OnInit {
   private fb = inject(FormBuilder);
   private exercises = inject(ExerciseService);
   private practiceConfig = inject(PracticeConfigService);
+  private aiQuota = inject(AiQuotaService);
 
   levels: SelectOption[] = [];
   topics: TopicOption[] = [];
@@ -256,6 +261,7 @@ export class ExercisesComponent implements OnInit {
   configLoading = signal(false);
   loading = signal(false);
   errorMsg = signal('');
+  quota = signal<AiQuotaStatus | null>(null);
   exercise = signal<ExerciseDto | null>(null);
   selectedOption = signal<number | null>(null);
   showAnswer = signal(false);
@@ -299,10 +305,16 @@ export class ExercisesComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadPracticeConfig();
+    this.loadQuota();
   }
 
   generate(): void {
     this.errorMsg.set('');
+
+    if (this.quotaBlocked()) {
+      this.errorMsg.set(this.quotaMessage());
+      return;
+    }
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -324,9 +336,11 @@ export class ExercisesComponent implements OnInit {
           topic: exercise.topic || request.topic,
           type: exercise.type || request.type,
         });
+        this.loadQuota();
       },
       error: (error) => {
         this.errorMsg.set(this.errorMessage(error));
+        this.loadQuota();
         this.loading.set(false);
       },
       complete: () => {
@@ -367,6 +381,16 @@ export class ExercisesComponent implements OnInit {
 
   typeLabel(type: string): string {
     return formatPracticeLabel(type);
+  }
+
+  quotaBlocked(): boolean {
+    return this.aiQuota.isExhausted(this.quota(), 'CHAT');
+  }
+
+  quotaMessage(): string {
+    return this.quotaBlocked()
+      ? this.aiQuota.blockedMessage(this.quota(), 'CHAT')
+      : '';
   }
 
   topicLabel(topic: string): string {
@@ -426,6 +450,13 @@ export class ExercisesComponent implements OnInit {
       complete: () => {
         this.configLoading.set(false);
       },
+    });
+  }
+
+  private loadQuota(): void {
+    this.aiQuota.getMyQuota().subscribe({
+      next: (quota) => this.quota.set(quota),
+      error: () => undefined,
     });
   }
 

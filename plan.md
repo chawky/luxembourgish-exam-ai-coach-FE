@@ -203,6 +203,39 @@ Recommendation:
 
 - Add filters and expanded row details when audit logs become useful for real operational debugging.
 
+### 9. Subscription, Quotas, and AI Cost Control
+
+Status: frontend quota gating is implemented for current learner AI surfaces.
+
+Implemented:
+
+- Frontend starts subscription checkout through `POST /api/payments/checkout`.
+- Frontend supports subscription cancellation through `POST /api/payments/subscription/cancel`.
+- Backend now decides BASIC vs PREMIUM AI routing from the logged-in user's subscription.
+- Admin user detail exposes recent AI usage and estimated AI cost for operational review.
+- Regenerated OpenAPI types after adding `GET /api/users/me/ai-quota`.
+- Added `AiQuotaService` for current-user quota status.
+- Text exercises, vocabulary, and chat send controls respect the `CHAT` quota.
+- Speaking and listening prompt/audio generation respect the `TTS` quota.
+- Speaking and image-description recording evaluation controls respect the `STT` quota.
+- Image-description generation respects the `IMAGE` quota.
+- Backend 429 quota messages are surfaced through the existing API error handling.
+- Exhausted BASIC quota shows an upgrade-oriented message; exhausted PREMIUM quota shows a monthly-limit message.
+
+Still future scope:
+
+- There is no frontend-facing usage meter showing learners how much premium practice remains.
+- Admin AI usage filters for provider and model are not implemented yet.
+- Chat is still a local mock conversation; quota gating is present, but usage will only decrement once chat sends real backend AI requests.
+
+Recommendation:
+
+- Treat user payment as SaaS revenue: users pay the app through Stripe, and the backend pays model providers using the platform API keys.
+- Define plan limits that exceed expected model cost with margin, such as monthly generated exercises, speaking evaluations, listening clips, and image-description attempts.
+- Enforce limits in the backend before making model calls so unpaid or over-limit users cannot create provider cost.
+- Use cheaper models for BASIC or high-volume simple tasks, and reserve stronger models for premium feedback, difficult evaluation, or paid tiers.
+- Keep provider API keys server-side only; do not ask learners to enter OpenAI or Groq keys unless the product explicitly supports bring-your-own-key.
+
 ## Recommended Implementation Order
 
 ### Phase 1: Stabilize Backend Config Access

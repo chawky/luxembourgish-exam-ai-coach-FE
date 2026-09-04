@@ -91,6 +91,7 @@ Implemented:
 - Added `adminGuard`.
 - Added `/app/admin` route.
 - Added an Admin sidebar item that is only visible for users with `ADMIN` or `ROLE_ADMIN`.
+- Split the admin dashboard into focused frontend sections for users, prompts, exercise config, and audit trail instead of rendering everything in one long page.
 
 Still future scope:
 
@@ -138,18 +139,19 @@ Implemented:
 - Added `AdminService.deletePrompt(...)`.
 - Added a prompt management section under `/app/admin`.
 - Admins can select an existing prompt overlay, edit title, edit teaching guidance, toggle enabled state, save, create a new overlay, or delete an overlay.
+- Prompt keys are no longer shown or editable in the admin UI; new prompt overlay keys are generated internally from the title as lowercase kebab-case identifiers, while existing keys stay stable during edits.
 - Prompt saves and deletes refresh audit logs after successful mutation.
 
 Still future scope:
 
 - The UI does not show locked backend prompt-file content; it only edits the database overlay fields exposed by OpenAPI.
-- The UI does not list known prompt keys that do not yet have overlays, because OpenAPI only returns existing prompt overlay DTOs.
+- The UI does not list known backend prompt definitions that do not yet have overlays, because OpenAPI only returns existing prompt overlay DTOs.
 - There is no prompt version history, rollback, publish state, or diff preview.
 - Backend validation errors are shown as plain API messages; there is no field-level validation display.
 
 Recommendation:
 
-- Add a backend endpoint that returns all known prompt keys plus overlay status if admins need to create overlays without manually typing keys.
+- Add a backend endpoint that returns all known prompt definitions plus overlay status if admins need to create overlays from a fixed backend-owned list.
 - Add versioning/rollback before allowing high-risk prompt edits in production.
 
 ### 7. Exercise Config Admin UI
@@ -162,7 +164,9 @@ Implemented:
 - Added save methods for levels, topics, and exercise types.
 - Added delete support for levels, topics, and exercise types.
 - Added an exercise config section under `/app/admin`.
-- Admins can select levels, topics, or exercise types, edit code/label/enabled state, and save.
+- Admins can open separate config tabs for levels, topics, or exercise types.
+- Admins can select a row inside the active config tab, edit label/enabled state, and save.
+- Exercise config codes are no longer editable or shown in the admin UI; new codes are generated from labels as uppercase snake-case identifiers, while existing codes stay stable during edits.
 - Topic editing supports `levelCode`.
 - Level editing supports `description`.
 - Config mutations refresh the config list and audit logs after successful mutation.
@@ -172,14 +176,13 @@ Still future scope:
 - Delete actions do not require confirmation yet.
 - There is no disable-first workflow even though disabling is safer than deleting once learner history exists.
 - There is no display ordering.
-- There is no validation for code format on the client beyond requiring non-empty code and label.
 - The learner option cache was removed, but pages only refresh config when they are loaded.
 
 Recommendation:
 
 - Add confirmation dialogs before delete.
 - Make "disable" the primary UI action and keep delete visually secondary.
-- Add client-side code validation once backend code rules are finalized.
+- Keep generated codes stable after creation so existing learner history and backend references do not break.
 
 ### 8. Audit Trail UI
 
@@ -211,8 +214,8 @@ Recommendation:
 
 ### Phase 2: Improve Admin Prompt UX
 
-- Add a backend read endpoint for all known prompt keys and overlay status.
-- Replace manual prompt-key typing with a select/list of known keys.
+- Add a backend read endpoint for all known prompt definitions and overlay status.
+- Replace free-form prompt creation with a select/list of backend-owned prompt definitions.
 - Add client-side validation help for backend prompt validation rules.
 - Add prompt versioning/rollback before production use.
 
@@ -240,4 +243,3 @@ Recommendation:
 - `npm run api:types` was run successfully against `http://localhost:8080/v3/api-docs`.
 - `npm run build` passes after the frontend admin changes.
 - End-to-end behavior still needs browser verification with an admin JWT and a non-admin learner JWT.
-

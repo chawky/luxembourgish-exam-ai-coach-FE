@@ -1,6 +1,7 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, throwError } from 'rxjs';
+import { apiUrl } from '../api/api-url';
 import {
   ApiResponse,
   GenerateExerciseRequest,
@@ -13,8 +14,8 @@ type SpeakingEvaluationResponse = ApiResponse<SpeakingEvaluationDto | null>;
 
 @Injectable({ providedIn: 'root' })
 export class SpeakingService {
-  private readonly practiceUrl = 'http://localhost:8080/api/exercises/practice';
-  private readonly recordingUrl = 'http://localhost:8080/api/exercises/recording';
+  private readonly practiceUrl = apiUrl('/exercises/practice');
+  private readonly recordingUrl = apiUrl('/exercises/recording');
   private readonly http = inject(HttpClient);
 
   generatePractice(

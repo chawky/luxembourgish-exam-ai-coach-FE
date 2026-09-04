@@ -1,6 +1,7 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, throwError } from 'rxjs';
+import { apiUrl } from '../api/api-url';
 import {
   ApiResponse,
   GenerateExerciseRequest,
@@ -15,9 +16,9 @@ type ImageDescriptionEvaluationResponse =
 @Injectable({ providedIn: 'root' })
 export class ImageDescriptionService {
   private readonly generateImageUrl =
-    'http://localhost:8080/api/exercises/generate-image';
+    apiUrl('/exercises/generate-image');
   private readonly recordingUrl =
-    'http://localhost:8080/api/exercises/image-description/recording';
+    apiUrl('/exercises/image-description/recording');
   private readonly http = inject(HttpClient);
 
   generateImage(request: GenerateExerciseRequest): Observable<GeneratedImageDto> {

@@ -1,6 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, throwError } from 'rxjs';
+import { apiUrl } from '../api/api-url';
 import {
   ApiResponse,
   AudioExerciseDto,
@@ -11,7 +12,7 @@ type GenerateListeningExerciseResponse = ApiResponse<AudioExerciseDto | null>;
 
 @Injectable({ providedIn: 'root' })
 export class ListeningService {
-  private readonly url = 'http://localhost:8080/api/exercises/listening';
+  private readonly url = apiUrl('/exercises/listening');
   private readonly http = inject(HttpClient);
 
   generateListeningExercise(

@@ -1,13 +1,14 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, throwError } from 'rxjs';
+import { apiUrl } from '../api/api-url';
 import { ApiResponse, ProgressDashboardDto } from '../models';
 
 type ProgressDashboardResponse = ApiResponse<ProgressDashboardDto | null>;
 
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
-  private readonly url = 'http://localhost:8080/api/progress/me';
+  private readonly url = apiUrl('/progress/me');
   private readonly http = inject(HttpClient);
 
   getMyProgress(): Observable<ProgressDashboardDto> {

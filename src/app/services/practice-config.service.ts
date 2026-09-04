@@ -1,6 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, throwError } from 'rxjs';
+import { apiUrl } from '../api/api-url';
 import type { components } from '../api/backend-schema';
 import { ApiResponse } from '../models';
 import {
@@ -24,7 +25,7 @@ export interface PracticeConfig {
 
 @Injectable({ providedIn: 'root' })
 export class PracticeConfigService {
-  private readonly url = 'http://localhost:8080/api/exercise-config';
+  private readonly url = apiUrl('/exercise-config');
   private readonly http = inject(HttpClient);
 
   getConfig(): Observable<PracticeConfig> {

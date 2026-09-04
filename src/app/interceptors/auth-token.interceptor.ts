@@ -1,12 +1,12 @@
 import { HttpInterceptorFn } from '@angular/common/http';
+import { API_BASE_URL } from '../api/api-url';
 
-const apiBaseUrl = 'http://localhost:8080/api';
 const tokenStorageKey = 'sproochen.authToken';
 
 export const authTokenInterceptor: HttpInterceptorFn = (request, next) => {
   const token = getToken();
   const isApiRequest =
-    request.url.startsWith(apiBaseUrl) || request.url.startsWith('/api');
+    request.url.startsWith(API_BASE_URL) || request.url.startsWith('/api');
 
   if (!token || !isApiRequest || request.headers.has('Authorization')) {
     return next(request);

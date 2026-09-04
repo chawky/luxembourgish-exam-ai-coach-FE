@@ -1,6 +1,7 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, throwError } from 'rxjs';
+import { apiUrl } from '../api/api-url';
 import type { components } from '../api/backend-schema';
 import { ApiResponse } from '../models';
 
@@ -56,7 +57,7 @@ export interface AuditLogFilters {
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
-  private readonly url = 'http://localhost:8080/api/admin';
+  private readonly url = apiUrl('/admin');
   private readonly http = inject(HttpClient);
 
   getUsers(filters: AdminUserFilters = {}): Observable<PageResponse<AdminUser>> {

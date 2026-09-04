@@ -1,6 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, throwError } from 'rxjs';
+import { apiUrl } from '../api/api-url';
 import {
   ApiResponse,
   GenerateVocabularyRequest,
@@ -11,7 +12,7 @@ type GenerateVocabularyResponse = ApiResponse<VocabularyExerciseDto | null>;
 
 @Injectable({ providedIn: 'root' })
 export class VocabularyService {
-  private readonly url = 'http://localhost:8080/api/exercises/vocabulary';
+  private readonly url = apiUrl('/exercises/vocabulary');
   private readonly http = inject(HttpClient);
 
   generateVocabulary(

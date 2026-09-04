@@ -9,6 +9,7 @@ import {
   tap,
   throwError,
 } from 'rxjs';
+import { apiUrl } from '../api/api-url';
 import { ApiResponse, User } from '../models';
 import type { components } from '../api/backend-schema';
 import { displayName } from '../location-utils';
@@ -32,7 +33,7 @@ interface UpdateProfileRequest {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly url = 'http://localhost:8080/api/users';
+  private readonly url = apiUrl('/users');
   private readonly tokenStorageKey = 'sproochen.authToken';
   private readonly https = inject(HttpClient);
 

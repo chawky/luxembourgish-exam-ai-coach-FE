@@ -1,6 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, throwError } from 'rxjs';
+import { apiUrl } from '../api/api-url';
 import { ApiResponse } from '../models';
 import type { components } from '../api/backend-schema';
 
@@ -9,7 +10,7 @@ type CheckoutSessionResponse =
 
 @Injectable({ providedIn: 'root' })
 export class PaymentService {
-  private readonly url = 'http://localhost:8080/api/payments';
+  private readonly url = apiUrl('/payments');
   private readonly http = inject(HttpClient);
 
   startSubscriptionCheckout(): Observable<string> {

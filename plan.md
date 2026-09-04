@@ -215,6 +215,7 @@ Implemented:
 - Admin user detail exposes recent AI usage and estimated AI cost for operational review.
 - Regenerated OpenAPI types after adding `GET /api/users/me/ai-quota`.
 - Added `AiQuotaService` for current-user quota status.
+- API calls now use Angular environment API base URL configuration instead of hardcoded localhost service URLs.
 - Text exercises, vocabulary, and chat send controls respect the `CHAT` quota.
 - Speaking and listening prompt/audio generation respect the `TTS` quota.
 - Speaking and image-description recording evaluation controls respect the `STT` quota.

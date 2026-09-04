@@ -1,6 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, throwError } from 'rxjs';
+import { apiUrl } from '../api/api-url';
 import type { components } from '../api/backend-schema';
 import { ApiResponse } from '../models';
 
@@ -14,7 +15,7 @@ type AiQuotaResponse = components['schemas']['ApiResponseAiQuotaStatusDto'];
 
 @Injectable({ providedIn: 'root' })
 export class AiQuotaService {
-  private readonly url = 'http://localhost:8080/api/users/me/ai-quota';
+  private readonly url = apiUrl('/users/me/ai-quota');
   private readonly http = inject(HttpClient);
 
   getMyQuota(): Observable<AiQuotaStatus> {

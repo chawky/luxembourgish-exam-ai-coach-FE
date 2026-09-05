@@ -76,7 +76,7 @@ import { AuthLayoutComponent } from './auth-layout.component';
           class="btn btn-primary btn-block btn-lg"
           [disabled]="loading()"
         >
-          {{ loading() ? 'Signing in…' : 'Sign in' }}
+          {{ loading() ? 'Signing in...' : 'Sign in' }}
         </button>
       </form>
 

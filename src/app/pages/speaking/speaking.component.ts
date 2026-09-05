@@ -82,7 +82,7 @@ import { PracticeConfigService } from '../../services/practice-config.service';
           <button
             type="submit"
             class="btn btn-primary btn-block"
-            [disabled]="loading() || configLoading() || recording() || uploadingRecording() || promptQuotaBlocked()"
+            [disabled]="loading() || configLoading() || form.invalid || recording() || uploadingRecording() || promptQuotaBlocked()"
           >
             @if (configLoading()) {
               <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>

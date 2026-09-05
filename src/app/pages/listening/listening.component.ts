@@ -125,7 +125,7 @@ interface ListeningExerciseView {
           <button
             class="btn btn-primary btn-block"
             type="submit"
-            [disabled]="loading() || configLoading() || quotaBlocked()"
+            [disabled]="loading() || configLoading() || form.invalid || quotaBlocked()"
           >
             @if (configLoading()) {
               <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
@@ -376,6 +376,8 @@ export class ListeningComponent implements OnDestroy, OnInit {
     this.ensureTopicMatchesLevel();
     this.loading.set(true);
     this.current.set(null);
+    this.showTranscript.set(false);
+    this.showTranslation.set(false);
     this.showTaskTranslation.set(false);
     this.resetAttempt();
     this.clearAudio();

@@ -90,7 +90,7 @@ interface ImageDescriptionExerciseView {
           <button
             class="btn btn-primary btn-block"
             type="submit"
-            [disabled]="loading() || configLoading() || recording() || uploadingRecording() || imageQuotaBlocked()"
+            [disabled]="loading() || configLoading() || form.invalid || recording() || uploadingRecording() || imageQuotaBlocked()"
           >
             @if (configLoading()) {
               <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>

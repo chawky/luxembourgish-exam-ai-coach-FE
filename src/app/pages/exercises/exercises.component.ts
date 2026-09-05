@@ -102,7 +102,7 @@ interface NormalizedOption {
           <button
             type="submit"
             class="btn btn-primary btn-block"
-            [disabled]="loading() || configLoading() || quotaBlocked()"
+            [disabled]="loading() || configLoading() || form.invalid || quotaBlocked()"
           >
             @if (configLoading()) {
               <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>

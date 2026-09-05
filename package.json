@@ -6,6 +6,7 @@
     "dev": "ng serve --host 0.0.0.0 --port 4200 --disable-host-check",
     "start": "ng serve --host 0.0.0.0 --port 4200 --disable-host-check",
     "build": "ng build",
+    "test:e2e": "playwright test",
     "watch": "ng build --watch --configuration development",
     "api:types": "openapi-typescript http://localhost:8080/v3/api-docs -o src/app/api/backend-schema.ts"
   },
@@ -27,6 +28,8 @@
     "@angular-devkit/build-angular": "^18.2.0",
     "@angular/cli": "^18.2.0",
     "@angular/compiler-cli": "^18.2.0",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^22.20.1",
     "openapi-typescript": "^7.13.0",
     "typescript": "~5.5.2"
   }

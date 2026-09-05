@@ -73,7 +73,7 @@ export class AuthService {
           const user = response.data;
           const token = user?.jwt;
           if (!token) {
-            throw new Error(response.message || 'Login response did not include a token.');
+            throw new Error('Login response did not include a token.');
           }
 
           this.saveToken(token);

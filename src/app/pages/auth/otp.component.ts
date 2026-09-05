@@ -73,7 +73,7 @@ import { AuthLayoutComponent } from './auth-layout.component';
           class="btn btn-primary btn-block btn-lg"
           [disabled]="verifying()"
         >
-          {{ verifying() ? 'Verifying…' : 'Verify account' }}
+          {{ verifying() ? 'Verifying...' : 'Verify account' }}
         </button>
 
         <button
@@ -82,7 +82,7 @@ import { AuthLayoutComponent } from './auth-layout.component';
           [disabled]="sending()"
           (click)="resendOtp()"
         >
-          {{ sending() ? 'Sending code…' : 'Resend code' }}
+          {{ sending() ? 'Sending code...' : 'Resend code' }}
         </button>
       </form>
 

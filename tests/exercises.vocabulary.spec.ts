@@ -94,6 +94,7 @@ test('loads config, generates vocabulary, and completes attempt on reveal', asyn
     level: 'A1',
     topic: 'DAILY_ROUTINE',
   });
+  expect(vocabularyPayload).not.toHaveProperty('type');
   await expect.poll(() => completionPayload).toEqual({});
   expectNoRouteErrors(configCalls);
   expectNoRouteErrors(quotaStatus.calls);

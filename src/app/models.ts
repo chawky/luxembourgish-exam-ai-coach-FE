@@ -1,3 +1,5 @@
+import type { components } from './api/backend-schema';
+
 export interface User {
   id?: number;
   username: string;
@@ -91,10 +93,8 @@ export interface GenerateExerciseRequest {
   type: ExerciseType;
 }
 
-export interface GenerateVocabularyRequest {
-  level: ExerciseLevel;
-  topic: ExerciseTopic;
-}
+export type GenerateVocabularyRequest =
+  components['schemas']['VocabularyRequestDto'];
 
 export interface VocabularySentenceDto {
   vocabularyWord?: string;

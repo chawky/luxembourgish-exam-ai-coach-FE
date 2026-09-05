@@ -812,10 +812,9 @@ export interface components {
         StripeSessionURLDto: {
             stripeSessionUrl?: string;
         };
-        ExerciseRequestDto: {
+        VocabularyRequestDto: {
             level: string;
             topic: string;
-            type: string;
         };
         ApiResponseVocabularyDto: {
             success?: boolean;
@@ -844,6 +843,11 @@ export interface components {
             score?: number;
             feedback?: string;
             corrections?: string[];
+        };
+        ExerciseRequestDto: {
+            level: string;
+            topic: string;
+            type: string;
         };
         ApiResponseSpeakingDto: {
             success?: boolean;
@@ -1667,7 +1671,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ExerciseRequestDto"];
+                "application/json": components["schemas"]["VocabularyRequestDto"];
             };
         };
         responses: {

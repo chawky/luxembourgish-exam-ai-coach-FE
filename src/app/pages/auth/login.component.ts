@@ -29,11 +29,6 @@ import { AuthLayoutComponent } from './auth-layout.component';
         Sign in to continue preparing for your Sproochentest.
       </p>
 
-      <div class="demo-hint">
-        <strong>Demo account</strong>
-        <span>demo&#64;sproochen.lu &middot; demo1234</span>
-      </div>
-
       <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
         <div class="field">
           <label for="email">Email</label>
@@ -105,18 +100,6 @@ import { AuthLayoutComponent } from './auth-layout.component';
       .subtitle {
         margin: 8px 0 20px;
       }
-      .demo-hint {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        background: var(--blue-50);
-        border: 1px solid var(--blue-100);
-        border-radius: 10px;
-        padding: 12px 14px;
-        margin-bottom: 22px;
-        font-size: 13.5px;
-        color: var(--blue-700);
-      }
       .form-error {
         background: var(--red-50);
         color: var(--red);
@@ -145,8 +128,8 @@ export class LoginComponent {
   errorMsg = signal('');
 
   form = this.fb.nonNullable.group({
-    email: ['demo@sproochen.lu', [Validators.required, Validators.email]],
-    password: ['demo1234', [Validators.required]],
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required]],
   });
 
   invalid(name: string): boolean {

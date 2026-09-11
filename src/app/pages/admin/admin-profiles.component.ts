@@ -108,6 +108,14 @@ type ConfigKind = 'level' | 'topic' | 'type';
           <div class="panel-head">
             <h2>Users</h2>
             <span class="badge">{{ usersPage().totalItems || users().length }}</span>
+            <button
+              class="btn btn-outline"
+              type="button"
+              [disabled]="usersLoading()"
+              (click)="loadUsers(true)"
+            >
+              Refresh users
+            </button>
           </div>
 
           @if (usersLoading()) {
@@ -673,7 +681,11 @@ export class AdminProfilesComponent implements OnInit {
     this.activeSection.set(section);
   }
 
-  loadUsers(): void {
+  loadUsers(forceRefresh = false): void {
+    if (forceRefresh) {
+      this.admin.clearUserCache();
+    }
+
     this.usersLoading.set(true);
     this.errorMsg.set('');
 

@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, map, throwError } from 'rxjs';
+import { Observable, catchError, map, of, shareReplay, tap, throwError } from 'rxjs';
 import { apiUrl } from '../api/api-url';
 import type { components } from '../api/backend-schema';
 import { ApiResponse } from '../models';
@@ -59,31 +59,58 @@ export interface AuditLogFilters {
 export class AdminService {
   private readonly url = apiUrl('/admin');
   private readonly http = inject(HttpClient);
+  private readonly usersCache = new Map<string, Observable<PageResponse<AdminUser>>>();
+  private readonly userDetailCache = new Map<number, Observable<AdminUserDetail>>();
+  private readonly userProgressCache = new Map<string, Observable<PageResponse<AdminUserProgress>>>();
+  private readonly userAiUsageCache = new Map<string, Observable<PageResponse<AdminAiUsage>>>();
 
   getUsers(filters: AdminUserFilters = {}): Observable<PageResponse<AdminUser>> {
-    return this.http
+    const cacheKey = this.cacheKey({ ...filters });
+    const cachedUsers = this.usersCache.get(cacheKey);
+
+    if (cachedUsers) {
+      return cachedUsers;
+    }
+
+    const request = this.http
       .get<ApiResponse<PageResponse<AdminUser> | null>>(`${this.url}/users`, {
         params: this.toParams({ ...filters }),
       })
       .pipe(
         map((response) => this.unwrapPage(response, 'Could not load users.')),
-        catchError((error) =>
-          throwError(() => this.toApiError(error, 'Could not load users.')),
-        ),
+        catchError((error) => {
+          this.usersCache.delete(cacheKey);
+          return throwError(() => this.toApiError(error, 'Could not load users.'));
+        }),
+        shareReplay({ bufferSize: 1, refCount: false }),
       );
+
+    this.usersCache.set(cacheKey, request);
+    return request;
   }
 
   getUser(userId: number): Observable<AdminUserDetail> {
-    return this.http
+    const cachedUser = this.userDetailCache.get(userId);
+
+    if (cachedUser) {
+      return cachedUser;
+    }
+
+    const request = this.http
       .get<ApiResponse<AdminUserDetail | null>>(`${this.url}/users/${userId}`)
       .pipe(
         map((response) => this.unwrapData(response, 'Could not load user profile.')),
-        catchError((error) =>
-          throwError(() =>
+        catchError((error) => {
+          this.userDetailCache.delete(userId);
+          return throwError(() =>
             this.toApiError(error, 'Could not load user profile.'),
-          ),
-        ),
+          );
+        }),
+        shareReplay({ bufferSize: 1, refCount: false }),
       );
+
+    this.userDetailCache.set(userId, request);
+    return request;
   }
 
   updateUserStatus(
@@ -98,6 +125,10 @@ export class AdminService {
       )
       .pipe(
         map((response) => this.unwrapData(response, 'Could not update status.')),
+        tap((detail) => {
+          this.usersCache.clear();
+          this.userDetailCache.set(userId, of(detail));
+        }),
         catchError((error) =>
           throwError(() =>
             this.toApiError(error, 'Could not update status.'),
@@ -111,10 +142,18 @@ export class AdminService {
       .delete<ApiResponse<unknown>>(`${this.url}/users/${userId}`)
       .pipe(
         map((response) => this.unwrapVoid(response, 'Could not delete account.')),
+        tap(() => this.clearUserCaches(userId)),
         catchError((error) =>
           throwError(() => this.toApiError(error, 'Could not delete account.')),
         ),
       );
+  }
+
+  clearUserCache(): void {
+    this.usersCache.clear();
+    this.userDetailCache.clear();
+    this.userProgressCache.clear();
+    this.userAiUsageCache.clear();
   }
 
   getUserProgress(
@@ -122,7 +161,14 @@ export class AdminService {
     page = 0,
     size = 8,
   ): Observable<PageResponse<AdminUserProgress>> {
-    return this.http
+    const cacheKey = this.cacheKey({ userId, page, size });
+    const cachedProgress = this.userProgressCache.get(cacheKey);
+
+    if (cachedProgress) {
+      return cachedProgress;
+    }
+
+    const request = this.http
       .get<ApiResponse<PageResponse<AdminUserProgress> | null>>(
         `${this.url}/users/${userId}/progress`,
         { params: this.toParams({ page, size }) },
@@ -131,12 +177,17 @@ export class AdminService {
         map((response) =>
           this.unwrapPage(response, 'Could not load user progress.'),
         ),
-        catchError((error) =>
-          throwError(() =>
+        catchError((error) => {
+          this.userProgressCache.delete(cacheKey);
+          return throwError(() =>
             this.toApiError(error, 'Could not load user progress.'),
-          ),
-        ),
+          );
+        }),
+        shareReplay({ bufferSize: 1, refCount: false }),
       );
+
+    this.userProgressCache.set(cacheKey, request);
+    return request;
   }
 
   getUserAiUsage(
@@ -144,7 +195,14 @@ export class AdminService {
     page = 0,
     size = 8,
   ): Observable<PageResponse<AdminAiUsage>> {
-    return this.http
+    const cacheKey = this.cacheKey({ userId, page, size });
+    const cachedAiUsage = this.userAiUsageCache.get(cacheKey);
+
+    if (cachedAiUsage) {
+      return cachedAiUsage;
+    }
+
+    const request = this.http
       .get<ApiResponse<PageResponse<AdminAiUsage> | null>>(
         `${this.url}/users/${userId}/ai-usage`,
         { params: this.toParams({ page, size }) },
@@ -153,12 +211,17 @@ export class AdminService {
         map((response) =>
           this.unwrapPage(response, 'Could not load AI usage.'),
         ),
-        catchError((error) =>
-          throwError(() =>
+        catchError((error) => {
+          this.userAiUsageCache.delete(cacheKey);
+          return throwError(() =>
             this.toApiError(error, 'Could not load AI usage.'),
-          ),
-        ),
+          );
+        }),
+        shareReplay({ bufferSize: 1, refCount: false }),
       );
+
+    this.userAiUsageCache.set(cacheKey, request);
+    return request;
   }
 
   getPrompts(): Observable<AdminPrompt[]> {
@@ -381,6 +444,27 @@ export class AdminService {
     });
 
     return params;
+  }
+
+  private cacheKey(values: Record<string, unknown>): string {
+    return Object.entries(values)
+      .filter(([, value]) => value !== undefined && value !== '')
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, value]) => `${key}:${String(value)}`)
+      .join('|');
+  }
+
+  private clearUserCaches(userId: number): void {
+    this.usersCache.clear();
+    this.userDetailCache.delete(userId);
+    this.deleteMatchingKeys(this.userProgressCache, `userId:${userId}`);
+    this.deleteMatchingKeys(this.userAiUsageCache, `userId:${userId}`);
+  }
+
+  private deleteMatchingKeys<T>(cache: Map<string, T>, value: string): void {
+    [...cache.keys()]
+      .filter((key) => key.includes(value))
+      .forEach((key) => cache.delete(key));
   }
 
   private toApiError(error: unknown, fallbackMessage: string): Error {

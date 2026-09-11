@@ -63,7 +63,7 @@ import { IconComponent } from '../../components/icon.component';
             <button
               type="button"
               class="password-toggle"
-              [attr.aria-label]="passwordVisible() ? 'Hide password' : 'Show password'"
+              [attr.aria-label]="passwordVisible() ? 'Hide secret' : 'Show secret'"
               (click)="passwordVisible.set(!passwordVisible())"
             >
               <app-icon [name]="passwordVisible() ? 'eye-off' : 'eye'" [size]="18"></app-icon>

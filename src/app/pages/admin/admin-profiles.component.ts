@@ -132,9 +132,10 @@ type ConfigKind = 'level' | 'topic' | 'type';
                   <span
                     class="badge"
                     [class.badge-red]="user.adminDisabled"
-                    [class.badge-green]="!user.adminDisabled"
+                    [class.badge-amber]="!user.adminDisabled && user.emailVerified === false"
+                    [class.badge-green]="!user.adminDisabled && user.emailVerified !== false"
                   >
-                    {{ user.adminDisabled ? 'Disabled' : 'Active' }}
+                    {{ accountStatusLabel(user) }}
                   </span>
                 </button>
               }
@@ -173,9 +174,10 @@ type ConfigKind = 'level' | 'topic' | 'type';
                   <span
                     class="badge"
                     [class.badge-red]="profile.user?.adminDisabled"
-                    [class.badge-green]="!profile.user?.adminDisabled"
+                    [class.badge-amber]="!profile.user?.adminDisabled && profile.user?.emailVerified === false"
+                    [class.badge-green]="!profile.user?.adminDisabled && profile.user?.emailVerified !== false"
                   >
-                    {{ profile.user?.adminDisabled ? 'Disabled' : 'Active' }}
+                    {{ accountStatusLabel(profile.user) }}
                   </span>
                 </div>
 
@@ -220,7 +222,7 @@ type ConfigKind = 'level' | 'topic' | 'type';
                   <div>
                     <strong>Delete account</strong>
                     <p class="text-muted">
-                      Anonymize this learner and free their email for a new account.
+                      Permanently remove this learner and their linked app records.
                     </p>
                   </div>
                   <button
@@ -591,13 +593,16 @@ type ConfigKind = 'level' | 'topic' | 'type';
             @for (log of auditLogs(); track log.id) {
               <div class="table-row">
                 <span>
-                  <strong>{{ formatLabel(log.action || 'Admin action') }}</strong>
+                  <strong>{{ auditActionLabel(log) }}</strong>
                   <small class="text-muted">
-                    {{ log.targetType || 'Target' }} {{ log.targetId || log.targetUserId || '' }}
+                    {{ auditTargetLabel(log) }}
                   </small>
+                  @if (auditChangeSummary(log)) {
+                    <small class="text-muted">{{ auditChangeSummary(log) }}</small>
+                  }
                 </span>
                 <span class="usage-meta">
-                  <strong>User {{ log.actorUserId || 'unknown' }}</strong>
+                  <strong>{{ auditActorLabel(log) }}</strong>
                   <small class="text-muted">{{ dateTime(log.createdAt) }}</small>
                 </span>
               </div>
@@ -1092,6 +1097,32 @@ export class AdminProfilesComponent implements OnInit {
     return formatPracticeLabel(value);
   }
 
+  auditActionLabel(log: AdminAuditLog): string {
+    return log.actionLabel || this.formatLabel(log.action || 'Admin action');
+  }
+
+  auditTargetLabel(log: AdminAuditLog): string {
+    if (log.targetLabel) {
+      return log.targetLabel;
+    }
+
+    const targetType = log.targetType ? this.formatLabel(log.targetType) : 'Target';
+    const targetId = log.targetId || log.targetUserId;
+    return targetId ? `${targetType} ${targetId}` : targetType;
+  }
+
+  auditActorLabel(log: AdminAuditLog): string {
+    if (log.actorLabel) {
+      return log.actorLabel;
+    }
+
+    return log.actorUserId ? `User ${log.actorUserId}` : 'System';
+  }
+
+  auditChangeSummary(log: AdminAuditLog): string {
+    return log.changeSummary || log.reason || '';
+  }
+
   cost(value: number | undefined): string {
     return value === undefined ? '$0.00' : `$${value.toFixed(4)}`;
   }
@@ -1128,6 +1159,18 @@ export class AdminProfilesComponent implements OnInit {
 
     const level = this.exerciseConfig().levels?.find((item) => item.code === code);
     return level?.label || 'Selected level';
+  }
+
+  accountStatusLabel(user: AdminUser | undefined): string {
+    if (user?.adminDisabled) {
+      return 'Disabled';
+    }
+
+    if (user?.emailVerified === false) {
+      return 'Pending verification';
+    }
+
+    return 'Active';
   }
 
   isEditingConfig(kind: ConfigKind, code: string | undefined): boolean {
@@ -1273,7 +1316,7 @@ export class AdminProfilesComponent implements OnInit {
 
   private confirmDelete(user: AdminUser | undefined): boolean {
     return window.confirm(
-      `Delete ${this.displayName(user)}? This permanently removes personal account details and cannot be undone.`,
+      `Delete ${this.displayName(user)}? This permanently removes the account, progress, usage, OTP, audit links, and cannot be undone.`,
     );
   }
 

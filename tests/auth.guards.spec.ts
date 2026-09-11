@@ -106,6 +106,7 @@ test('admin confirms disabling and deleting an account', async ({ page }) => {
   const learner = testUser({
     id: 77,
     email: `delete.target.${Date.now()}@example.com`,
+    emailVerified: false,
   });
   const jwt = 'admin-delete-jwt';
   let statusPayload: Record<string, unknown> | undefined;
@@ -243,6 +244,7 @@ test('admin confirms disabling and deleting an account', async ({ page }) => {
   await expect(
     page.locator('.user-row').filter({ hasText: learner.email }),
   ).toBeVisible();
+  await expect(page.getByText('Pending verification')).toHaveCount(2);
   await expect(page.getByRole('button', { name: 'Disable account' })).toBeVisible();
 
   page.once('dialog', async (dialog) => {
@@ -260,6 +262,7 @@ test('admin confirms disabling and deleting an account', async ({ page }) => {
 
   page.once('dialog', async (dialog) => {
     expect(dialog.message()).toContain('Delete');
+    expect(dialog.message()).toContain('permanently removes the account');
     await dialog.accept();
   });
   await page.getByRole('button', { name: 'Delete account' }).click();

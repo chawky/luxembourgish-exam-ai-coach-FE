@@ -542,7 +542,7 @@ export interface paths {
         get: operations["getUser"];
         put?: never;
         post?: never;
-        delete: operations["anonymizeUser"];
+        delete: operations["deleteUser"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1166,6 +1166,10 @@ export interface components {
             reason?: string;
             /** Format: date-time */
             createdAt?: string;
+            actorLabel?: string;
+            targetLabel?: string;
+            actionLabel?: string;
+            changeSummary?: string;
         };
         ApiResponsePageResponseDtoAdminAuditLogDto: {
             success?: boolean;
@@ -2156,7 +2160,7 @@ export interface operations {
             };
         };
     };
-    anonymizeUser: {
+    deleteUser: {
         parameters: {
             query?: never;
             header?: never;

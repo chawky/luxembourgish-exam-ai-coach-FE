@@ -217,7 +217,7 @@ function matchPasswords(group: AbstractControl): ValidationErrors | null {
             <button
               type="button"
               class="password-toggle"
-              [attr.aria-label]="passwordVisible() ? 'Hide password' : 'Show password'"
+              [attr.aria-label]="passwordVisible() ? 'Hide secret' : 'Show secret'"
               (click)="passwordVisible.set(!passwordVisible())"
             >
               <app-icon [name]="passwordVisible() ? 'eye-off' : 'eye'" [size]="18"></app-icon>
@@ -243,7 +243,7 @@ function matchPasswords(group: AbstractControl): ValidationErrors | null {
             <button
               type="button"
               class="password-toggle"
-              [attr.aria-label]="confirmPasswordVisible() ? 'Hide confirm password' : 'Show confirm password'"
+              [attr.aria-label]="confirmPasswordVisible() ? 'Hide confirmation secret' : 'Show confirmation secret'"
               (click)="confirmPasswordVisible.set(!confirmPasswordVisible())"
             >
               <app-icon [name]="confirmPasswordVisible() ? 'eye-off' : 'eye'" [size]="18"></app-icon>

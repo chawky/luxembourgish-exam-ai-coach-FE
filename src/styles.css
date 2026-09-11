@@ -244,6 +244,12 @@ button {
 .input.error {
   border-color: var(--red);
 }
+input[type='password']::-ms-reveal,
+input[type='password']::-ms-clear {
+  display: none;
+  width: 0;
+  height: 0;
+}
 .field-error {
   font-size: 13px;
   color: var(--red);

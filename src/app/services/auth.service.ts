@@ -284,14 +284,24 @@ export class AuthService {
   }
 
   private getApiErrorMessageFromString(errorBody: string): string | null {
-    if (!errorBody) {
+    const trimmedBody = errorBody.trim();
+
+    if (!trimmedBody) {
+      return null;
+    }
+
+    const normalizedBody = trimmedBody.toLowerCase();
+    if (
+      normalizedBody.startsWith('<!doctype html') ||
+      normalizedBody.startsWith('<html')
+    ) {
       return null;
     }
 
     try {
-      return this.getApiErrorMessage(JSON.parse(errorBody));
+      return this.getApiErrorMessage(JSON.parse(trimmedBody));
     } catch {
-      return errorBody;
+      return trimmedBody;
     }
   }
 }

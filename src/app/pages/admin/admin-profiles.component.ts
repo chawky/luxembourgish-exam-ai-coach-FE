@@ -209,10 +209,27 @@ type ConfigKind = 'level' | 'topic' | 'type';
                     [class.btn-accent]="!profile.user?.adminDisabled"
                     [class.btn-outline]="profile.user?.adminDisabled"
                     type="button"
-                    [disabled]="statusLoading()"
+                    [disabled]="statusLoading() || deleteLoading()"
                     (click)="toggleStatus(profile)"
                   >
                     {{ profile.user?.adminDisabled ? 'Enable account' : 'Disable account' }}
+                  </button>
+                </div>
+
+                <div class="danger-zone">
+                  <div>
+                    <strong>Delete account</strong>
+                    <p class="text-muted">
+                      Anonymize this learner and free their email for a new account.
+                    </p>
+                  </div>
+                  <button
+                    class="btn btn-danger"
+                    type="button"
+                    [disabled]="statusLoading() || deleteLoading()"
+                    (click)="deleteAccount(profile)"
+                  >
+                    {{ deleteLoading() ? 'Deleting...' : 'Delete account' }}
                   </button>
                 </div>
               </section>
@@ -605,6 +622,7 @@ export class AdminProfilesComponent implements OnInit {
   usersLoading = signal(false);
   detailLoading = signal(false);
   statusLoading = signal(false);
+  deleteLoading = signal(false);
   promptsLoading = signal(false);
   promptSaving = signal(false);
   configLoading = signal(false);
@@ -720,13 +738,18 @@ export class AdminProfilesComponent implements OnInit {
       return;
     }
 
+    const nextDisabled = !profile.user?.adminDisabled;
+    if (!this.confirmStatusChange(profile.user, nextDisabled)) {
+      return;
+    }
+
     this.statusLoading.set(true);
     this.errorMsg.set('');
 
     this.admin
       .updateUserStatus(
         userId,
-        !profile.user?.adminDisabled,
+        nextDisabled,
         this.statusReason,
       )
       .subscribe({
@@ -741,6 +764,34 @@ export class AdminProfilesComponent implements OnInit {
         },
         complete: () => this.statusLoading.set(false),
       });
+  }
+
+  deleteAccount(profile: AdminUserDetail): void {
+    const userId = profile.user?.id;
+
+    if (userId === undefined || !this.confirmDelete(profile.user)) {
+      return;
+    }
+
+    this.deleteLoading.set(true);
+    this.errorMsg.set('');
+
+    this.admin.deleteUser(userId).subscribe({
+      next: () => {
+        this.removeUserRow(userId);
+        this.selectedUserId.set(null);
+        this.detail.set(null);
+        this.progressPage.set({});
+        this.aiUsagePage.set({});
+        this.statusReason = '';
+        this.loadAuditLogs();
+      },
+      error: (error) => {
+        this.errorMsg.set(this.errorMessage(error));
+        this.deleteLoading.set(false);
+      },
+      complete: () => this.deleteLoading.set(false),
+    });
   }
 
   loadPrompts(): void {
@@ -1197,6 +1248,33 @@ export class AdminProfilesComponent implements OnInit {
       ...page,
       items: (page.items ?? []).map((item) => (item.id === user.id ? user : item)),
     }));
+  }
+
+  private removeUserRow(userId: number): void {
+    this.usersPage.update((page) => ({
+      ...page,
+      items: (page.items ?? []).filter((item) => item.id !== userId),
+      totalItems:
+        page.totalItems === undefined ? undefined : Math.max(page.totalItems - 1, 0),
+    }));
+  }
+
+  private confirmStatusChange(
+    user: AdminUser | undefined,
+    nextDisabled: boolean,
+  ): boolean {
+    const action = nextDisabled ? 'Disable' : 'Enable';
+    const consequence = nextDisabled
+      ? 'They will not be able to sign in until the account is enabled again.'
+      : 'They will be able to sign in again.';
+
+    return window.confirm(`${action} ${this.displayName(user)}? ${consequence}`);
+  }
+
+  private confirmDelete(user: AdminUser | undefined): boolean {
+    return window.confirm(
+      `Delete ${this.displayName(user)}? This permanently removes personal account details and cannot be undone.`,
+    );
   }
 
   private upsertPrompt(prompt: AdminPrompt): void {

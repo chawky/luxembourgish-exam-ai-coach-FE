@@ -20,7 +20,9 @@ type IconName =
   | 'sparkles'
   | 'clock'
   | 'pause'
-  | 'info';
+  | 'info'
+  | 'eye'
+  | 'eye-off';
 
 const PATHS: Record<IconName, string> = {
   mic: 'M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM5 10v1a7 7 0 0 0 14 0v-1M12 18v4M8 22h8',
@@ -42,6 +44,8 @@ const PATHS: Record<IconName, string> = {
   clock: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2',
   pause: 'M8 5v14M16 5v14',
   info: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-4M12 8h.01',
+  eye: 'M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
+  'eye-off': 'M3 3l18 18M10.6 10.6A3 3 0 0 0 13.4 13.4M9.9 4.2A10.6 10.6 0 0 1 12 4c6.5 0 10 8 10 8a17.4 17.4 0 0 1-4 5.1M6.1 6.1C3.5 7.8 2 12 2 12s3.5 8 10 8a10.8 10.8 0 0 0 5.9-1.8',
 };
 
 @Component({

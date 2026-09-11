@@ -64,6 +64,10 @@ import { AuthLayoutComponent } from './auth-layout.component';
           <div class="form-success" role="status">{{ statusMsg() }}</div>
         }
 
+        @if (noticeMsg()) {
+          <div class="form-notice" role="alert">{{ noticeMsg() }}</div>
+        }
+
         @if (errorMsg()) {
           <div class="form-error" role="alert">{{ errorMsg() }}</div>
         }
@@ -117,6 +121,7 @@ import { AuthLayoutComponent } from './auth-layout.component';
         font-weight: 700;
       }
       .form-error,
+      .form-notice,
       .form-success {
         border-radius: 8px;
         padding: 10px 12px;
@@ -126,6 +131,10 @@ import { AuthLayoutComponent } from './auth-layout.component';
       .form-error {
         background: var(--red-50);
         color: var(--red);
+      }
+      .form-notice {
+        background: #fff7ed;
+        color: #9a3412;
       }
       .form-success {
         background: #143525;
@@ -154,6 +163,7 @@ export class OtpComponent implements OnInit {
   sending = signal(false);
   verifying = signal(false);
   statusMsg = signal('');
+  noticeMsg = signal('');
   errorMsg = signal('');
 
   form = this.fb.nonNullable.group({
@@ -171,6 +181,13 @@ export class OtpComponent implements OnInit {
 
   ngOnInit(): void {
     const email = this.route.snapshot.queryParamMap.get('email');
+    const notice =
+      this.router.getCurrentNavigation()?.extras.state?.['notice'] ??
+      window.history.state?.['notice'];
+
+    if (typeof notice === 'string' && notice) {
+      this.noticeMsg.set(notice);
+    }
 
     if (email) {
       this.form.patchValue({ email });

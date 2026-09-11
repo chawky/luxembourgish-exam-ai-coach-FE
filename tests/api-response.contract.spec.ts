@@ -32,23 +32,38 @@ test('failed login envelope shows API message and stores no token', async ({ pag
   expectNoRouteErrors(loginCalls);
 });
 
-test('HTTP error envelope shows backend message', async ({ page }) => {
+test('unverified login redirects to OTP with typed email', async ({ page }) => {
   const user = testUser();
 
   const loginCalls = await routeApi(page, '**/api/users/login', {
     method: 'POST',
-    status: 401,
-    response: apiFailure('Account is not verified.'),
+    status: 403,
+    response: apiFailure('Email not verified. Please verify your email.'),
+  });
+  const sendOtpCalls = await routeApi(page, '**/api/users/sendOtp', {
+    method: 'POST',
+    response: apiSuccess(null, 'Verification code sent'),
   });
 
   await page.goto('/login');
   await page.getByLabel('Email').fill(user.email);
   await page.getByLabel('Password').fill(user.password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
 
-  await expect(page.getByRole('alert')).toHaveText('Account is not verified.');
+  const otpNavigation = page.waitForURL(
+    (url) =>
+      url.pathname === '/otp' && url.searchParams.get('email') === user.email,
+  );
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await otpNavigation;
+
+  await expect(page.getByRole('alert')).toHaveText(
+    'Please verify your email. Use Resend code if you need a new code.',
+  );
+  await expect(page.getByRole('status')).toHaveText('Verification code sent');
+  await expect(page.getByLabel('Email')).toHaveValue(user.email);
   await expectStoredToken(page, null);
   expectNoRouteErrors(loginCalls);
+  expectNoRouteErrors(sendOtpCalls);
 });
 
 test('raw text HTTP error is surfaced to the login form', async ({ page }) => {
@@ -68,6 +83,26 @@ test('raw text HTTP error is surfaced to the login form', async ({ page }) => {
   await page.getByRole('button', { name: 'Sign in' }).click();
 
   await expect(page.getByRole('alert')).toHaveText('Backend unavailable');
+  await expectStoredToken(page, null);
+});
+
+test('HTML login error falls back to a learner-safe message', async ({ page }) => {
+  const user = testUser();
+
+  await page.route('**/api/users/login', async (route) => {
+    await route.fulfill({
+      status: 404,
+      contentType: 'text/html',
+      body: '<!DOCTYPE html><html><body><pre>Cannot POST /api/users/login</pre></body></html>',
+    });
+  });
+
+  await page.goto('/login');
+  await page.getByLabel('Email').fill(user.email);
+  await page.getByLabel('Password').fill(user.password);
+  await page.getByRole('button', { name: 'Sign in' }).click();
+
+  await expect(page.getByRole('alert')).toHaveText('Could not sign in.');
   await expectStoredToken(page, null);
 });
 

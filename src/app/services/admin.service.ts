@@ -106,6 +106,17 @@ export class AdminService {
       );
   }
 
+  deleteUser(userId: number): Observable<void> {
+    return this.http
+      .delete<ApiResponse<unknown>>(`${this.url}/users/${userId}`)
+      .pipe(
+        map((response) => this.unwrapVoid(response, 'Could not delete account.')),
+        catchError((error) =>
+          throwError(() => this.toApiError(error, 'Could not delete account.')),
+        ),
+      );
+  }
+
   getUserProgress(
     userId: number,
     page = 0,

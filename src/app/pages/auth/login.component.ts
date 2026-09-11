@@ -9,6 +9,7 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { LogoComponent } from '../../components/logo.component';
 import { AuthLayoutComponent } from './auth-layout.component';
+import { IconComponent } from '../../components/icon.component';
 
 @Component({
   selector: 'app-login',
@@ -19,6 +20,7 @@ import { AuthLayoutComponent } from './auth-layout.component';
     RouterLink,
     LogoComponent,
     AuthLayoutComponent,
+    IconComponent,
   ],
   template: `
     <app-auth-layout>
@@ -48,15 +50,25 @@ import { AuthLayoutComponent } from './auth-layout.component';
 
         <div class="field">
           <label for="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            class="input"
-            formControlName="password"
-            [class.error]="invalid('password')"
-            autocomplete="current-password"
-            placeholder="Your password"
-          />
+          <div class="password-control">
+            <input
+              id="password"
+              [type]="passwordVisible() ? 'text' : 'password'"
+              class="input password-input"
+              formControlName="password"
+              [class.error]="invalid('password')"
+              autocomplete="current-password"
+              placeholder="Your password"
+            />
+            <button
+              type="button"
+              class="password-toggle"
+              [attr.aria-label]="passwordVisible() ? 'Hide password' : 'Show password'"
+              (click)="passwordVisible.set(!passwordVisible())"
+            >
+              <app-icon [name]="passwordVisible() ? 'eye-off' : 'eye'" [size]="18"></app-icon>
+            </button>
+          </div>
           @if (invalid('password')) {
             <span class="field-error">Password is required.</span>
           }
@@ -108,6 +120,29 @@ import { AuthLayoutComponent } from './auth-layout.component';
         font-size: 14px;
         margin-bottom: 16px;
       }
+      .password-control {
+        position: relative;
+      }
+      .password-input {
+        padding-right: 46px;
+      }
+      .password-toggle {
+        position: absolute;
+        top: 50%;
+        right: 12px;
+        transform: translateY(-50%);
+        border: 0;
+        background: transparent;
+        color: var(--slate-500);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px;
+      }
+      .password-toggle:hover {
+        color: var(--blue-700);
+      }
       .switch {
         margin-top: 20px;
         font-size: 14.5px;
@@ -126,6 +161,7 @@ export class LoginComponent {
 
   loading = signal(false);
   errorMsg = signal('');
+  passwordVisible = signal(false);
 
   form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -152,6 +188,17 @@ export class LoginComponent {
         this.router.navigate(['/app/dashboard']);
       },
       error: (error) => {
+        if (this.isEmailVerificationError(error)) {
+          this.router.navigate(['/otp'], {
+            queryParams: { email },
+            state: {
+              notice:
+                'Please verify your email. Use Resend code if you need a new code.',
+            },
+          });
+          return;
+        }
+
         this.errorMsg.set(this.errorMessage(error));
         this.loading.set(false);
       },
@@ -165,5 +212,22 @@ export class LoginComponent {
     return error instanceof Error && error.message
       ? error.message
       : 'Something went wrong.';
+  }
+
+  private isEmailVerificationError(error: unknown): boolean {
+    if (!(error instanceof Error) || !error.message) {
+      return false;
+    }
+
+    const message = error.message.toLowerCase();
+    return (
+      message.includes('verify your email') ||
+      message.includes('email is not verified') ||
+      message.includes('email not verified') ||
+      message.includes('account is not verified') ||
+      message.includes('account not verified') ||
+      message.includes('unverified account') ||
+      message.includes('unverified email')
+    );
   }
 }

@@ -542,7 +542,7 @@ export interface paths {
         get: operations["getUser"];
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["anonymizeUser"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2152,6 +2152,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseAdminUserDetailDto"];
+                };
+            };
+        };
+    };
+    anonymizeUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
                 };
             };
         };

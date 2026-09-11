@@ -17,6 +17,7 @@ import { AuthService } from '../../services/auth.service';
 import { LocationService } from '../../services/location.service';
 import { LogoComponent } from '../../components/logo.component';
 import { AuthLayoutComponent } from './auth-layout.component';
+import { IconComponent } from '../../components/icon.component';
 
 function matchPasswords(group: AbstractControl): ValidationErrors | null {
   const password = group.get('password')?.value;
@@ -33,6 +34,7 @@ function matchPasswords(group: AbstractControl): ValidationErrors | null {
     RouterLink,
     LogoComponent,
     AuthLayoutComponent,
+    IconComponent,
   ],
   template: `
     <app-auth-layout>
@@ -202,15 +204,25 @@ function matchPasswords(group: AbstractControl): ValidationErrors | null {
 
         <div class="field">
           <label for="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            class="input"
-            formControlName="password"
-            [class.error]="invalid('password')"
-            autocomplete="new-password"
-            placeholder="At least 8 characters"
-          />
+          <div class="password-control">
+            <input
+              id="password"
+              [type]="passwordVisible() ? 'text' : 'password'"
+              class="input password-input"
+              formControlName="password"
+              [class.error]="invalid('password')"
+              autocomplete="new-password"
+              placeholder="At least 8 characters"
+            />
+            <button
+              type="button"
+              class="password-toggle"
+              [attr.aria-label]="passwordVisible() ? 'Hide password' : 'Show password'"
+              (click)="passwordVisible.set(!passwordVisible())"
+            >
+              <app-icon [name]="passwordVisible() ? 'eye-off' : 'eye'" [size]="18"></app-icon>
+            </button>
+          </div>
           @if (invalid('password')) {
             <span class="field-error">Use at least 8 characters.</span>
           }
@@ -218,15 +230,25 @@ function matchPasswords(group: AbstractControl): ValidationErrors | null {
 
         <div class="field">
           <label for="confirm">Confirm password</label>
-          <input
-            id="confirm"
-            type="password"
-            class="input"
-            formControlName="confirm"
-            [class.error]="form.hasError('mismatch') && form.get('confirm')?.touched"
-            autocomplete="new-password"
-            placeholder="Re-enter your password"
-          />
+          <div class="password-control">
+            <input
+              id="confirm"
+              [type]="confirmPasswordVisible() ? 'text' : 'password'"
+              class="input password-input"
+              formControlName="confirm"
+              [class.error]="form.hasError('mismatch') && form.get('confirm')?.touched"
+              autocomplete="new-password"
+              placeholder="Re-enter your password"
+            />
+            <button
+              type="button"
+              class="password-toggle"
+              [attr.aria-label]="confirmPasswordVisible() ? 'Hide confirm password' : 'Show confirm password'"
+              (click)="confirmPasswordVisible.set(!confirmPasswordVisible())"
+            >
+              <app-icon [name]="confirmPasswordVisible() ? 'eye-off' : 'eye'" [size]="18"></app-icon>
+            </button>
+          </div>
           @if (form.hasError('mismatch') && form.get('confirm')?.touched) {
             <span class="field-error">Passwords do not match.</span>
           }
@@ -304,6 +326,29 @@ function matchPasswords(group: AbstractControl): ValidationErrors | null {
         font-size: 14px;
         margin-bottom: 16px;
       }
+      .password-control {
+        position: relative;
+      }
+      .password-input {
+        padding-right: 46px;
+      }
+      .password-toggle {
+        position: absolute;
+        top: 50%;
+        right: 12px;
+        transform: translateY(-50%);
+        border: 0;
+        background: transparent;
+        color: var(--slate-500);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px;
+      }
+      .password-toggle:hover {
+        color: var(--blue-700);
+      }
       .switch {
         margin-top: 20px;
         font-size: 14.5px;
@@ -337,6 +382,8 @@ export class SignupComponent implements OnDestroy {
   locationLoading = signal(false);
   locationError = signal('');
   locationSuggestions = signal<LocationSuggestion[]>([]);
+  passwordVisible = signal(false);
+  confirmPasswordVisible = signal(false);
 
   form = this.fb.nonNullable.group(
     {

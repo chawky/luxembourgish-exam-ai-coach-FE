@@ -199,10 +199,38 @@
 
 .status-actions {
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .status-actions .input {
   flex: 1;
+  min-width: 220px;
+}
+
+.danger-zone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 14px;
+  border: 1px solid var(--red-50);
+  border-radius: 12px;
+  padding: 14px;
+  background: rgba(214, 40, 40, 0.08);
+}
+
+.danger-zone p {
+  margin: 4px 0 0;
+}
+
+.btn-danger {
+  background: var(--red);
+  color: var(--white);
+  flex-shrink: 0;
+}
+
+.btn-danger:hover {
+  background: #b91f1f;
 }
 
 .usage-meta {

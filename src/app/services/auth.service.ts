@@ -2,10 +2,13 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import {
   catchError,
+  finalize,
   firstValueFrom,
   map,
   MonoTypeOperatorFunction,
+  Observable,
   of,
+  shareReplay,
   tap,
   throwError,
 } from 'rxjs';
@@ -36,6 +39,7 @@ export class AuthService {
   private readonly url = apiUrl('/users');
   private readonly tokenStorageKey = 'sproochen.authToken';
   private readonly https = inject(HttpClient);
+  private currentUserRequest?: Observable<User | null>;
 
   readonly currentUser = signal<User | null>(null);
   readonly isLoggedIn = computed(() => this.currentUser() !== null);
@@ -76,6 +80,7 @@ export class AuthService {
             throw new Error('Login response did not include a token.');
           }
 
+          this.currentUserRequest = undefined;
           this.saveToken(token);
           this.currentUser.set(this.toCurrentUser(user, email));
         }),
@@ -110,13 +115,18 @@ export class AuthService {
   }
 
   logout() {
+    this.currentUserRequest = undefined;
     this.currentUser.set(null);
     this.clearToken();
     return of(null);
   }
 
-  loadCurrentUser() {
-    return this.https
+  loadCurrentUser(forceRefresh = false) {
+    if (!forceRefresh && this.currentUserRequest) {
+      return this.currentUserRequest;
+    }
+
+    this.currentUserRequest = this.https
       .get<ApiResponse<ResponseUserDto | null>>(this.url + '/me')
       .pipe(
         this.requireSuccess('Could not load current user.'),
@@ -125,7 +135,13 @@ export class AuthService {
           this.currentUser.set(user);
           return user;
         }),
+        finalize(() => {
+          this.currentUserRequest = undefined;
+        }),
+        shareReplay({ bufferSize: 1, refCount: false }),
       );
+
+    return this.currentUserRequest;
   }
 
   updateProfile(data: UpdateProfileRequest) {
@@ -158,6 +174,7 @@ export class AuthService {
           }
 
           const user = this.toCurrentUser(updatedUser, request.email);
+          this.currentUserRequest = undefined;
           this.currentUser.set(user);
           return user;
         }),

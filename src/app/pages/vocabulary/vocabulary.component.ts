@@ -280,11 +280,11 @@ export class VocabularyComponent implements OnInit {
       next: (vocabulary) => {
         this.vocabulary.set(vocabulary);
         this.requestContext.set(request);
-        this.loadQuota();
+        this.loadQuota(true);
       },
       error: (error) => {
         this.errorMsg.set(this.errorMessage(error));
-        this.loadQuota();
+        this.loadQuota(true);
         this.loading.set(false);
       },
       complete: () => {
@@ -375,8 +375,8 @@ export class VocabularyComponent implements OnInit {
     });
   }
 
-  private loadQuota(): void {
-    this.aiQuota.getMyQuota().subscribe({
+  private loadQuota(refresh = false): void {
+    this.aiQuota.getMyQuota(refresh).subscribe({
       next: (quota) => this.quota.set(quota),
       error: () => undefined,
     });

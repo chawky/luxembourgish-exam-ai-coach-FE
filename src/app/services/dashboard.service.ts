@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, map, throwError } from 'rxjs';
+import { Observable, catchError, map, shareReplay, throwError } from 'rxjs';
 import { apiUrl } from '../api/api-url';
 import { ApiResponse, ProgressDashboardDto } from '../models';
 
@@ -10,16 +10,37 @@ type ProgressDashboardResponse = ApiResponse<ProgressDashboardDto | null>;
 export class DashboardService {
   private readonly url = apiUrl('/progress/me');
   private readonly http = inject(HttpClient);
+  private readonly progressCacheTtlMs = 10_000;
+  private progressRequest?: Observable<ProgressDashboardDto>;
+  private progressCachedAt = 0;
 
-  getMyProgress(): Observable<ProgressDashboardDto> {
-    return this.http.get<ProgressDashboardResponse>(this.url).pipe(
+  getMyProgress(refresh = false): Observable<ProgressDashboardDto> {
+    if (
+      !refresh &&
+      this.progressRequest &&
+      Date.now() - this.progressCachedAt < this.progressCacheTtlMs
+    ) {
+      return this.progressRequest;
+    }
+
+    this.progressCachedAt = Date.now();
+    this.progressRequest = this.http.get<ProgressDashboardResponse>(this.url).pipe(
       map((response) => this.unwrapDashboard(response)),
-      catchError((error) =>
-        throwError(() =>
+      catchError((error) => {
+        this.clearCache();
+        return throwError(() =>
           this.toApiError(error, 'Could not load dashboard progress.'),
-        ),
-      ),
+        );
+      }),
+      shareReplay({ bufferSize: 1, refCount: false }),
     );
+
+    return this.progressRequest;
+  }
+
+  clearCache(): void {
+    this.progressRequest = undefined;
+    this.progressCachedAt = 0;
   }
 
   private unwrapDashboard(

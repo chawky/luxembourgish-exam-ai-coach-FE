@@ -249,11 +249,11 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  loadQuota(): void {
+  loadQuota(refresh = false): void {
     this.quotaLoading.set(true);
     this.quotaError.set('');
 
-    this.quotaService.getMyQuota().subscribe({
+    this.quotaService.getMyQuota(refresh).subscribe({
       next: (quota) => this.quota.set(quota),
       error: (error) => {
         this.quotaError.set(this.errorMessage(error));

@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, map, throwError } from 'rxjs';
+import { Observable, catchError, map, shareReplay, throwError } from 'rxjs';
 import { apiUrl } from '../api/api-url';
 import type { components } from '../api/backend-schema';
 import { ApiResponse } from '../models';
@@ -17,14 +17,27 @@ type AiQuotaResponse = components['schemas']['ApiResponseAiQuotaStatusDto'];
 export class AiQuotaService {
   private readonly url = apiUrl('/users/me/ai-quota');
   private readonly http = inject(HttpClient);
+  private quotaRequest?: Observable<AiQuotaStatus>;
 
-  getMyQuota(): Observable<AiQuotaStatus> {
-    return this.http.get<AiQuotaResponse>(this.url).pipe(
+  getMyQuota(refresh = false): Observable<AiQuotaStatus> {
+    if (!refresh && this.quotaRequest) {
+      return this.quotaRequest;
+    }
+
+    this.quotaRequest = this.http.get<AiQuotaResponse>(this.url).pipe(
       map((response) => this.unwrapQuota(response)),
-      catchError((error) =>
-        throwError(() => this.toApiError(error, 'Could not load AI quota.')),
-      ),
+      catchError((error) => {
+        this.quotaRequest = undefined;
+        return throwError(() => this.toApiError(error, 'Could not load AI quota.'));
+      }),
+      shareReplay({ bufferSize: 1, refCount: false }),
     );
+
+    return this.quotaRequest;
+  }
+
+  clearCache(): void {
+    this.quotaRequest = undefined;
   }
 
   category(

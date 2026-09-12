@@ -357,11 +357,11 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
     this.imageDescription.generateImage(request).subscribe({
       next: (image) => {
         this.current.set(this.toView(image, request));
-        this.loadQuota();
+        this.loadQuota(true);
       },
       error: (error) => {
         this.errorMsg.set(this.errorMessage(error));
-        this.loadQuota();
+        this.loadQuota(true);
         this.loading.set(false);
       },
       complete: () => {
@@ -497,8 +497,8 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
     });
   }
 
-  private loadQuota(): void {
-    this.aiQuota.getMyQuota().subscribe({
+  private loadQuota(refresh = false): void {
+    this.aiQuota.getMyQuota(refresh).subscribe({
       next: (quota) => this.quota.set(quota),
       error: () => undefined,
     });
@@ -738,11 +738,11 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
         next: (evaluation) => {
           this.evaluation.set(evaluation);
           this.lastRecordingAudio = null;
-          this.loadQuota();
+          this.loadQuota(true);
         },
         error: (error) => {
           this.recordingError.set(this.errorMessage(error));
-          this.loadQuota();
+          this.loadQuota(true);
           this.retryableRecording.set(true);
           this.uploadingRecording.set(false);
         },

@@ -336,11 +336,11 @@ export class ExercisesComponent implements OnInit {
           topic: exercise.topic || request.topic,
           type: exercise.type || request.type,
         });
-        this.loadQuota();
+        this.loadQuota(true);
       },
       error: (error) => {
         this.errorMsg.set(this.errorMessage(error));
-        this.loadQuota();
+        this.loadQuota(true);
         this.loading.set(false);
       },
       complete: () => {
@@ -453,8 +453,8 @@ export class ExercisesComponent implements OnInit {
     });
   }
 
-  private loadQuota(): void {
-    this.aiQuota.getMyQuota().subscribe({
+  private loadQuota(refresh = false): void {
+    this.aiQuota.getMyQuota(refresh).subscribe({
       next: (quota) => this.quota.set(quota),
       error: () => undefined,
     });

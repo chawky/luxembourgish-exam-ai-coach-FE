@@ -387,11 +387,11 @@ export class ListeningComponent implements OnDestroy, OnInit {
     this.listening.generateListeningExercise(request).subscribe({
       next: (exercise) => {
         this.current.set(this.toView(exercise, request));
-        this.loadQuota();
+        this.loadQuota(true);
       },
       error: (error) => {
         this.errorMsg.set(this.errorMessage(error));
-        this.loadQuota();
+        this.loadQuota(true);
         this.loading.set(false);
       },
       complete: () => {
@@ -484,8 +484,8 @@ export class ListeningComponent implements OnDestroy, OnInit {
     });
   }
 
-  private loadQuota(): void {
-    this.aiQuota.getMyQuota().subscribe({
+  private loadQuota(refresh = false): void {
+    this.aiQuota.getMyQuota(refresh).subscribe({
       next: (quota) => this.quota.set(quota),
       error: () => undefined,
     });

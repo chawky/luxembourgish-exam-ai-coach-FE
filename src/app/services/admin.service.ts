@@ -63,6 +63,8 @@ export class AdminService {
   private readonly userDetailCache = new Map<number, Observable<AdminUserDetail>>();
   private readonly userProgressCache = new Map<string, Observable<PageResponse<AdminUserProgress>>>();
   private readonly userAiUsageCache = new Map<string, Observable<PageResponse<AdminAiUsage>>>();
+  private promptsCache?: Observable<AdminPrompt[]>;
+  private exerciseConfigCache?: Observable<AdminExerciseConfig>;
 
   getUsers(filters: AdminUserFilters = {}): Observable<PageResponse<AdminUser>> {
     const cacheKey = this.cacheKey({ ...filters });
@@ -225,15 +227,23 @@ export class AdminService {
   }
 
   getPrompts(): Observable<AdminPrompt[]> {
-    return this.http
+    if (this.promptsCache) {
+      return this.promptsCache;
+    }
+
+    this.promptsCache = this.http
       .get<ApiResponse<AdminPrompt[] | null>>(`${this.url}/prompts`)
       .pipe(
         map((response) => this.unwrapData(response, 'Could not load prompts.')),
         map((prompts) => prompts ?? []),
-        catchError((error) =>
-          throwError(() => this.toApiError(error, 'Could not load prompts.')),
-        ),
+        catchError((error) => {
+          this.promptsCache = undefined;
+          return throwError(() => this.toApiError(error, 'Could not load prompts.'));
+        }),
+        shareReplay({ bufferSize: 1, refCount: false }),
       );
+
+    return this.promptsCache;
   }
 
   createPrompt(request: AdminPromptCreateRequest): Observable<AdminPrompt> {
@@ -241,6 +251,9 @@ export class AdminService {
       .post<ApiResponse<AdminPrompt | null>>(`${this.url}/prompts`, request)
       .pipe(
         map((response) => this.unwrapData(response, 'Could not create prompt.')),
+        tap(() => {
+          this.promptsCache = undefined;
+        }),
         catchError((error) =>
           throwError(() => this.toApiError(error, 'Could not create prompt.')),
         ),
@@ -258,6 +271,9 @@ export class AdminService {
       )
       .pipe(
         map((response) => this.unwrapData(response, 'Could not update prompt.')),
+        tap(() => {
+          this.promptsCache = undefined;
+        }),
         catchError((error) =>
           throwError(() => this.toApiError(error, 'Could not update prompt.')),
         ),
@@ -269,6 +285,9 @@ export class AdminService {
       .delete<ApiResponse<unknown>>(`${this.url}/prompts/${encodeURIComponent(key)}`)
       .pipe(
         map((response) => this.unwrapVoid(response, 'Could not delete prompt.')),
+        tap(() => {
+          this.promptsCache = undefined;
+        }),
         catchError((error) =>
           throwError(() => this.toApiError(error, 'Could not delete prompt.')),
         ),
@@ -276,18 +295,26 @@ export class AdminService {
   }
 
   getExerciseConfig(): Observable<AdminExerciseConfig> {
-    return this.http
+    if (this.exerciseConfigCache) {
+      return this.exerciseConfigCache;
+    }
+
+    this.exerciseConfigCache = this.http
       .get<ApiResponse<AdminExerciseConfig | null>>(`${this.url}/exercise-config`)
       .pipe(
         map((response) =>
           this.unwrapData(response, 'Could not load exercise config.'),
         ),
-        catchError((error) =>
-          throwError(() =>
+        catchError((error) => {
+          this.exerciseConfigCache = undefined;
+          return throwError(() =>
             this.toApiError(error, 'Could not load exercise config.'),
-          ),
-        ),
+          );
+        }),
+        shareReplay({ bufferSize: 1, refCount: false }),
       );
+
+    return this.exerciseConfigCache;
   }
 
   saveLevel(
@@ -306,6 +333,9 @@ export class AdminService {
 
     return call.pipe(
       map((response) => this.unwrapData(response, 'Could not save level.')),
+      tap(() => {
+        this.exerciseConfigCache = undefined;
+      }),
       catchError((error) =>
         throwError(() => this.toApiError(error, 'Could not save level.')),
       ),
@@ -328,6 +358,9 @@ export class AdminService {
 
     return call.pipe(
       map((response) => this.unwrapData(response, 'Could not save topic.')),
+      tap(() => {
+        this.exerciseConfigCache = undefined;
+      }),
       catchError((error) =>
         throwError(() => this.toApiError(error, 'Could not save topic.')),
       ),
@@ -350,6 +383,9 @@ export class AdminService {
 
     return call.pipe(
       map((response) => this.unwrapData(response, 'Could not save exercise type.')),
+      tap(() => {
+        this.exerciseConfigCache = undefined;
+      }),
       catchError((error) =>
         throwError(() =>
           this.toApiError(error, 'Could not save exercise type.'),
@@ -370,6 +406,9 @@ export class AdminService {
         map((response) =>
           this.unwrapVoid(response, 'Could not delete exercise config item.'),
         ),
+        tap(() => {
+          this.exerciseConfigCache = undefined;
+        }),
         catchError((error) =>
           throwError(() =>
             this.toApiError(error, 'Could not delete exercise config item.'),

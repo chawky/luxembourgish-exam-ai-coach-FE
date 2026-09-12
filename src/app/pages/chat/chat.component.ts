@@ -161,8 +161,8 @@ export class ChatComponent implements OnInit {
       : '';
   }
 
-  private loadQuota(): void {
-    this.aiQuota.getMyQuota().subscribe({
+  private loadQuota(refresh = false): void {
+    this.aiQuota.getMyQuota(refresh).subscribe({
       next: (quota) => this.quota.set(quota),
       error: () => undefined,
     });

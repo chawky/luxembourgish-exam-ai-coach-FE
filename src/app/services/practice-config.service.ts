@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, map, throwError } from 'rxjs';
+import { Observable, catchError, map, shareReplay, throwError } from 'rxjs';
 import { apiUrl } from '../api/api-url';
 import type { components } from '../api/backend-schema';
 import { ApiResponse } from '../models';
@@ -27,16 +27,29 @@ export interface PracticeConfig {
 export class PracticeConfigService {
   private readonly url = apiUrl('/exercise-config');
   private readonly http = inject(HttpClient);
+  private configRequest?: Observable<PracticeConfig>;
 
   getConfig(): Observable<PracticeConfig> {
-    return this.http.get<ApiResponse<ExerciseConfigDto | null>>(this.url).pipe(
+    if (this.configRequest) {
+      return this.configRequest;
+    }
+
+    this.configRequest = this.http.get<ApiResponse<ExerciseConfigDto | null>>(this.url).pipe(
       map((response) => this.unwrapConfig(response)),
-      catchError((error) =>
-        throwError(() =>
+      catchError((error) => {
+        this.configRequest = undefined;
+        return throwError(() =>
           this.toApiError(error, 'Could not load practice options.'),
-        ),
-      ),
+        );
+      }),
+      shareReplay({ bufferSize: 1, refCount: false }),
     );
+
+    return this.configRequest;
+  }
+
+  clearCache(): void {
+    this.configRequest = undefined;
   }
 
   private unwrapConfig(

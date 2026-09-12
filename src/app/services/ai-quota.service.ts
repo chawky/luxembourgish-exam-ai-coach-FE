@@ -4,6 +4,7 @@ import { Observable, catchError, map, shareReplay, throwError } from 'rxjs';
 import { apiUrl } from '../api/api-url';
 import type { components } from '../api/backend-schema';
 import { ApiResponse } from '../models';
+import { CacheRegistryService } from './cache-registry.service';
 
 export type AiQuotaCategory = 'CHAT' | 'TTS' | 'STT' | 'IMAGE';
 export type AiQuotaTier = 'BASIC' | 'PREMIUM' | string;
@@ -17,7 +18,12 @@ type AiQuotaResponse = components['schemas']['ApiResponseAiQuotaStatusDto'];
 export class AiQuotaService {
   private readonly url = apiUrl('/users/me/ai-quota');
   private readonly http = inject(HttpClient);
+  private readonly cacheRegistry = inject(CacheRegistryService);
   private quotaRequest?: Observable<AiQuotaStatus>;
+
+  constructor() {
+    this.cacheRegistry.register(() => this.clearCache());
+  }
 
   getMyQuota(refresh = false): Observable<AiQuotaStatus> {
     if (!refresh && this.quotaRequest) {

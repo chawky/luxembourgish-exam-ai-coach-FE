@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, map, throwError } from 'rxjs';
+import { Observable, catchError, map, tap, throwError } from 'rxjs';
 import { apiUrl } from '../api/api-url';
 import {
   ApiResponse,
@@ -8,6 +8,7 @@ import {
   GeneratedImageDto,
   SpeakingEvaluationDto,
 } from '../models';
+import { DashboardService } from './dashboard.service';
 
 type GenerateImageResponse = ApiResponse<GeneratedImageDto | null>;
 type ImageDescriptionEvaluationResponse =
@@ -20,6 +21,7 @@ export class ImageDescriptionService {
   private readonly recordingUrl =
     apiUrl('/exercises/image-description/recording');
   private readonly http = inject(HttpClient);
+  private readonly dashboard = inject(DashboardService);
 
   generateImage(request: GenerateExerciseRequest): Observable<GeneratedImageDto> {
     return this.http.post<GenerateImageResponse>(this.generateImageUrl, request).pipe(
@@ -57,6 +59,9 @@ export class ImageDescriptionService {
       })
       .pipe(
         map((response) => this.unwrapEvaluation(response)),
+        tap(() => {
+          this.dashboard.clearCache();
+        }),
         catchError((error) =>
           throwError(() =>
             this.toApiError(error, 'Could not evaluate your description.'),

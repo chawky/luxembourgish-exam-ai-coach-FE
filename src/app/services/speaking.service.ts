@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, map, throwError } from 'rxjs';
+import { Observable, catchError, map, tap, throwError } from 'rxjs';
 import { apiUrl } from '../api/api-url';
 import {
   ApiResponse,
@@ -8,6 +8,7 @@ import {
   SpeakingEvaluationDto,
   SpeakingPracticeDto,
 } from '../models';
+import { DashboardService } from './dashboard.service';
 
 type GenerateSpeakingPracticeResponse = ApiResponse<SpeakingPracticeDto | null>;
 type SpeakingEvaluationResponse = ApiResponse<SpeakingEvaluationDto | null>;
@@ -17,6 +18,7 @@ export class SpeakingService {
   private readonly practiceUrl = apiUrl('/exercises/practice');
   private readonly recordingUrl = apiUrl('/exercises/recording');
   private readonly http = inject(HttpClient);
+  private readonly dashboard = inject(DashboardService);
 
   generatePractice(
     request: GenerateExerciseRequest,
@@ -56,6 +58,9 @@ export class SpeakingService {
       })
       .pipe(
         map((response) => this.unwrapEvaluation(response)),
+        tap(() => {
+          this.dashboard.clearCache();
+        }),
         catchError((error) =>
           throwError(() =>
             this.toApiError(error, 'Could not evaluate recording.'),

@@ -1,12 +1,13 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, map, throwError } from 'rxjs';
+import { Observable, catchError, map, tap, throwError } from 'rxjs';
 import { apiUrl } from '../api/api-url';
 import {
   ApiResponse,
   GeneratedExerciseDto,
   GenerateExerciseRequest,
 } from '../models';
+import { DashboardService } from './dashboard.service';
 
 type GenerateExerciseResponse = ApiResponse<GeneratedExerciseDto | null>;
 type CompleteExerciseResponse = ApiResponse<unknown>;
@@ -15,6 +16,7 @@ type CompleteExerciseResponse = ApiResponse<unknown>;
 export class ExerciseService {
   private readonly url = apiUrl('/exercises');
   private readonly http = inject(HttpClient);
+  private readonly dashboard = inject(DashboardService);
 
   generateExercise(
     request: GenerateExerciseRequest,
@@ -40,6 +42,9 @@ export class ExerciseService {
       )
       .pipe(
         map((response) => this.unwrapCompletedAttempt(response)),
+        tap(() => {
+          this.dashboard.clearCache();
+        }),
         catchError((error) =>
           throwError(() =>
             this.toApiError(error, 'Could not save exercise progress.'),

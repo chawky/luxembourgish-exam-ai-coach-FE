@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, shareReplay, throwError } from 'rxjs';
 import { apiUrl } from '../api/api-url';
 import { ApiResponse, ProgressDashboardDto } from '../models';
+import { CacheRegistryService } from './cache-registry.service';
 
 type ProgressDashboardResponse = ApiResponse<ProgressDashboardDto | null>;
 
@@ -10,9 +11,14 @@ type ProgressDashboardResponse = ApiResponse<ProgressDashboardDto | null>;
 export class DashboardService {
   private readonly url = apiUrl('/progress/me');
   private readonly http = inject(HttpClient);
+  private readonly cacheRegistry = inject(CacheRegistryService);
   private readonly progressCacheTtlMs = 10_000;
   private progressRequest?: Observable<ProgressDashboardDto>;
   private progressCachedAt = 0;
+
+  constructor() {
+    this.cacheRegistry.register(() => this.clearCache());
+  }
 
   getMyProgress(refresh = false): Observable<ProgressDashboardDto> {
     if (

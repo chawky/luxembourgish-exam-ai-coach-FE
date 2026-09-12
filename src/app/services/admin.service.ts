@@ -4,6 +4,8 @@ import { Observable, catchError, map, of, shareReplay, tap, throwError } from 'r
 import { apiUrl } from '../api/api-url';
 import type { components } from '../api/backend-schema';
 import { ApiResponse } from '../models';
+import { CacheRegistryService } from './cache-registry.service';
+import { PracticeConfigService } from './practice-config.service';
 
 export type AdminUser = components['schemas']['ResponseUserDto'];
 export type AdminUserDetail = components['schemas']['AdminUserDetailDto'];
@@ -59,12 +61,18 @@ export interface AuditLogFilters {
 export class AdminService {
   private readonly url = apiUrl('/admin');
   private readonly http = inject(HttpClient);
+  private readonly cacheRegistry = inject(CacheRegistryService);
+  private readonly practiceConfig = inject(PracticeConfigService);
   private readonly usersCache = new Map<string, Observable<PageResponse<AdminUser>>>();
   private readonly userDetailCache = new Map<number, Observable<AdminUserDetail>>();
   private readonly userProgressCache = new Map<string, Observable<PageResponse<AdminUserProgress>>>();
   private readonly userAiUsageCache = new Map<string, Observable<PageResponse<AdminAiUsage>>>();
   private promptsCache?: Observable<AdminPrompt[]>;
   private exerciseConfigCache?: Observable<AdminExerciseConfig>;
+
+  constructor() {
+    this.cacheRegistry.register(() => this.clearCache());
+  }
 
   getUsers(filters: AdminUserFilters = {}): Observable<PageResponse<AdminUser>> {
     const cacheKey = this.cacheKey({ ...filters });
@@ -156,6 +164,12 @@ export class AdminService {
     this.userDetailCache.clear();
     this.userProgressCache.clear();
     this.userAiUsageCache.clear();
+  }
+
+  clearCache(): void {
+    this.clearUserCache();
+    this.promptsCache = undefined;
+    this.exerciseConfigCache = undefined;
   }
 
   getUserProgress(
@@ -335,6 +349,7 @@ export class AdminService {
       map((response) => this.unwrapData(response, 'Could not save level.')),
       tap(() => {
         this.exerciseConfigCache = undefined;
+        this.practiceConfig.clearCache();
       }),
       catchError((error) =>
         throwError(() => this.toApiError(error, 'Could not save level.')),
@@ -360,6 +375,7 @@ export class AdminService {
       map((response) => this.unwrapData(response, 'Could not save topic.')),
       tap(() => {
         this.exerciseConfigCache = undefined;
+        this.practiceConfig.clearCache();
       }),
       catchError((error) =>
         throwError(() => this.toApiError(error, 'Could not save topic.')),
@@ -385,6 +401,7 @@ export class AdminService {
       map((response) => this.unwrapData(response, 'Could not save exercise type.')),
       tap(() => {
         this.exerciseConfigCache = undefined;
+        this.practiceConfig.clearCache();
       }),
       catchError((error) =>
         throwError(() =>
@@ -408,6 +425,7 @@ export class AdminService {
         ),
         tap(() => {
           this.exerciseConfigCache = undefined;
+          this.practiceConfig.clearCache();
         }),
         catchError((error) =>
           throwError(() =>

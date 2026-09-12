@@ -16,6 +16,7 @@ import { apiUrl } from '../api/api-url';
 import { ApiResponse, User } from '../models';
 import type { components } from '../api/backend-schema';
 import { displayName } from '../location-utils';
+import { CacheRegistryService } from './cache-registry.service';
 
 type RequestUserDto = components['schemas']['RequestUserDto'];
 type ResponseUserDto = components['schemas']['ResponseUserDto'];
@@ -39,6 +40,7 @@ export class AuthService {
   private readonly url = apiUrl('/users');
   private readonly tokenStorageKey = 'sproochen.authToken';
   private readonly https = inject(HttpClient);
+  private readonly cacheRegistry = inject(CacheRegistryService);
   private currentUserRequest?: Observable<User | null>;
 
   readonly currentUser = signal<User | null>(null);
@@ -58,6 +60,7 @@ export class AuthService {
         map(() => undefined),
         catchError(() => {
           this.currentUser.set(null);
+          this.clearUserScopedCaches();
           this.clearToken();
           return of(undefined);
         }),
@@ -81,6 +84,7 @@ export class AuthService {
           }
 
           this.currentUserRequest = undefined;
+          this.clearUserScopedCaches();
           this.saveToken(token);
           this.currentUser.set(this.toCurrentUser(user, email));
         }),
@@ -116,6 +120,7 @@ export class AuthService {
 
   logout() {
     this.currentUserRequest = undefined;
+    this.clearUserScopedCaches();
     this.currentUser.set(null);
     this.clearToken();
     return of(null);
@@ -196,6 +201,10 @@ export class AuthService {
   private clearToken(): void {
     localStorage.removeItem(this.tokenStorageKey);
     sessionStorage.removeItem(this.tokenStorageKey);
+  }
+
+  private clearUserScopedCaches(): void {
+    this.cacheRegistry.clearUserScopedCaches();
   }
 
   private normalizeToken(token: string): string {

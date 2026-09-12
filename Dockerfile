@@ -20,5 +20,8 @@ ENV BACKEND_URL=http://backend:8080
 # nginx:alpine automatically runs envsubst on files
 # inside /etc/nginx/templates/
 COPY default.conf.template /etc/nginx/templates/default.conf.template
-
+COPY docker-entrypoint-custom.sh /docker-entrypoint-custom.sh
+RUN chmod +x /docker-entrypoint-custom.sh
 COPY --from=build /app/dist/sproochentest-coach/browser /usr/share/nginx/html
+
+ENTRYPOINT ["/docker-entrypoint-custom.sh"]

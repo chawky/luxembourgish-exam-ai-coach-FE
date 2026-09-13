@@ -186,18 +186,11 @@ export class AuthService {
   }
 
   updateProfile(data: UpdateProfileRequest) {
-    const userId = data.id ?? this.currentUser()?.id;
-    if (userId === undefined) {
-      return throwError(
-        () => new Error('Could not update profile. Please sign in again.'),
-      );
-    }
-
     const request = this.toUserRequest(data);
 
     return this.https
       .put<ApiResponse<ResponseUserDto | null>>(
-        `${this.url}/${userId}`,
+        this.url + '/me',
         request,
       )
       .pipe(

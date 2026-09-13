@@ -17,6 +17,7 @@ import {
 } from '../../practice-options';
 import { AiQuotaService, AiQuotaStatus } from '../../services/ai-quota.service';
 import { PracticeConfigService } from '../../services/practice-config.service';
+import { friendlyErrorMessage } from '../../error-message';
 
 @Component({
   selector: 'app-speaking',
@@ -749,9 +750,7 @@ export class SpeakingComponent implements OnDestroy, OnInit {
   }
 
   private errorMessage(error: unknown): string {
-    return error instanceof Error && error.message
-      ? error.message
-      : 'Something went wrong.';
+    return friendlyErrorMessage(error);
   }
 
   private microphoneErrorMessage(error: unknown): string {

@@ -8,6 +8,7 @@ import {
 } from '@angular/forms';
 import { ExerciseService } from '../../services/exercise.service';
 import { IconComponent } from '../../components/icon.component';
+import { friendlyErrorMessage } from '../../error-message';
 import {
   ExerciseDto,
   ExerciseOptionDto,
@@ -535,8 +536,6 @@ export class ExercisesComponent implements OnInit {
   }
 
   private errorMessage(error: unknown): string {
-    return error instanceof Error && error.message
-      ? error.message
-      : 'Something went wrong.';
+    return friendlyErrorMessage(error);
   }
 }

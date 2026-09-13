@@ -25,6 +25,7 @@ import { LocationSuggestion, User } from '../../models';
 import { AuthService } from '../../services/auth.service';
 import { LocationService } from '../../services/location.service';
 import { PaymentService } from '../../services/payment.service';
+import { friendlyErrorMessage } from '../../error-message';
 
 type ProfileTab = 'account' | 'subscription';
 type SubscriptionStatus = 'active' | 'canceled' | 'inactive';
@@ -202,24 +203,32 @@ function profilePasswordValidator(
 
                   <div class="field">
                     <label for="profile-location-search">Find address</label>
-                    <input
-                      id="profile-location-search"
-                      type="text"
-                      class="input"
-                      [value]="locationQuery()"
-                      (input)="onLocationInput($event)"
-                      (change)="applyLocationInput($event)"
-                      list="profile-location-options"
-                      autocomplete="off"
-                      placeholder="Start typing a Luxembourg address"
-                    />
-                    <datalist id="profile-location-options">
-                      @for (location of locationSuggestions(); track locationTrack(location, $index)) {
-                        <option [value]="location.label || ''">
-                          {{ location.layerName }}
-                        </option>
+                    <div class="location-search-control">
+                      <input
+                        id="profile-location-search"
+                        type="text"
+                        class="input"
+                        [value]="locationQuery()"
+                        (input)="onLocationInput($event)"
+                        (change)="applyLocationInput($event)"
+                        autocomplete="off"
+                        placeholder="Start typing a Luxembourg address"
+                      />
+                      @if (locationSuggestions().length) {
+                        <div class="location-suggestions" role="listbox" aria-label="Address suggestions">
+                          @for (location of locationSuggestions(); track locationTrack(location, $index)) {
+                            <button
+                              type="button"
+                              class="location-suggestion"
+                              role="option"
+                              (click)="selectLocation(location)"
+                            >
+                              {{ location.label }}
+                            </button>
+                          }
+                        </div>
                       }
-                    </datalist>
+                    </div>
                     @if (locationLoading()) {
                       <span class="field-help">Searching locations...</span>
                     } @else if (locationError()) {
@@ -851,8 +860,13 @@ export class ProfileComponent implements OnInit, OnDestroy {
     );
 
     if (selectedLocation) {
-      this.applyLocation(selectedLocation);
+      this.selectLocation(selectedLocation);
     }
+  }
+
+  selectLocation(location: LocationSuggestion): void {
+    this.applyLocation(location);
+    this.locationSuggestions.set([]);
   }
 
   locationTrack(location: LocationSuggestion, index: number): string {
@@ -1087,8 +1101,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
   }
 
   private errorMessage(error: unknown): string {
-    return error instanceof Error && error.message
-      ? error.message
-      : 'Something went wrong.';
+    return friendlyErrorMessage(error);
   }
 }

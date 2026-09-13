@@ -12,6 +12,7 @@ import { LogoComponent } from '../../components/logo.component';
 import { IconComponent } from '../../components/icon.component';
 import { AuthService } from '../../services/auth.service';
 import { AuthLayoutComponent } from './auth-layout.component';
+import { friendlyErrorMessage } from '../../error-message';
 
 function matchPasswords(group: AbstractControl): ValidationErrors | null {
   const password = group.get('newPassword')?.value;
@@ -433,8 +434,6 @@ export class PasswordResetComponent implements OnInit {
   }
 
   private errorMessage(error: unknown): string {
-    return error instanceof Error && error.message
-      ? error.message
-      : 'Something went wrong.';
+    return friendlyErrorMessage(error);
   }
 }

@@ -154,6 +154,46 @@
   font-size: 13px;
 }
 
+.location-search-control {
+  position: relative;
+}
+
+.location-suggestions {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  display: grid;
+  max-height: 220px;
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+
+.location-suggestion {
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 11px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.location-suggestion:hover,
+.location-suggestion:focus {
+  outline: none;
+  background: var(--surface-2);
+  color: var(--blue-700);
+}
+
 .loading-panel,
 .empty-state {
   display: flex;

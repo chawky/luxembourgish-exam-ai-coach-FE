@@ -15,6 +15,7 @@ import {
 import { AiQuotaService, AiQuotaStatus } from '../../services/ai-quota.service';
 import { ImageDescriptionService } from '../../services/image-description.service';
 import { PracticeConfigService } from '../../services/practice-config.service';
+import { friendlyErrorMessage } from '../../error-message';
 
 interface ImageDescriptionExerciseView {
   id: string;
@@ -767,9 +768,7 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
   }
 
   private errorMessage(error: unknown): string {
-    return error instanceof Error && error.message
-      ? error.message
-      : 'Something went wrong.';
+    return friendlyErrorMessage(error);
   }
 
   private microphoneErrorMessage(error: unknown): string {

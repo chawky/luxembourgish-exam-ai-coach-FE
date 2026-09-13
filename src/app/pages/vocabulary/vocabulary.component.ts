@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { IconComponent } from '../../components/icon.component';
+import { friendlyErrorMessage } from '../../error-message';
 import {
   GenerateVocabularyRequest,
   VocabularyExerciseDto,
@@ -421,8 +422,6 @@ export class VocabularyComponent implements OnInit {
   }
 
   private errorMessage(error: unknown): string {
-    return error instanceof Error && error.message
-      ? error.message
-      : 'Something went wrong.';
+    return friendlyErrorMessage(error);
   }
 }

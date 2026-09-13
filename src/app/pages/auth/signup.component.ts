@@ -18,6 +18,7 @@ import { LocationService } from '../../services/location.service';
 import { LogoComponent } from '../../components/logo.component';
 import { AuthLayoutComponent } from './auth-layout.component';
 import { IconComponent } from '../../components/icon.component';
+import { friendlyErrorMessage } from '../../error-message';
 
 function matchPasswords(group: AbstractControl): ValidationErrors | null {
   const password = group.get('password')?.value;
@@ -104,24 +105,32 @@ function matchPasswords(group: AbstractControl): ValidationErrors | null {
 
           <div class="field">
             <label for="locationSearch">Find address</label>
-            <input
-              id="locationSearch"
-              type="text"
-              class="input"
-              [value]="locationQuery()"
-              (input)="onLocationInput($event)"
-              (change)="applyLocationInput($event)"
-              list="signup-location-options"
-              autocomplete="off"
-              placeholder="Start typing a Luxembourg address"
-            />
-            <datalist id="signup-location-options">
-              @for (location of locationSuggestions(); track locationTrack(location, $index)) {
-                <option [value]="location.label || ''">
-                  {{ location.layerName }}
-                </option>
+            <div class="location-search-control">
+              <input
+                id="locationSearch"
+                type="text"
+                class="input"
+                [value]="locationQuery()"
+                (input)="onLocationInput($event)"
+                (change)="applyLocationInput($event)"
+                autocomplete="off"
+                placeholder="Start typing a Luxembourg address"
+              />
+              @if (locationSuggestions().length) {
+                <div class="location-suggestions" role="listbox" aria-label="Address suggestions">
+                  @for (location of locationSuggestions(); track locationTrack(location, $index)) {
+                    <button
+                      type="button"
+                      class="location-suggestion"
+                      role="option"
+                      (click)="selectLocation(location)"
+                    >
+                      {{ location.label }}
+                    </button>
+                  }
+                </div>
               }
-            </datalist>
+            </div>
             @if (locationLoading()) {
               <span class="field-help">Searching locations...</span>
             } @else if (locationError()) {
@@ -318,6 +327,42 @@ function matchPasswords(group: AbstractControl): ValidationErrors | null {
         color: var(--slate-500);
         font-size: 13px;
       }
+      .location-search-control {
+        position: relative;
+      }
+      .location-suggestions {
+        position: absolute;
+        z-index: 20;
+        top: calc(100% + 6px);
+        right: 0;
+        left: 0;
+        display: grid;
+        max-height: 220px;
+        padding: 6px;
+        overflow-y: auto;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+        box-shadow: var(--shadow-md);
+      }
+      .location-suggestion {
+        width: 100%;
+        border: 0;
+        border-radius: 8px;
+        padding: 10px 11px;
+        background: transparent;
+        color: var(--ink);
+        font: inherit;
+        font-weight: 700;
+        text-align: left;
+        cursor: pointer;
+      }
+      .location-suggestion:hover,
+      .location-suggestion:focus {
+        outline: none;
+        background: var(--surface-2);
+        color: var(--blue-700);
+      }
       .form-error {
         background: var(--red-50);
         color: var(--red);
@@ -494,8 +539,13 @@ export class SignupComponent implements OnDestroy {
     );
 
     if (selectedLocation) {
-      this.applyLocation(selectedLocation);
+      this.selectLocation(selectedLocation);
     }
+  }
+
+  selectLocation(location: LocationSuggestion): void {
+    this.applyLocation(location);
+    this.locationSuggestions.set([]);
   }
 
   locationTrack(location: LocationSuggestion, index: number): string {
@@ -528,8 +578,6 @@ export class SignupComponent implements OnDestroy {
   }
 
   private errorMessage(error: unknown): string {
-    return error instanceof Error && error.message
-      ? error.message
-      : 'Something went wrong.';
+    return friendlyErrorMessage(error);
   }
 }

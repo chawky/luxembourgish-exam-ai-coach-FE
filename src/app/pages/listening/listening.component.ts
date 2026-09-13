@@ -23,6 +23,7 @@ import { ExerciseService } from '../../services/exercise.service';
 import { ListeningService } from '../../services/listening.service';
 import { PracticeConfigService } from '../../services/practice-config.service';
 import { AudioPlayerComponent } from '../../components/audio-player.component';
+import { friendlyErrorMessage } from '../../error-message';
 
 interface NormalizedOption {
   label: string;
@@ -642,9 +643,7 @@ export class ListeningComponent implements OnDestroy, OnInit {
   }
 
   private errorMessage(error: unknown): string {
-    return error instanceof Error && error.message
-      ? error.message
-      : 'Something went wrong.';
+    return friendlyErrorMessage(error);
   }
 
   ngOnDestroy(): void {

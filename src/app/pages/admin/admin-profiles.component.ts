@@ -3,6 +3,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AiQuotaSummaryComponent } from '../../components/ai-quota-summary.component';
 import { IconComponent } from '../../components/icon.component';
+import { friendlyErrorMessage } from '../../error-message';
 import { formatPracticeLabel } from '../../practice-options';
 import {
   AdminAiUsage,
@@ -1347,8 +1348,6 @@ export class AdminProfilesComponent implements OnInit {
   }
 
   private errorMessage(error: unknown): string {
-    return error instanceof Error && error.message
-      ? error.message
-      : 'Something went wrong.';
+    return friendlyErrorMessage(error);
   }
 }

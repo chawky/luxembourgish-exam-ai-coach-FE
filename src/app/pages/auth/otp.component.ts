@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { LogoComponent } from '../../components/logo.component';
 import { AuthLayoutComponent } from './auth-layout.component';
+import { friendlyErrorMessage } from '../../error-message';
 
 @Component({
   selector: 'app-otp',
@@ -285,8 +286,6 @@ export class OtpComponent implements OnInit {
   }
 
   private errorMessage(error: unknown): string {
-    return error instanceof Error && error.message
-      ? error.message
-      : 'Something went wrong.';
+    return friendlyErrorMessage(error);
   }
 }

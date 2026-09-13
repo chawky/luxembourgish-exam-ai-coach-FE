@@ -7,6 +7,7 @@ import { ProgressDashboardDto, SkillProgressDto } from '../../models';
 import { AiQuotaService, AiQuotaStatus } from '../../services/ai-quota.service';
 import { AuthService } from '../../services/auth.service';
 import { DashboardService } from '../../services/dashboard.service';
+import { friendlyErrorMessage } from '../../error-message';
 import { formatPracticeLabel } from '../../practice-options';
 
 @Component({
@@ -369,8 +370,9 @@ export class DashboardComponent implements OnInit {
   }
 
   private errorMessage(error: unknown): string {
-    return error instanceof Error && error.message
-      ? error.message
-      : 'We could not load your progress. Please try again.';
+    return friendlyErrorMessage(
+      error,
+      'We could not load your progress. Please try again.',
+    );
   }
 }

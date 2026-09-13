@@ -10,6 +10,7 @@ import { AuthService } from '../../services/auth.service';
 import { LogoComponent } from '../../components/logo.component';
 import { AuthLayoutComponent } from './auth-layout.component';
 import { IconComponent } from '../../components/icon.component';
+import { friendlyErrorMessage } from '../../error-message';
 
 @Component({
   selector: 'app-login',
@@ -243,9 +244,18 @@ export class LoginComponent implements OnInit {
   }
 
   private errorMessage(error: unknown): string {
-    return error instanceof Error && error.message
-      ? error.message
-      : 'Something went wrong.';
+    const message = error instanceof Error ? error.message.trim().toLowerCase() : '';
+
+    if (
+      message === 'please log in and try again.' ||
+      message === 'unauthorized' ||
+      message.includes('bad credentials') ||
+      message.includes('invalid username or password')
+    ) {
+      return 'Email or password is incorrect.';
+    }
+
+    return friendlyErrorMessage(error);
   }
 
   private isEmailVerificationError(error: unknown): boolean {

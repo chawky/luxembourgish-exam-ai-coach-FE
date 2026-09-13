@@ -19,7 +19,7 @@ import {
   formatAddress,
   parseLocationSuggestion,
 } from '../../location-utils';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { IconComponent } from '../../components/icon.component';
 import { LocationSuggestion, User } from '../../models';
 import { AuthService } from '../../services/auth.service';
@@ -553,6 +553,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   private locationService = inject(LocationService);
   private paymentService = inject(PaymentService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private locationSearchTimer: ReturnType<typeof setTimeout> | null = null;
   private subscriptionRefreshTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly subscriptionRefreshDelayMs = 1500;
@@ -683,6 +684,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
     this.saving.set(true);
     const formValue = this.form.getRawValue();
+    const passwordChanged = !!formValue.password;
     this.auth
       .updateProfile({
         id: this.currentUser()?.id,
@@ -699,6 +701,17 @@ export class ProfileComponent implements OnInit, OnDestroy {
       })
       .subscribe({
         next: (user) => {
+          if (passwordChanged) {
+            this.auth.logout().subscribe(() => {
+              this.router.navigate(['/login'], {
+                state: {
+                  notice: 'Your password was changed. Please sign in again.',
+                },
+              });
+            });
+            return;
+          }
+
           this.patchForm(user);
           this.editMode.set(false);
           this.successMsg.set('Profile updated.');

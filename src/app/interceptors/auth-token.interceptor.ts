@@ -8,17 +8,16 @@ export const authTokenInterceptor: HttpInterceptorFn = (request, next) => {
   const isApiRequest =
     request.url.startsWith(API_BASE_URL) || request.url.startsWith('/api');
 
-  if (!token || !isApiRequest || request.headers.has('Authorization')) {
+  if (!isApiRequest) {
     return next(request);
   }
 
-  return next(
-    request.clone({
-      setHeaders: {
-        Authorization: `Bearer ${normalizeToken(token)}`,
-      },
-    }),
-  );
+  const headers =
+    token && !request.headers.has('Authorization')
+      ? { Authorization: `Bearer ${normalizeToken(token)}` }
+      : undefined;
+
+  return next(request.clone({ setHeaders: headers, withCredentials: true }));
 };
 
 function getToken(): string | null {

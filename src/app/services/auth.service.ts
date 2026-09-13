@@ -58,11 +58,6 @@ export class AuthService {
   );
 
   initializeSession(): Promise<void> {
-    const token = this.getToken();
-    if (!token) {
-      return Promise.resolve();
-    }
-
     return firstValueFrom(
       this.loadCurrentUser().pipe(
         map(() => undefined),
@@ -86,14 +81,13 @@ export class AuthService {
         this.requireSuccess('Could not sign in.'),
         tap((response) => {
           const user = response.data;
-          const token = user?.jwt;
-          if (!token) {
-            throw new Error('Login response did not include a token.');
+          if (!user) {
+            throw new Error('Login response did not include your account.');
           }
 
           this.currentUserRequest = undefined;
           this.clearUserScopedCaches();
-          this.saveToken(token);
+          this.clearToken();
           this.currentUser.set(this.toCurrentUser(user, email));
         }),
       );
@@ -159,7 +153,11 @@ export class AuthService {
     this.clearUserScopedCaches();
     this.currentUser.set(null);
     this.clearToken();
-    return of(null);
+
+    return this.https.post<ApiResponse<null>>(this.url + '/logout', {}).pipe(
+      map(() => null),
+      catchError(() => of(null)),
+    );
   }
 
   loadCurrentUser(forceRefresh = false) {
@@ -203,28 +201,13 @@ export class AuthService {
             );
           }
 
-          if (updatedUser.jwt) {
-            this.saveToken(updatedUser.jwt);
-          }
-
+          this.clearToken();
           const user = this.toCurrentUser(updatedUser, request.email);
           this.currentUserRequest = undefined;
           this.currentUser.set(user);
           return user;
         }),
       );
-  }
-
-  private getToken(): string | null {
-    return (
-      localStorage.getItem(this.tokenStorageKey) ||
-      sessionStorage.getItem(this.tokenStorageKey)
-    );
-  }
-
-  private saveToken(token: string): void {
-    localStorage.setItem(this.tokenStorageKey, this.normalizeToken(token));
-    sessionStorage.removeItem(this.tokenStorageKey);
   }
 
   private clearToken(): void {
@@ -234,10 +217,6 @@ export class AuthService {
 
   private clearUserScopedCaches(): void {
     this.cacheRegistry.clearUserScopedCaches();
-  }
-
-  private normalizeToken(token: string): string {
-    return token.replace(/^Bearer\s+/i, '').trim();
   }
 
   private toUserRequest(data: RequestUserDto): RequestUserDto {

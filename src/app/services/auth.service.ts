@@ -66,7 +66,6 @@ interface UpdateProfileRequest {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly url = apiUrl('/users');
-  private readonly tokenStorageKey = 'sproochen.authToken';
   private readonly https = inject(HttpClient);
   private readonly cacheRegistry = inject(CacheRegistryService);
   private currentUserRequest?: Observable<User | null>;
@@ -84,7 +83,6 @@ export class AuthService {
         catchError(() => {
           this.currentUser.set(null);
           this.clearUserScopedCaches();
-          this.clearToken();
           return of(undefined);
         }),
       ),
@@ -107,7 +105,6 @@ export class AuthService {
 
           this.currentUserRequest = undefined;
           this.clearUserScopedCaches();
-          this.clearToken();
           this.currentUser.set(this.toCurrentUser(user, email));
         }),
       );
@@ -172,7 +169,6 @@ export class AuthService {
     this.currentUserRequest = undefined;
     this.clearUserScopedCaches();
     this.currentUser.set(null);
-    this.clearToken();
 
     return this.https.post<ApiResponse<null>>(this.url + '/logout', {}).pipe(
       map(() => null),
@@ -221,18 +217,12 @@ export class AuthService {
             );
           }
 
-          this.clearToken();
           const user = this.toCurrentUser(updatedUser, request.email);
           this.currentUserRequest = undefined;
           this.currentUser.set(user);
           return user;
         }),
       );
-  }
-
-  private clearToken(): void {
-    localStorage.removeItem(this.tokenStorageKey);
-    sessionStorage.removeItem(this.tokenStorageKey);
   }
 
   private clearUserScopedCaches(): void {

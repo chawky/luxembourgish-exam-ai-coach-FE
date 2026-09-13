@@ -2,10 +2,13 @@ import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http'
 import { Injectable, inject } from '@angular/core';
 import { catchError, map, of, throwError } from 'rxjs';
 import { apiUrl } from '../api/api-url';
-import type { components } from '../api/backend-schema';
 import { ApiResponse, LocationSuggestion } from '../models';
 
-type LocationSuggestionDto = components['schemas']['LocationSuggestionDto'];
+interface LocationSuggestionDto {
+  id?: string;
+  label?: string;
+  layerName?: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class LocationService {

@@ -18,10 +18,30 @@ import type { components } from '../api/backend-schema';
 import { displayName } from '../location-utils';
 import { CacheRegistryService } from './cache-registry.service';
 
-type RequestUserDto = components['schemas']['RequestUserDto'];
 type ResponseUserDto = components['schemas']['ResponseUserDto'];
-type SendOtpRequest = components['schemas']['SendOtpRequest'];
-type ResetPasswordRequest = components['schemas']['ResetPasswordRequest'];
+
+interface RequestUserDto {
+  username?: string;
+  password?: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  street?: string;
+  streetNumber?: string;
+  postalCode?: string;
+  city?: string;
+  addressInfo?: string;
+}
+
+interface EmailRequest {
+  email: string;
+}
+
+interface ResetPasswordRequest {
+  email: string;
+  code: string;
+  newPassword: string;
+}
 
 interface ResetPasswordFormValue {
   email: string;
@@ -121,7 +141,7 @@ export class AuthService {
   }
 
   requestPasswordReset(email: string) {
-    const request: SendOtpRequest = { email: email.trim() };
+    const request: EmailRequest = { email: email.trim() };
 
     return this.https
       .post<ApiResponse<null>>(this.url + '/forgot-password', request)
@@ -129,7 +149,7 @@ export class AuthService {
   }
 
   resendPasswordReset(email: string) {
-    const request: SendOtpRequest = { email: email.trim() };
+    const request: EmailRequest = { email: email.trim() };
 
     return this.https
       .post<ApiResponse<null>>(this.url + '/resend-password-reset', request)

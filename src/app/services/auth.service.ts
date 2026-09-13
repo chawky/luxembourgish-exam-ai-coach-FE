@@ -20,6 +20,14 @@ import { CacheRegistryService } from './cache-registry.service';
 
 type RequestUserDto = components['schemas']['RequestUserDto'];
 type ResponseUserDto = components['schemas']['ResponseUserDto'];
+type SendOtpRequest = components['schemas']['SendOtpRequest'];
+type ResetPasswordRequest = components['schemas']['ResetPasswordRequest'];
+
+interface ResetPasswordFormValue {
+  email: string;
+  code: string;
+  newPassword: string;
+}
 
 interface UpdateProfileRequest {
   id?: number;
@@ -116,6 +124,34 @@ export class AuthService {
     return this.https
       .post<ApiResponse<null>>(this.url + '/verifyOtp', { email, otp })
       .pipe(this.requireSuccess('Could not verify code.'));
+  }
+
+  requestPasswordReset(email: string) {
+    const request: SendOtpRequest = { email: email.trim() };
+
+    return this.https
+      .post<ApiResponse<null>>(this.url + '/forgot-password', request)
+      .pipe(this.requireSuccess('Could not send reset code.'));
+  }
+
+  resendPasswordReset(email: string) {
+    const request: SendOtpRequest = { email: email.trim() };
+
+    return this.https
+      .post<ApiResponse<null>>(this.url + '/resend-password-reset', request)
+      .pipe(this.requireSuccess('Could not resend reset code.'));
+  }
+
+  resetPassword(request: ResetPasswordFormValue) {
+    const body: ResetPasswordRequest = {
+      email: request.email.trim(),
+      code: request.code.trim(),
+      newPassword: request.newPassword,
+    };
+
+    return this.https
+      .post<ApiResponse<null>>(this.url + '/reset-password', body)
+      .pipe(this.requireSuccess('Could not reset password.'));
   }
 
   logout() {

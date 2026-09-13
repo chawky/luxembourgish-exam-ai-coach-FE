@@ -23,6 +23,20 @@ export const routes: Routes = [
       import('./pages/auth/otp.component').then((m) => m.OtpComponent),
   },
   {
+    path: 'forgot-password',
+    loadComponent: () =>
+      import('./pages/auth/password-reset.component').then(
+        (m) => m.PasswordResetComponent,
+      ),
+  },
+  {
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./pages/auth/password-reset.component').then(
+        (m) => m.PasswordResetComponent,
+      ),
+  },
+  {
     path: 'payment/success',
     loadComponent: () =>
       import('./pages/payment/payment-return.component').then(

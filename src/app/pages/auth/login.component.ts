@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
@@ -87,6 +87,14 @@ import { IconComponent } from '../../components/icon.component';
         </button>
       </form>
 
+      @if (noticeMsg()) {
+        <div class="form-success" role="status">{{ noticeMsg() }}</div>
+      }
+
+      <p class="forgot">
+        <a routerLink="/forgot-password">Forgot password?</a>
+      </p>
+
       <p class="switch text-muted">
         New here? <a routerLink="/signup">Create an account</a>
       </p>
@@ -120,6 +128,14 @@ import { IconComponent } from '../../components/icon.component';
         font-size: 14px;
         margin-bottom: 16px;
       }
+      .form-success {
+        background: #143525;
+        color: var(--green);
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 14px;
+        margin-top: 16px;
+      }
       .password-control {
         position: relative;
       }
@@ -147,6 +163,12 @@ import { IconComponent } from '../../components/icon.component';
         margin-top: 20px;
         font-size: 14.5px;
       }
+      .forgot {
+        margin: 14px 0 0;
+        text-align: center;
+        font-size: 14.5px;
+      }
+      .forgot a,
       .switch a {
         color: var(--blue-700);
         font-weight: 600;
@@ -154,19 +176,30 @@ import { IconComponent } from '../../components/icon.component';
     `,
   ],
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   private fb = inject(FormBuilder);
   private auth = inject(AuthService);
   private router = inject(Router);
 
   loading = signal(false);
   errorMsg = signal('');
+  noticeMsg = signal('');
   passwordVisible = signal(false);
 
   form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required]],
   });
+
+  ngOnInit(): void {
+    const notice =
+      this.router.getCurrentNavigation()?.extras.state?.['notice'] ??
+      window.history.state?.['notice'];
+
+    if (typeof notice === 'string' && notice) {
+      this.noticeMsg.set(notice);
+    }
+  }
 
   invalid(name: string): boolean {
     const c = this.form.get(name);
@@ -175,6 +208,7 @@ export class LoginComponent {
 
   submit(): void {
     this.errorMsg.set('');
+    this.noticeMsg.set('');
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;

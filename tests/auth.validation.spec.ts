@@ -158,7 +158,7 @@ test('login validation blocks invalid credentials before request', async ({ page
   await page.goto('/login');
   await page.getByLabel('Email').fill('not-an-email');
   await page.getByLabel('Password').fill('');
-  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 
   await expect(page.getByText('Enter a valid email address.')).toBeVisible();
   await expect(page.getByText('Password is required.')).toBeVisible();

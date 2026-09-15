@@ -138,7 +138,7 @@ test('verifies OTP, logs in, and opens dashboard', async ({ page }) => {
   await page.getByLabel('Password').fill(user.password);
 
   const loginNavigation = page.waitForURL(/\/app\/dashboard$/);
-  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Signing in...' })).toBeVisible();
   await loginNavigation;
 

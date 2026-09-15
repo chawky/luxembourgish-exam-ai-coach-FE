@@ -61,7 +61,7 @@ test('failed login envelope shows API message and stores no token', async ({ pag
   await page.goto('/login');
   await page.getByLabel('Email').fill(user.email);
   await page.getByLabel('Password').fill(user.password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 
   await expect(page.getByRole('alert')).toHaveText('Invalid email or password.');
   await expectStoredToken(page, null);
@@ -117,7 +117,7 @@ test('unverified login redirects to OTP with typed email', async ({ page }) => {
     (url) =>
       url.pathname === '/otp' && url.searchParams.get('email') === user.email,
   );
-  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await otpNavigation;
 
   await expect(page.getByRole('alert')).toHaveText(
@@ -144,7 +144,7 @@ test('raw text HTTP error is surfaced to the login form', async ({ page }) => {
   await page.goto('/login');
   await page.getByLabel('Email').fill(user.email);
   await page.getByLabel('Password').fill(user.password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 
   await expect(page.getByRole('alert')).toHaveText('Backend unavailable');
   await expectStoredToken(page, null);
@@ -164,7 +164,7 @@ test('HTML login error falls back to a learner-safe message', async ({ page }) =
   await page.goto('/login');
   await page.getByLabel('Email').fill(user.email);
   await page.getByLabel('Password').fill(user.password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 
   await expect(page.getByRole('alert')).toHaveText('Could not sign in.');
   await expectStoredToken(page, null);
@@ -185,7 +185,7 @@ test('successful cookie login does not require JWT response body', async ({ page
   await page.goto('/login');
   await page.getByLabel('Email').fill(user.email);
   await page.getByLabel('Password').fill(user.password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 
   await expect(page).toHaveURL(/\/app\/dashboard$/);
   await expect(page.getByRole('heading', { name: 'Moien, Playwright' })).toBeVisible();

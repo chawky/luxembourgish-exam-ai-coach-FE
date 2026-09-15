@@ -10,6 +10,37 @@ function delay(ms: number): Promise<void> {
   });
 }
 
+async function mockGoogleSignIn(
+  page: import('@playwright/test').Page,
+  credential = 'google-signup-id-token',
+): Promise<void> {
+  await page.route('https://accounts.google.com/gsi/client', async (route) => {
+    await route.fulfill({
+      contentType: 'application/javascript',
+      body: `
+        window.google = {
+          accounts: {
+            id: {
+              initialize(config) {
+                window.__googleCredentialCallback = config.callback;
+              },
+              renderButton(parent) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.textContent = 'Sign up with Google';
+                button.addEventListener('click', () => {
+                  window.__googleCredentialCallback({ credential: ${JSON.stringify(credential)} });
+                });
+                parent.appendChild(button);
+              }
+            }
+          }
+        };
+      `,
+    });
+  });
+}
+
 test('registers with required account details and redirects to OTP', async ({ page }) => {
   const user = {
     ...testUser(),
@@ -58,6 +89,32 @@ test('registers with required account details and redirects to OTP', async ({ pa
   });
   expect(registrationPayload).not.toHaveProperty('confirm');
   expectNoRouteErrors(registrationCalls);
+});
+
+test('signs up with Google and opens dashboard', async ({ page }) => {
+  const user = testUser();
+  let googlePayload: Record<string, unknown> | undefined;
+
+  await mockGoogleSignIn(page);
+  const googleLoginCalls = await routeApi(page, '**/api/users/google-login', {
+    method: 'POST',
+    response: apiSuccess(responseUser(user), 'Google login successful'),
+    onRequest: (request) => {
+      googlePayload = request.postDataJSON() as Record<string, unknown>;
+    },
+  });
+  const dashboardProgress = await mockDashboardProgress(page, user);
+  const quotaStatus = await mockQuota(page);
+
+  await page.goto('/signup');
+  await page.getByRole('button', { name: 'Sign up with Google' }).click();
+
+  await expect(page).toHaveURL(/\/app\/dashboard$/);
+  await expect(page.getByRole('heading', { name: 'Moien, Playwright' })).toBeVisible();
+  expect(googlePayload).toEqual({ idToken: 'google-signup-id-token' });
+  expectNoRouteErrors(googleLoginCalls);
+  expectNoRouteErrors(dashboardProgress.calls);
+  expectNoRouteErrors(quotaStatus.calls);
 });
 
 test('verifies OTP, logs in, and opens dashboard', async ({ page }) => {

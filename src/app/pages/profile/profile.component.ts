@@ -20,6 +20,7 @@ import {
   parseLocationSuggestion,
 } from '../../location-utils';
 import { ActivatedRoute, Router } from '@angular/router';
+import { map, of, switchMap } from 'rxjs';
 import { IconComponent } from '../../components/icon.component';
 import { GoogleSignInButtonComponent } from '../../components/google-sign-in-button.component';
 import { LocationSuggestion, User } from '../../models';
@@ -37,9 +38,15 @@ function profilePasswordValidator(
 ): ValidationErrors | null {
   const password = group.get('password')?.value;
   const confirmPassword = group.get('confirmPassword')?.value;
+  const currentPassword = group.get('currentPassword')?.value;
+  const hasPassword = group.get('hasPassword')?.value === true;
 
-  if (!password && !confirmPassword) {
+  if (!password && !confirmPassword && !currentPassword) {
     return null;
+  }
+
+  if (hasPassword && !currentPassword) {
+    return { currentPasswordRequired: true };
   }
 
   if (!password) {
@@ -150,7 +157,7 @@ function profilePasswordValidator(
                   <dd>{{ addressText(user) || 'Not added yet' }}</dd>
                 </div>
               </dl>
-              @if (googleConfigured) {
+              @if (showGoogleLink()) {
                 <section class="google-link-card" aria-label="Google sign-in">
                   <div>
                     <h3>Google sign-in</h3>
@@ -333,12 +340,30 @@ function profilePasswordValidator(
                 </div>
 
                 <div class="password-section">
-                  <h3>Change password</h3>
+                  <h3>{{ passwordSectionTitle() }}</h3>
                   <p class="text-muted">
-                    Leave these fields empty to keep your current password.
+                    {{ passwordSectionHelp() }}
                   </p>
 
                   <div class="form-grid">
+                    @if (hasExistingPassword()) {
+                      <div class="field span-2">
+                        <label for="profile-current-password">Current password</label>
+                        <input
+                          id="profile-current-password"
+                          type="password"
+                          class="input"
+                          formControlName="currentPassword"
+                          [class.error]="currentPasswordInvalid()"
+                          autocomplete="current-password"
+                          placeholder="Your current password"
+                        />
+                        @if (currentPasswordInvalid()) {
+                          <span class="field-error">Enter your current password.</span>
+                        }
+                      </div>
+                    }
+
                     <div class="field">
                       <label for="profile-password">New password</label>
                       <input
@@ -642,6 +667,18 @@ export class ProfileComponent implements OnInit, OnDestroy {
   errorMsg = signal('');
   successMsg = signal('');
   readonly googleConfigured = this.googleSignIn.isConfigured;
+  showGoogleLink = computed(
+    () => this.googleConfigured && this.currentUser()?.googleLinked === false,
+  );
+  hasExistingPassword = computed(() => this.currentUser()?.hasPassword !== false);
+  passwordSectionTitle = computed(() =>
+    this.hasExistingPassword() ? 'Change password' : 'Set password',
+  );
+  passwordSectionHelp = computed(() =>
+    this.hasExistingPassword()
+      ? 'Leave these fields empty to keep your current password.'
+      : 'Add a password if you also want to sign in with email and password.',
+  );
   subscriptionError = signal('');
   subscriptionInfo = signal('');
   subscriptionSuccess = signal('');
@@ -660,11 +697,13 @@ export class ProfileComponent implements OnInit, OnDestroy {
       firstName: ['', [Validators.required, Validators.minLength(2)]],
       lastName: ['', [Validators.required, Validators.minLength(2)]],
       email: ['', [Validators.required, Validators.email]],
+      hasPassword: [false],
       streetNumber: [''],
       street: [''],
       postalCode: ['', [Validators.pattern(/^\d{4}$/)]],
       city: [''],
       addressInfo: [''],
+      currentPassword: [''],
       password: ['', [Validators.minLength(8)]],
       confirmPassword: [''],
     },
@@ -722,6 +761,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
     this.saving.set(true);
     const formValue = this.form.getRawValue();
     const passwordChanged = !!formValue.password;
+    const hadPassword = this.hasExistingPassword();
     this.auth
       .updateProfile({
         id: this.currentUser()?.id,
@@ -734,24 +774,48 @@ export class ProfileComponent implements OnInit, OnDestroy {
         postalCode: formValue.postalCode,
         city: formValue.city,
         addressInfo: formValue.addressInfo,
-        ...(formValue.password ? { password: formValue.password } : {}),
       })
-      .subscribe({
-        next: (user) => {
-          if (passwordChanged) {
-            this.auth.logout().subscribe(() => {
-              this.router.navigate(['/login'], {
-                state: {
-                  notice: 'Your password was changed. Please sign in again.',
-                },
-              });
+      .pipe(
+        switchMap((user) => {
+          if (!passwordChanged) {
+            return of({
+              user,
+              passwordChanged: false,
+              passwordWasSet: false,
             });
-            return;
           }
 
+          const passwordRequest = {
+            newPassword: formValue.password,
+            confirmPassword: formValue.confirmPassword,
+          };
+          const savePassword = hadPassword
+            ? this.auth.changePassword({
+                currentPassword: formValue.currentPassword,
+                ...passwordRequest,
+              })
+            : this.auth.setPassword(passwordRequest);
+
+          return savePassword.pipe(
+            map((user) => ({
+              user,
+              passwordChanged: true,
+              passwordWasSet: !hadPassword,
+            })),
+          );
+        }),
+      )
+      .subscribe({
+        next: ({ user, passwordChanged, passwordWasSet }) => {
           this.patchForm(user);
           this.editMode.set(false);
-          this.successMsg.set('Profile updated.');
+          this.successMsg.set(
+            passwordChanged
+              ? passwordWasSet
+                ? 'Password set.'
+                : 'Password changed.'
+              : 'Profile updated.',
+          );
         },
         error: (error) => {
           this.errorMsg.set(this.errorMessage(error));
@@ -859,6 +923,13 @@ export class ProfileComponent implements OnInit, OnDestroy {
       (control.invalid && (control.dirty || control.touched)) ||
       (this.form.hasError('passwordRequired') &&
         this.form.controls.confirmPassword.touched)
+    );
+  }
+
+  currentPasswordInvalid(): boolean {
+    return (
+      this.form.controls.currentPassword.touched &&
+      this.form.hasError('currentPasswordRequired')
     );
   }
 
@@ -991,11 +1062,13 @@ export class ProfileComponent implements OnInit, OnDestroy {
       firstName: user.firstName ?? '',
       lastName: user.lastName ?? '',
       email: user.email,
+      hasPassword: user.hasPassword !== false,
       streetNumber: user.streetNumber ?? '',
       street: user.street ?? '',
       postalCode: user.postalCode ?? '',
       city: user.city ?? '',
       addressInfo: user.addressInfo ?? '',
+      currentPassword: '',
       password: '',
       confirmPassword: '',
     });

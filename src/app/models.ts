@@ -14,6 +14,8 @@ export interface User {
   addressInfo?: string;
   emailVerified?: boolean;
   adminDisabled?: boolean;
+  googleLinked?: boolean;
+  hasPassword?: boolean;
   roles?: string[];
   subscription?: SubscriptionInfo;
 }

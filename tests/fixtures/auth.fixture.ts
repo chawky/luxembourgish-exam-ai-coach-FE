@@ -11,6 +11,8 @@ export interface TestUser {
   roles: string[];
   emailVerified: boolean;
   adminDisabled: boolean;
+  googleLinked: boolean;
+  hasPassword: boolean;
 }
 
 export const authTokenStorageKey = 'sproochen.authToken';
@@ -34,6 +36,8 @@ export function testUser(overrides: Partial<TestUser> = {}): TestUser {
     roles: ['USER'],
     emailVerified: true,
     adminDisabled: false,
+    googleLinked: false,
+    hasPassword: true,
     ...overrides,
   };
 }
@@ -47,6 +51,8 @@ export function responseUser(user: TestUser, jwt?: string): Record<string, unkno
     lastName: user.lastName,
     emailVerified: user.emailVerified,
     adminDisabled: user.adminDisabled,
+    googleLinked: user.googleLinked,
+    hasPassword: user.hasPassword,
     roles: user.roles,
     subscription: null,
     ...(jwt ? { jwt } : {}),

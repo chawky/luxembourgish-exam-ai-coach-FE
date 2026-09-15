@@ -36,6 +36,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/me/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["changePassword"];
+        post: operations["setPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/prompts/{key}": {
         parameters: {
             query?: never;
@@ -776,6 +792,8 @@ export interface components {
             addressInfo?: string;
             emailVerified?: boolean;
             adminDisabled?: boolean;
+            googleLinked?: boolean;
+            hasPassword?: boolean;
             roles?: string[];
             subscription?: components["schemas"]["SubscriptionInfoDto"];
         };
@@ -786,6 +804,11 @@ export interface components {
             startedAt?: string;
             /** Format: date */
             currentPeriodEnd?: string;
+        };
+        ChangePasswordRequest: {
+            currentPassword: string;
+            newPassword: string;
+            confirmPassword: string;
         };
         AdminPromptUpdateRequest: {
             title?: string;
@@ -880,6 +903,10 @@ export interface components {
         ForgotPasswordRequest: {
             /** Format: email */
             email: string;
+        };
+        SetPasswordRequest: {
+            newPassword: string;
+            confirmPassword: string;
         };
         GoogleLoginRequestDto: {
             idToken: string;
@@ -1382,6 +1409,54 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["RequestUserDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseResponseUserDto"];
+                };
+            };
+        };
+    };
+    changePassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseResponseUserDto"];
+                };
+            };
+        };
+    };
+    setPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetPasswordRequest"];
             };
         };
         responses: {

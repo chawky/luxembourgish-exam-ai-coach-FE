@@ -20,6 +20,8 @@ import { CacheRegistryService } from './cache-registry.service';
 
 type ResponseUserDto = components['schemas']['ResponseUserDto'];
 type GoogleLoginRequestDto = components['schemas']['GoogleLoginRequestDto'];
+type SetPasswordRequest = components['schemas']['SetPasswordRequest'];
+type ChangePasswordRequest = components['schemas']['ChangePasswordRequest'];
 
 interface RequestUserDto {
   username?: string;
@@ -249,6 +251,26 @@ export class AuthService {
       );
   }
 
+  setPassword(request: SetPasswordRequest) {
+    return this.savePassword(
+      this.https.post<ApiResponse<ResponseUserDto | null>>(
+        this.url + '/me/password',
+        request,
+      ),
+      'Could not set password.',
+    );
+  }
+
+  changePassword(request: ChangePasswordRequest) {
+    return this.savePassword(
+      this.https.put<ApiResponse<ResponseUserDto | null>>(
+        this.url + '/me/password',
+        request,
+      ),
+      'Could not change password.',
+    );
+  }
+
   linkGoogle(idToken: string) {
     const request: GoogleLoginRequestDto = { idToken };
 
@@ -277,6 +299,26 @@ export class AuthService {
 
   private clearUserScopedCaches(): void {
     this.cacheRegistry.clearUserScopedCaches();
+  }
+
+  private savePassword(
+    request: Observable<ApiResponse<ResponseUserDto | null>>,
+    fallbackMessage: string,
+  ) {
+    return request.pipe(
+      this.requireSuccess(fallbackMessage),
+      map((response) => {
+        const updatedUser = response.data;
+        if (!updatedUser) {
+          throw new Error(response.message || fallbackMessage);
+        }
+
+        const user = this.toCurrentUser(updatedUser);
+        this.currentUserRequest = undefined;
+        this.currentUser.set(user);
+        return user;
+      }),
+    );
   }
 
   private toUserRequest(data: RequestUserDto): RequestUserDto {
@@ -321,6 +363,8 @@ export class AuthService {
       addressInfo: user.addressInfo,
       emailVerified: user.emailVerified,
       adminDisabled: user.adminDisabled,
+      googleLinked: user.googleLinked,
+      hasPassword: user.hasPassword,
       roles: user.roles,
       subscription: user.subscription,
     };

@@ -8,6 +8,7 @@ import {
 } from './fixtures/api.fixture';
 import {
   mockCurrentUser,
+  responseUser,
   seedAuthenticatedSession,
   testUser,
 } from './fixtures/auth.fixture';
@@ -306,4 +307,140 @@ test('logout clears the session and leaves protected routes inaccessible', async
 
   await expect(page).toHaveURL(/\/login$/);
   expectNoRouteErrors(unauthenticatedCurrentUser);
+});
+
+test('google-linked user does not see profile link prompt', async ({ page }) => {
+  const learner = testUser({ googleLinked: true });
+
+  const currentUser = await seedAuthenticatedSession(page, learner);
+  const progress = await mockDashboardProgress(page, learner);
+  const quotaStatus = await mockQuota(page);
+
+  await page.goto('/app/profile');
+
+  await expect(page.getByRole('heading', { name: 'Your account' })).toBeVisible();
+  await expect(page.getByLabel('Google sign-in')).toHaveCount(0);
+  expectNoRouteErrors(currentUser.calls);
+  expectNoRouteErrors(progress.calls);
+  expectNoRouteErrors(quotaStatus.calls);
+});
+
+test('google-only user can set first password from profile', async ({ page }) => {
+  const learner = testUser({ googleLinked: true, hasPassword: false });
+  const userRouteErrors: string[] = [];
+  let profilePayload: Record<string, unknown> | undefined;
+  let passwordPayload: Record<string, unknown> | undefined;
+
+  const progress = await mockDashboardProgress(page, learner);
+  const quotaStatus = await mockQuota(page);
+  await page.route('**/api/users/me', async (route) => {
+    const request = route.request();
+
+    if (request.method() === 'GET') {
+      await fulfillJson(route, apiSuccess(responseUser(learner), 'User loaded'));
+      return;
+    }
+
+    if (request.method() === 'PUT') {
+      profilePayload = request.postDataJSON() as Record<string, unknown>;
+      await fulfillJson(
+        route,
+        apiSuccess(responseUser(learner), 'Current user updated successfully'),
+      );
+      return;
+    }
+
+    userRouteErrors.push(`Unexpected ${request.method()} ${request.url()}`);
+    await route.abort();
+  });
+  const passwordCalls = await routeApi(page, '**/api/users/me/password', {
+    method: 'POST',
+    response: apiSuccess(
+      responseUser({ ...learner, hasPassword: true }),
+      'Password set successfully',
+    ),
+    onRequest: (request) => {
+      passwordPayload = request.postDataJSON() as Record<string, unknown>;
+    },
+  });
+
+  await page.goto('/app/profile');
+  await page.getByRole('button', { name: 'Edit profile' }).click();
+  await expect(page.getByRole('heading', { name: 'Set password' })).toBeVisible();
+  await expect(page.getByLabel('Current password')).toHaveCount(0);
+
+  await page.getByLabel('New password', { exact: true }).fill('NewSecurePassword1!');
+  await page.getByLabel('Confirm new password').fill('NewSecurePassword1!');
+  await page.getByRole('button', { name: 'Save changes' }).click();
+
+  await expect(page.getByRole('status')).toHaveText('Password set.');
+  expect(profilePayload).not.toHaveProperty('password');
+  expect(passwordPayload).toEqual({
+    newPassword: 'NewSecurePassword1!',
+    confirmPassword: 'NewSecurePassword1!',
+  });
+  expect(userRouteErrors).toEqual([]);
+  expectNoRouteErrors(progress.calls);
+  expectNoRouteErrors(quotaStatus.calls);
+  expectNoRouteErrors(passwordCalls);
+});
+
+test('password account changes password with current password', async ({ page }) => {
+  const learner = testUser({ hasPassword: true });
+  const userRouteErrors: string[] = [];
+  let profilePayload: Record<string, unknown> | undefined;
+  let passwordPayload: Record<string, unknown> | undefined;
+
+  const progress = await mockDashboardProgress(page, learner);
+  const quotaStatus = await mockQuota(page);
+  await page.route('**/api/users/me', async (route) => {
+    const request = route.request();
+
+    if (request.method() === 'GET') {
+      await fulfillJson(route, apiSuccess(responseUser(learner), 'User loaded'));
+      return;
+    }
+
+    if (request.method() === 'PUT') {
+      profilePayload = request.postDataJSON() as Record<string, unknown>;
+      await fulfillJson(
+        route,
+        apiSuccess(responseUser(learner), 'Current user updated successfully'),
+      );
+      return;
+    }
+
+    userRouteErrors.push(`Unexpected ${request.method()} ${request.url()}`);
+    await route.abort();
+  });
+  const passwordCalls = await routeApi(page, '**/api/users/me/password', {
+    method: 'PUT',
+    response: apiSuccess(responseUser(learner), 'Password changed successfully'),
+    onRequest: (request) => {
+      passwordPayload = request.postDataJSON() as Record<string, unknown>;
+    },
+  });
+
+  await page.goto('/app/profile');
+  await page.getByRole('button', { name: 'Edit profile' }).click();
+  await expect(page.getByRole('heading', { name: 'Change password' })).toBeVisible();
+
+  await page.getByLabel('Current password').fill(learner.password);
+  await page
+    .getByLabel('New password', { exact: true })
+    .fill('ChangedSecurePassword1!');
+  await page.getByLabel('Confirm new password').fill('ChangedSecurePassword1!');
+  await page.getByRole('button', { name: 'Save changes' }).click();
+
+  await expect(page.getByRole('status')).toHaveText('Password changed.');
+  expect(profilePayload).not.toHaveProperty('password');
+  expect(passwordPayload).toEqual({
+    currentPassword: learner.password,
+    newPassword: 'ChangedSecurePassword1!',
+    confirmPassword: 'ChangedSecurePassword1!',
+  });
+  expect(userRouteErrors).toEqual([]);
+  expectNoRouteErrors(progress.calls);
+  expectNoRouteErrors(quotaStatus.calls);
+  expectNoRouteErrors(passwordCalls);
 });

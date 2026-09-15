@@ -114,6 +114,31 @@
   overflow-wrap: anywhere;
 }
 
+.google-link-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px;
+  margin-top: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.google-link-card h3 {
+  font-size: 18px;
+}
+
+.google-link-card p {
+  margin: 4px 0 0;
+}
+
+.google-link-status {
+  color: var(--slate-500);
+  font-size: 14px;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -383,6 +408,11 @@
 
   .profile-head .btn {
     width: 100%;
+  }
+
+  .google-link-card {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .actions .btn {

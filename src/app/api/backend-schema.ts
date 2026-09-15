@@ -4,6 +4,38 @@
  */
 
 export interface paths {
+    "/api/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["findById"];
+        put: operations["updateUser"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["me"];
+        put: operations["updateMe"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/prompts/{key}": {
         parameters: {
             query?: never;
@@ -63,6 +95,182 @@ export interface paths {
         put: operations["updateLevel"];
         post?: never;
         delete: operations["deleteLevel"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/verifyOtp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["verifyOtp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/sendOtp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["sendOtp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/resendOtp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resendOtp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/resend-password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["forgotPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/forgot-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["forgotPassword_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/me/google-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["linkGoogle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/google-login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["googleLogin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/addUser": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createUser"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -324,6 +532,54 @@ export interface paths {
         patch: operations["updateUserStatus"];
         trace?: never;
     };
+    "/api/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["findAll"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/me/ai-quota": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["myAiQuota"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["searchLocations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/progress/me": {
         parameters: {
             query?: never;
@@ -488,6 +744,49 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        RequestUserDto: {
+            username?: string;
+            password?: string;
+            email?: string;
+            firstName?: string;
+            lastName?: string;
+            street?: string;
+            streetNumber?: string;
+            postalCode?: string;
+            city?: string;
+            addressInfo?: string;
+            roles?: string[];
+        };
+        ApiResponseResponseUserDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["ResponseUserDto"];
+        };
+        ResponseUserDto: {
+            /** Format: int32 */
+            id?: number;
+            username?: string;
+            email?: string;
+            firstName?: string;
+            lastName?: string;
+            street?: string;
+            streetNumber?: string;
+            postalCode?: string;
+            city?: string;
+            addressInfo?: string;
+            emailVerified?: boolean;
+            adminDisabled?: boolean;
+            roles?: string[];
+            subscription?: components["schemas"]["SubscriptionInfoDto"];
+        };
+        SubscriptionInfoDto: {
+            subscribed?: boolean;
+            status?: string;
+            /** Format: date */
+            startedAt?: string;
+            /** Format: date */
+            currentPeriodEnd?: string;
+        };
         AdminPromptUpdateRequest: {
             title?: string;
             editableContent?: string;
@@ -558,6 +857,32 @@ export interface components {
             success?: boolean;
             message?: string;
             data?: components["schemas"]["AdminLevelOptionDto"];
+        };
+        VerifyOtpRequest: {
+            /** Format: int32 */
+            otp?: number;
+            email?: string;
+        };
+        ApiResponseVoid: {
+            success?: boolean;
+            message?: string;
+            data?: unknown;
+        };
+        SendOtpRequest: {
+            email?: string;
+        };
+        ResetPasswordRequest: {
+            /** Format: email */
+            email: string;
+            code: string;
+            newPassword: string;
+        };
+        ForgotPasswordRequest: {
+            /** Format: email */
+            email: string;
+        };
+        GoogleLoginRequestDto: {
+            idToken: string;
         };
         CompleteExerciseRequest: {
             learnerAnswer?: string;
@@ -767,24 +1092,6 @@ export interface components {
             latestExerciseName?: string;
             skillProgress?: components["schemas"]["SkillProgressDto"][];
         };
-        ResponseUserDto: {
-            /** Format: int32 */
-            id?: number;
-            username?: string;
-            email?: string;
-            firstName?: string;
-            lastName?: string;
-            street?: string;
-            streetNumber?: string;
-            postalCode?: string;
-            city?: string;
-            addressInfo?: string;
-            emailVerified?: boolean;
-            adminDisabled?: boolean;
-            roles?: string[];
-            subscription?: components["schemas"]["SubscriptionInfoDto"];
-            jwt?: string;
-        };
         SkillProgressDto: {
             exerciseType?: string;
             /** Format: int32 */
@@ -797,13 +1104,25 @@ export interface components {
             averageRatingOverall?: number;
             latestExerciseName?: string;
         };
-        SubscriptionInfoDto: {
-            subscribed?: boolean;
-            status?: string;
-            /** Format: date */
-            startedAt?: string;
-            /** Format: date */
-            currentPeriodEnd?: string;
+        ApiResponseListResponseUserDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["ResponseUserDto"][];
+        };
+        ApiResponseAiQuotaStatusDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["AiQuotaStatusDto"];
+        };
+        ApiResponseListLocationSuggestionDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["LocationSuggestionDto"][];
+        };
+        LocationSuggestionDto: {
+            id?: string;
+            label?: string;
+            layerName?: string;
         };
         ApiResponseProgressDashboardDto: {
             success?: boolean;
@@ -924,11 +1243,6 @@ export interface components {
             message?: string;
             data?: components["schemas"]["AdminAiUsageSummaryDto"];
         };
-        ApiResponseAiQuotaStatusDto: {
-            success?: boolean;
-            message?: string;
-            data?: components["schemas"]["AiQuotaStatusDto"];
-        };
         ApiResponseListAdminPromptDto: {
             success?: boolean;
             message?: string;
@@ -981,11 +1295,6 @@ export interface components {
             /** Format: int32 */
             totalPages?: number;
         };
-        ApiResponseVoid: {
-            success?: boolean;
-            message?: string;
-            data?: unknown;
-        };
     };
     responses: never;
     parameters: never;
@@ -995,6 +1304,98 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    findById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseResponseUserDto"];
+                };
+            };
+        };
+    };
+    updateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestUserDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseResponseUserDto"];
+                };
+            };
+        };
+    };
+    me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseResponseUserDto"];
+                };
+            };
+        };
+    };
+    updateMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestUserDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseResponseUserDto"];
+                };
+            };
+        };
+    };
     getPrompt: {
         parameters: {
             query?: never;
@@ -1205,6 +1606,266 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    verifyOtp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyOtpRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    sendOtp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendOtpRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    resetPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    resendOtp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendOtpRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    forgotPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForgotPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    forgotPassword_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForgotPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    linkGoogle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoogleLoginRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseResponseUserDto"];
+                };
+            };
+        };
+    };
+    logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestUserDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseResponseUserDto"];
+                };
+            };
+        };
+    };
+    googleLogin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoogleLoginRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseResponseUserDto"];
+                };
+            };
+        };
+    };
+    createUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestUserDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseResponseUserDto"];
                 };
             };
         };
@@ -1616,6 +2277,69 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseAdminUserDetailDto"];
+                };
+            };
+        };
+    };
+    findAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListResponseUserDto"];
+                };
+            };
+        };
+    };
+    myAiQuota: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAiQuotaStatusDto"];
+                };
+            };
+        };
+    };
+    searchLocations: {
+        parameters: {
+            query: {
+                query: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListLocationSuggestionDto"];
                 };
             };
         };

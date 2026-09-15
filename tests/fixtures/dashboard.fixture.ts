@@ -35,7 +35,7 @@ export async function mockDashboardProgress(
   const {
     token = 'playwright-jwt-token',
     data = progressDashboard(user),
-    requireAuth = true,
+    requireAuth = false,
   } = options;
 
   const calls = await routeApi(page, '**/api/progress/me', {

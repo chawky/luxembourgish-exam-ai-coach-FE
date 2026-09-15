@@ -21,8 +21,10 @@ import {
 } from '../../location-utils';
 import { ActivatedRoute, Router } from '@angular/router';
 import { IconComponent } from '../../components/icon.component';
+import { GoogleSignInButtonComponent } from '../../components/google-sign-in-button.component';
 import { LocationSuggestion, User } from '../../models';
 import { AuthService } from '../../services/auth.service';
+import { GoogleSignInService } from '../../services/google-sign-in.service';
 import { LocationService } from '../../services/location.service';
 import { PaymentService } from '../../services/payment.service';
 import { friendlyErrorMessage } from '../../error-message';
@@ -54,7 +56,12 @@ function profilePasswordValidator(
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, IconComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    IconComponent,
+    GoogleSignInButtonComponent,
+  ],
   template: `
     <header class="page-head">
       <div>
@@ -143,6 +150,24 @@ function profilePasswordValidator(
                   <dd>{{ addressText(user) || 'Not added yet' }}</dd>
                 </div>
               </dl>
+              @if (googleConfigured) {
+                <section class="google-link-card" aria-label="Google sign-in">
+                  <div>
+                    <h3>Google sign-in</h3>
+                    <p class="text-muted">
+                      Connect your Google account to sign in faster next time.
+                    </p>
+                    @if (googleLinking()) {
+                      <p class="google-link-status" role="status">
+                        Connecting Google sign-in...
+                      </p>
+                    }
+                  </div>
+                  <app-google-sign-in-button
+                    (credential)="linkGoogle($event)"
+                  ></app-google-sign-in-button>
+                </section>
+              }
             } @else {
               <form [formGroup]="form" (ngSubmit)="save()" novalidate>
                 <div class="form-grid">
@@ -559,6 +584,7 @@ function profilePasswordValidator(
 export class ProfileComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private auth = inject(AuthService);
+  private googleSignIn = inject(GoogleSignInService);
   private locationService = inject(LocationService);
   private paymentService = inject(PaymentService);
   private route = inject(ActivatedRoute);
@@ -573,6 +599,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   activeTab = signal<ProfileTab>('account');
   loading = signal(false);
   saving = signal(false);
+  googleLinking = signal(false);
   subscriptionLoading = signal(false);
   subscriptionCancellationLoading = signal(false);
   subscriptionCancellationPending = signal(false);
@@ -614,6 +641,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   editMode = signal(false);
   errorMsg = signal('');
   successMsg = signal('');
+  readonly googleConfigured = this.googleSignIn.isConfigured;
   subscriptionError = signal('');
   subscriptionInfo = signal('');
   subscriptionSuccess = signal('');
@@ -733,6 +761,30 @@ export class ProfileComponent implements OnInit, OnDestroy {
           this.saving.set(false);
         },
       });
+  }
+
+  linkGoogle(idToken: string): void {
+    if (this.googleLinking()) {
+      return;
+    }
+
+    this.errorMsg.set('');
+    this.successMsg.set('');
+    this.googleLinking.set(true);
+
+    this.auth.linkGoogle(idToken).subscribe({
+      next: (user) => {
+        this.patchForm(user);
+        this.successMsg.set('Google sign-in connected.');
+      },
+      error: (error) => {
+        this.errorMsg.set(this.errorMessage(error));
+        this.googleLinking.set(false);
+      },
+      complete: () => {
+        this.googleLinking.set(false);
+      },
+    });
   }
 
   startSubscription(): void {

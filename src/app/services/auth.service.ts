@@ -19,6 +19,7 @@ import { displayName } from '../location-utils';
 import { CacheRegistryService } from './cache-registry.service';
 
 type ResponseUserDto = components['schemas']['ResponseUserDto'];
+type GoogleLoginRequestDto = components['schemas']['GoogleLoginRequestDto'];
 
 interface RequestUserDto {
   username?: string;
@@ -106,6 +107,29 @@ export class AuthService {
           this.currentUserRequest = undefined;
           this.clearUserScopedCaches();
           this.currentUser.set(this.toCurrentUser(user, email));
+        }),
+      );
+  }
+
+  googleLogin(idToken: string) {
+    const request: GoogleLoginRequestDto = { idToken };
+
+    return this.https
+      .post<ApiResponse<ResponseUserDto | null>>(
+        this.url + '/google-login',
+        request,
+      )
+      .pipe(
+        this.requireSuccess('Could not sign in with Google.'),
+        tap((response) => {
+          const user = response.data;
+          if (!user) {
+            throw new Error('Google sign-in response did not include your account.');
+          }
+
+          this.currentUserRequest = undefined;
+          this.clearUserScopedCaches();
+          this.currentUser.set(this.toCurrentUser(user));
         }),
       );
   }
@@ -218,6 +242,32 @@ export class AuthService {
           }
 
           const user = this.toCurrentUser(updatedUser, request.email);
+          this.currentUserRequest = undefined;
+          this.currentUser.set(user);
+          return user;
+        }),
+      );
+  }
+
+  linkGoogle(idToken: string) {
+    const request: GoogleLoginRequestDto = { idToken };
+
+    return this.https
+      .post<ApiResponse<ResponseUserDto | null>>(
+        this.url + '/me/google-link',
+        request,
+      )
+      .pipe(
+        this.requireSuccess('Could not connect Google sign-in.'),
+        map((response) => {
+          const updatedUser = response.data;
+          if (!updatedUser) {
+            throw new Error(
+              response.message || 'Google sign-in did not return your account.',
+            );
+          }
+
+          const user = this.toCurrentUser(updatedUser);
           this.currentUserRequest = undefined;
           this.currentUser.set(user);
           return user;

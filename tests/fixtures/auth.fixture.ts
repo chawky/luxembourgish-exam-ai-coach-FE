@@ -62,7 +62,7 @@ export async function mockCurrentUser(
   } = {},
 ): Promise<MockedProtectedRoute> {
   const authHeaders: string[] = [];
-  const { token = 'playwright-jwt-token', requireAuth = true } = options;
+  const { token = 'playwright-jwt-token', requireAuth = false } = options;
 
   const calls = await routeApi(page, '**/api/users/me', {
     method: 'GET',
@@ -87,14 +87,7 @@ export async function seedAuthenticatedSession(
   user: TestUser,
   token = 'playwright-jwt-token',
 ): Promise<MockedProtectedRoute> {
-  await page.addInitScript(
-    ({ key, value }) => {
-      window.localStorage.setItem(key, value);
-    },
-    { key: authTokenStorageKey, value: token },
-  );
-
-  return mockCurrentUser(page, user, { token });
+  return mockCurrentUser(page, user, { token, requireAuth: false });
 }
 
 export async function expectStoredToken(page: Page, token: string | null): Promise<void> {

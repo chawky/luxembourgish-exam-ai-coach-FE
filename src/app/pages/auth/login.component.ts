@@ -7,10 +7,12 @@ import {
 } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { GoogleSignInService } from '../../services/google-sign-in.service';
 import { LogoComponent } from '../../components/logo.component';
 import { AuthLayoutComponent } from './auth-layout.component';
 import { IconComponent } from '../../components/icon.component';
 import { friendlyErrorMessage } from '../../error-message';
+import { GoogleSignInButtonComponent } from '../../components/google-sign-in-button.component';
 
 @Component({
   selector: 'app-login',
@@ -22,6 +24,7 @@ import { friendlyErrorMessage } from '../../error-message';
     LogoComponent,
     AuthLayoutComponent,
     IconComponent,
+    GoogleSignInButtonComponent,
   ],
   template: `
     <app-auth-layout>
@@ -88,6 +91,18 @@ import { friendlyErrorMessage } from '../../error-message';
         </button>
       </form>
 
+      @if (googleConfigured) {
+        <div class="auth-divider"><span>or</span></div>
+        <app-google-sign-in-button
+          text="signin_with"
+          unavailableMessage="Google sign-in is not available right now. Use email and password."
+          (credential)="submitGoogle($event)"
+        ></app-google-sign-in-button>
+        @if (googleLoading()) {
+          <p class="google-status" role="status">Signing in with Google...</p>
+        }
+      }
+
       @if (noticeMsg()) {
         <div class="form-success" role="status">{{ noticeMsg() }}</div>
       }
@@ -137,6 +152,28 @@ import { friendlyErrorMessage } from '../../error-message';
         font-size: 14px;
         margin-top: 16px;
       }
+      .auth-divider {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--slate-500);
+        font-size: 13px;
+        font-weight: 700;
+        margin: 18px 0;
+      }
+      .auth-divider::before,
+      .auth-divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+      .google-status {
+        color: var(--slate-500);
+        font-size: 14px;
+        margin: 10px 0 0;
+        text-align: center;
+      }
       .password-control {
         position: relative;
       }
@@ -180,12 +217,15 @@ import { friendlyErrorMessage } from '../../error-message';
 export class LoginComponent implements OnInit {
   private fb = inject(FormBuilder);
   private auth = inject(AuthService);
+  private googleSignIn = inject(GoogleSignInService);
   private router = inject(Router);
 
   loading = signal(false);
+  googleLoading = signal(false);
   errorMsg = signal('');
   noticeMsg = signal('');
   passwordVisible = signal(false);
+  readonly googleConfigured = this.googleSignIn.isConfigured;
 
   form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -239,6 +279,32 @@ export class LoginComponent implements OnInit {
       },
       complete: () => {
         this.loading.set(false);
+      },
+    });
+  }
+
+  submitGoogle(idToken: string): void {
+    if (this.loading()) {
+      return;
+    }
+
+    this.errorMsg.set('');
+    this.noticeMsg.set('');
+    this.loading.set(true);
+    this.googleLoading.set(true);
+
+    this.auth.googleLogin(idToken).subscribe({
+      next: () => {
+        this.router.navigate(['/app/dashboard']);
+      },
+      error: (error) => {
+        this.errorMsg.set(this.errorMessage(error));
+        this.loading.set(false);
+        this.googleLoading.set(false);
+      },
+      complete: () => {
+        this.loading.set(false);
+        this.googleLoading.set(false);
       },
     });
   }

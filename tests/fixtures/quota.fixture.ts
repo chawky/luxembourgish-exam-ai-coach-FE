@@ -35,7 +35,7 @@ export async function mockQuota(
   const {
     token = 'playwright-jwt-token',
     data = quota(),
-    requireAuth = true,
+    requireAuth = false,
   } = options;
 
   const calls = await routeApi(page, '**/api/users/me/ai-quota', {

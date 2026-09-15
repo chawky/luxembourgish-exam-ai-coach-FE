@@ -66,7 +66,6 @@ test('verifies OTP, logs in, and opens dashboard', async ({ page }) => {
     email: `verified.${Date.now()}@example.com`,
   };
   const otp = '123456';
-  const jwt = 'playwright-jwt-token';
   let sendOtpPayload: Record<string, unknown> | undefined;
   let resendOtpPayload: Record<string, unknown> | undefined;
   let verifyOtpPayload: Record<string, unknown> | undefined;
@@ -100,15 +99,15 @@ test('verifies OTP, logs in, and opens dashboard', async ({ page }) => {
 
   const loginCalls = await routeApi(page, '**/api/users/login', {
     method: 'POST',
-    response: apiSuccess(responseUser(user, jwt), 'Signed in'),
+    response: apiSuccess(responseUser(user), 'Signed in'),
     onRequest: async (request) => {
       loginPayload = request.postDataJSON() as Record<string, unknown>;
       await delay(150);
     },
   });
 
-  const dashboardProgress = await mockDashboardProgress(page, user, { token: jwt });
-  const quotaStatus = await mockQuota(page, { token: jwt });
+  const dashboardProgress = await mockDashboardProgress(page, user);
+  const quotaStatus = await mockQuota(page);
 
   await page.goto(`/otp?email=${encodeURIComponent(user.email)}`);
 
@@ -156,9 +155,7 @@ test('verifies OTP, logs in, and opens dashboard', async ({ page }) => {
     email: user.email,
     password: user.password,
   });
-  await expectStoredToken(page, jwt);
-  expect(dashboardProgress.authHeaders).toContain(`Bearer ${jwt}`);
-  expect(quotaStatus.authHeaders).toContain(`Bearer ${jwt}`);
+  await expectStoredToken(page, null);
   expectNoRouteErrors(sendOtpCalls);
   expectNoRouteErrors(resendOtpCalls);
   expectNoRouteErrors(verifyOtpCalls);

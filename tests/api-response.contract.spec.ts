@@ -8,11 +8,47 @@ import {
 import {
   authTokenStorageKey,
   expectStoredToken,
+  mockCurrentUser,
   responseUser,
-  seedAuthenticatedSession,
   testUser,
 } from './fixtures/auth.fixture';
+import { mockDashboardProgress } from './fixtures/dashboard.fixture';
 import { mockQuota } from './fixtures/quota.fixture';
+
+async function mockGoogleSignIn(
+  page: import('@playwright/test').Page,
+  credential = 'google-id-token',
+): Promise<void> {
+  await page.addInitScript(() => {
+    window.SPROOCHEN_GOOGLE_CLIENT_ID = 'test-google-client-id';
+  });
+
+  await page.route('https://accounts.google.com/gsi/client', async (route) => {
+    await route.fulfill({
+      contentType: 'application/javascript',
+      body: `
+        window.google = {
+          accounts: {
+            id: {
+              initialize(config) {
+                window.__googleCredentialCallback = config.callback;
+              },
+              renderButton(parent) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.textContent = 'Sign in with Google';
+                button.addEventListener('click', () => {
+                  window.__googleCredentialCallback({ credential: ${JSON.stringify(credential)} });
+                });
+                parent.appendChild(button);
+              }
+            }
+          }
+        };
+      `,
+    });
+  });
+}
 
 test('failed login envelope shows API message and stores no token', async ({ page }) => {
   const user = testUser();
@@ -30,6 +66,34 @@ test('failed login envelope shows API message and stores no token', async ({ pag
   await expect(page.getByRole('alert')).toHaveText('Invalid email or password.');
   await expectStoredToken(page, null);
   expectNoRouteErrors(loginCalls);
+});
+
+test('google login posts ID token and opens dashboard', async ({ page }) => {
+  const user = testUser();
+  let googlePayload: Record<string, unknown> | undefined;
+
+  await mockGoogleSignIn(page);
+  const googleLoginCalls = await routeApi(page, '**/api/users/google-login', {
+    method: 'POST',
+    response: apiSuccess(responseUser(user), 'Google login successful'),
+    onRequest: (request) => {
+      googlePayload = request.postDataJSON() as Record<string, unknown>;
+    },
+  });
+  const progressCalls = await mockDashboardProgress(page, user, {
+    requireAuth: false,
+  });
+  const quotaStatus = await mockQuota(page, { requireAuth: false });
+
+  await page.goto('/login');
+  await page.getByRole('button', { name: 'Sign in with Google' }).click();
+
+  await expect(page).toHaveURL(/\/app\/dashboard$/);
+  await expect(page.getByRole('heading', { name: 'Moien, Playwright' })).toBeVisible();
+  expect(googlePayload).toEqual({ idToken: 'google-id-token' });
+  expectNoRouteErrors(googleLoginCalls);
+  expectNoRouteErrors(progressCalls.calls);
+  expectNoRouteErrors(quotaStatus.calls);
 });
 
 test('unverified login redirects to OTP with typed email', async ({ page }) => {
@@ -106,32 +170,36 @@ test('HTML login error falls back to a learner-safe message', async ({ page }) =
   await expectStoredToken(page, null);
 });
 
-test('successful login envelope without JWT is rejected', async ({ page }) => {
+test('successful cookie login does not require JWT response body', async ({ page }) => {
   const user = testUser();
 
   const loginCalls = await routeApi(page, '**/api/users/login', {
     method: 'POST',
     response: apiSuccess(responseUser(user), 'Signed in'),
   });
+  const progressCalls = await mockDashboardProgress(page, user, {
+    requireAuth: false,
+  });
+  const quotaStatus = await mockQuota(page, { requireAuth: false });
 
   await page.goto('/login');
   await page.getByLabel('Email').fill(user.email);
   await page.getByLabel('Password').fill(user.password);
   await page.getByRole('button', { name: 'Sign in' }).click();
 
-  await expect(page.getByRole('alert')).toHaveText(
-    'Login response did not include a token.',
-  );
+  await expect(page).toHaveURL(/\/app\/dashboard$/);
+  await expect(page.getByRole('heading', { name: 'Moien, Playwright' })).toBeVisible();
   await expectStoredToken(page, null);
   expectNoRouteErrors(loginCalls);
+  expectNoRouteErrors(progressCalls.calls);
+  expectNoRouteErrors(quotaStatus.calls);
 });
 
 test('missing dashboard data is shown as a page-level error', async ({ page }) => {
   const user = testUser();
-  const jwt = 'dashboard-contract-jwt';
 
-  const currentUser = await seedAuthenticatedSession(page, user, jwt);
-  const quotaStatus = await mockQuota(page, { token: jwt });
+  const currentUser = await mockCurrentUser(page, user, { requireAuth: false });
+  const quotaStatus = await mockQuota(page, { requireAuth: false });
 
   const progressCalls = await routeApi(page, '**/api/progress/me', {
     method: 'GET',
@@ -141,14 +209,14 @@ test('missing dashboard data is shown as a page-level error', async ({ page }) =
   await page.goto('/app/dashboard');
 
   await expect(page.getByRole('alert')).toHaveText(
-    'Dashboard response did not include progress data.',
+    'We could not load your progress. Please try again.',
   );
   expectNoRouteErrors(currentUser.calls);
   expectNoRouteErrors(quotaStatus.calls);
   expectNoRouteErrors(progressCalls);
 });
 
-test('auth interceptor normalizes stored bearer token prefix', async ({ page }) => {
+test('auth interceptor ignores legacy stored bearer token', async ({ page }) => {
   const user = testUser();
   const jwt = 'prefixed-token';
   const authHeaders: string[] = [];
@@ -160,11 +228,8 @@ test('auth interceptor normalizes stored bearer token prefix', async ({ page }) 
     { key: authTokenStorageKey, value: `Bearer ${jwt}` },
   );
 
-  const meCalls = await routeApi(page, '**/api/users/me', {
-    method: 'GET',
-    response: apiSuccess(responseUser(user), 'User loaded'),
-  });
-  const quotaStatus = await mockQuota(page, { token: jwt });
+  const meCalls = await mockCurrentUser(page, user, { requireAuth: false });
+  const quotaStatus = await mockQuota(page, { requireAuth: false });
   const progressCalls = await routeApi(page, '**/api/progress/me', {
     method: 'GET',
     response: apiSuccess(
@@ -184,8 +249,9 @@ test('auth interceptor normalizes stored bearer token prefix', async ({ page }) 
   await page.goto('/app/dashboard');
 
   await expect(page.getByRole('heading', { name: 'Moien, Playwright' })).toBeVisible();
-  expect(authHeaders).toContain(`Bearer ${jwt}`);
-  expectNoRouteErrors(meCalls);
+  expect(meCalls.authHeaders).not.toContain(`Bearer ${jwt}`);
+  expect(authHeaders).not.toContain(`Bearer ${jwt}`);
+  expectNoRouteErrors(meCalls.calls);
   expectNoRouteErrors(quotaStatus.calls);
   expectNoRouteErrors(progressCalls);
 });

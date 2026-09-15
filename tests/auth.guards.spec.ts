@@ -1,13 +1,12 @@
 import { test, expect } from '@playwright/test';
 import {
   apiSuccess,
+  apiFailure,
   expectNoRouteErrors,
   fulfillJson,
   routeApi,
 } from './fixtures/api.fixture';
 import {
-  authTokenStorageKey,
-  expectStoredToken,
   mockCurrentUser,
   seedAuthenticatedSession,
   testUser,
@@ -277,7 +276,7 @@ test('admin confirms disabling and deleting an account', async ({ page }) => {
   expectNoRouteErrors(auditCalls);
 });
 
-test('logout clears the token and leaves protected routes inaccessible', async ({ page }) => {
+test('logout clears the session and leaves protected routes inaccessible', async ({ page }) => {
   const learner = testUser();
   const jwt = 'logout-jwt';
 
@@ -285,12 +284,7 @@ test('logout clears the token and leaves protected routes inaccessible', async (
   const progress = await mockDashboardProgress(page, learner, { token: jwt });
   const quotaStatus = await mockQuota(page, { token: jwt });
 
-  // Set the token after the first navigation so later reloads do not re-seed it.
   await page.goto('/');
-  await page.evaluate(
-    ({ key, value }) => localStorage.setItem(key, value),
-    { key: authTokenStorageKey, value: jwt },
-  );
 
   await page.goto('/app/dashboard');
   await expect(page.getByRole('heading', { name: 'Moien, Playwright' })).toBeVisible();
@@ -298,17 +292,18 @@ test('logout clears the token and leaves protected routes inaccessible', async (
   await page.getByRole('button', { name: /Sign out/ }).click();
 
   await expect(page).toHaveURL(/\/$/);
-  await expectStoredToken(page, null);
   expectNoRouteErrors(currentUser.calls);
   expectNoRouteErrors(progress.calls);
   expectNoRouteErrors(quotaStatus.calls);
 
   await page.unroute('**/api/users/me');
-  const unauthenticatedCurrentUser = await mockCurrentUser(page, learner, {
-    requireAuth: false,
+  const unauthenticatedCurrentUser = await routeApi(page, '**/api/users/me', {
+    method: 'GET',
+    status: 401,
+    response: apiFailure('Please log in and try again.'),
   });
   await page.goto('/app/dashboard');
 
   await expect(page).toHaveURL(/\/login$/);
-  expectNoRouteErrors(unauthenticatedCurrentUser.calls);
+  expectNoRouteErrors(unauthenticatedCurrentUser);
 });

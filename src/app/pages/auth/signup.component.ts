@@ -108,7 +108,7 @@ function matchPasswords(group: AbstractControl): ValidationErrors | null {
 
           <div class="field">
             <label for="locationSearch">Find address</label>
-            <div class="location-search-control">
+            <div class="location-search-control" (focusout)="hideLocationSuggestions($event)">
               <input
                 id="locationSearch"
                 type="text"
@@ -610,6 +610,20 @@ export class SignupComponent implements OnDestroy {
 
   selectLocation(location: LocationSuggestion): void {
     this.applyLocation(location);
+    this.locationSuggestions.set([]);
+  }
+
+  hideLocationSuggestions(event: FocusEvent): void {
+    const nextFocusedElement = event.relatedTarget;
+
+    if (
+      nextFocusedElement instanceof Node &&
+      event.currentTarget instanceof HTMLElement &&
+      event.currentTarget.contains(nextFocusedElement)
+    ) {
+      return;
+    }
+
     this.locationSuggestions.set([]);
   }
 

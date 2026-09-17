@@ -235,7 +235,7 @@ function profilePasswordValidator(
 
                   <div class="field">
                     <label for="profile-location-search">Find address</label>
-                    <div class="location-search-control">
+                    <div class="location-search-control" (focusout)="hideLocationSuggestions($event)">
                       <input
                         id="profile-location-search"
                         type="text"
@@ -989,6 +989,20 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   selectLocation(location: LocationSuggestion): void {
     this.applyLocation(location);
+    this.locationSuggestions.set([]);
+  }
+
+  hideLocationSuggestions(event: FocusEvent): void {
+    const nextFocusedElement = event.relatedTarget;
+
+    if (
+      nextFocusedElement instanceof Node &&
+      event.currentTarget instanceof HTMLElement &&
+      event.currentTarget.contains(nextFocusedElement)
+    ) {
+      return;
+    }
+
     this.locationSuggestions.set([]);
   }
 

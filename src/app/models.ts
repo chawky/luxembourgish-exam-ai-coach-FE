@@ -29,6 +29,7 @@ export interface ApiResponse<T> {
 export interface SubscriptionInfo {
   subscribed?: boolean;
   status?: string;
+  cancelAtPeriodEnd?: boolean;
   startedAt?: string;
   currentPeriodEnd?: string;
 }

@@ -465,6 +465,19 @@ function profilePasswordValidator(
                         Your subscription is no longer set to renew.
                       </p>
                     }
+                  } @else if (subscriptionCancellationScheduled()) {
+                    <h3>Subscription cancellation scheduled</h3>
+                    @if (subscriptionPeriodEnd()) {
+                      <p class="text-muted">
+                        Your access remains available until
+                        {{ subscriptionPeriodEnd() }}.
+                      </p>
+                    } @else {
+                      <p class="text-muted">
+                        Your subscription remains active until the end of the
+                        current billing period.
+                      </p>
+                    }
                   } @else if (hasActiveSubscription()) {
                     <h3>Your practice plan is active</h3>
                     <p class="text-muted">
@@ -544,6 +557,11 @@ function profilePasswordValidator(
                   </button>
                   <p class="text-muted">
                     This may take a moment to update.
+                  </p>
+                } @else if (subscriptionCancellationScheduled()) {
+                  <p class="text-muted">
+                    Your subscription is already set to end after the current
+                    billing period.
                   </p>
                 } @else if (hasActiveSubscription()) {
                   <button
@@ -640,15 +658,25 @@ export class ProfileComponent implements OnInit, OnDestroy {
   hasCanceledSubscription = computed(
     () => this.subscriptionStatus() === 'canceled',
   );
+  subscriptionCancellationScheduled = computed(
+    () => this.currentUser()?.subscription?.cancelAtPeriodEnd === true,
+  );
   showSubscriptionDetails = computed(
     () => this.hasActiveSubscription() || this.hasCanceledSubscription(),
   );
-  subscriptionStatusLabel = computed(() =>
-    this.toSubscriptionStatusLabel(
+  subscriptionStatusLabel = computed(() => {
+    if (this.subscriptionCancellationScheduled()) {
+      const periodEnd = this.subscriptionPeriodEnd();
+      return periodEnd
+        ? `Active — Cancels ${periodEnd}`
+        : 'Active — Cancels at period end';
+    }
+
+    return this.toSubscriptionStatusLabel(
       this.currentUser()?.subscription?.status,
       this.subscriptionStatus(),
-    ),
-  );
+    );
+  });
   subscriptionStartedAt = computed(() =>
     this.formatSubscriptionDate(this.currentUser()?.subscription?.startedAt),
   );
@@ -661,7 +689,9 @@ export class ProfileComponent implements OnInit, OnDestroy {
     ),
   );
   subscriptionPeriodEndLabel = computed(() =>
-    this.hasCanceledSubscription() ? 'Access until' : 'Current period ends',
+    this.hasCanceledSubscription() || this.subscriptionCancellationScheduled()
+      ? 'Access until'
+      : 'Current period ends',
   );
   editMode = signal(false);
   errorMsg = signal('');
@@ -877,7 +907,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   }
 
   cancelSubscription(): void {
-    if (!this.hasActiveSubscription()) {
+    if (!this.hasActiveSubscription() || this.subscriptionCancellationScheduled()) {
       return;
     }
 
@@ -1123,16 +1153,21 @@ export class ProfileComponent implements OnInit, OnDestroy {
   }
 
   private refreshSubscriptionAfterCancellation(attempt: number): void {
-    this.auth.loadCurrentUser().subscribe({
+    this.auth.loadCurrentUser(true).subscribe({
       next: () => {
         if (
+          this.subscriptionCancellationScheduled() ||
           this.hasCanceledSubscription() ||
           this.currentUser()?.subscription?.subscribed === false
         ) {
           this.subscriptionCancellationPending.set(false);
           this.subscriptionCancellationLoading.set(false);
           this.subscriptionInfo.set('');
-          this.subscriptionSuccess.set('Subscription canceled.');
+          this.subscriptionSuccess.set(
+            this.subscriptionCancellationScheduled()
+              ? 'Subscription cancellation scheduled.'
+              : 'Subscription canceled.',
+          );
           return;
         }
 

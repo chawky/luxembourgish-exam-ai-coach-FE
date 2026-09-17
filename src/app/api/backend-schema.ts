@@ -800,6 +800,7 @@ export interface components {
         SubscriptionInfoDto: {
             subscribed?: boolean;
             status?: string;
+            cancelAtPeriodEnd?: boolean;
             /** Format: date */
             startedAt?: string;
             /** Format: date */

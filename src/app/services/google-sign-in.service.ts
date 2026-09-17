@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { environment } from '../../environments/environment';
 
 type GoogleButtonText = 'signin_with' | 'signup_with' | 'continue_with';
+type GoogleButtonTheme = 'outline' | 'filled_blue' | 'filled_black';
+type GoogleButtonShape = 'rectangular' | 'pill' | 'circle' | 'square';
 
 interface GoogleCredentialResponse {
   credential?: string;
@@ -16,10 +18,10 @@ interface GoogleAccountsId {
   renderButton(
     parent: HTMLElement,
     options: {
-      theme: 'outline';
+      theme: GoogleButtonTheme;
       size: 'large';
       text: GoogleButtonText;
-      shape: 'rectangular';
+      shape: GoogleButtonShape;
       width: number;
     },
   ): void;
@@ -48,6 +50,7 @@ export class GoogleSignInService {
     host: HTMLElement,
     onCredential: (idToken: string) => void,
     text: GoogleButtonText = 'continue_with',
+    width = 400,
   ): Promise<void> {
     if (!this.clientId) {
       return Promise.reject(new Error('Google sign-in is not configured.'));
@@ -70,11 +73,11 @@ export class GoogleSignInService {
         },
       });
       googleSignIn.renderButton(host, {
-        theme: 'outline',
+        theme: 'filled_black',
         size: 'large',
         text,
-        shape: 'rectangular',
-        width: 320,
+        shape: 'pill',
+        width,
       });
     });
   }

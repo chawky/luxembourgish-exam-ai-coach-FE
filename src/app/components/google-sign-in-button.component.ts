@@ -28,8 +28,9 @@ type GoogleButtonText = 'signin_with' | 'signup_with' | 'continue_with';
   styles: [
     `
       .google-button-host {
-        display: flex;
-        justify-content: center;
+        display: block;
+        width: 100%;
+        min-height: 44px;
       }
 
       .google-button-error {
@@ -67,6 +68,7 @@ export class GoogleSignInButtonComponent implements AfterViewInit {
           this.zone.run(() => this.credential.emit(idToken));
         },
         this.text,
+        Math.min(Math.floor(host.getBoundingClientRect().width), 400) || 400,
       )
       .catch(() => {
         this.zone.run(() => {

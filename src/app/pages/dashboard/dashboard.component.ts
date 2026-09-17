@@ -20,7 +20,7 @@ import { formatPracticeLabel } from '../../practice-options';
         <span class="eyebrow">Dashboard</span>
         <h1>Moien, {{ firstName() }}</h1>
         <p class="text-muted">
-          Here is where you stand on your road to the Sproochentest.
+          Here is your recent Luxembourgish practice activity.
         </p>
       </div>
     </header>
@@ -193,7 +193,7 @@ export class DashboardComponent implements OnInit {
       path: '/app/speaking',
       icon: 'mic',
       title: 'Speaking drill',
-      text: 'Practice an exam-style prompt',
+      text: 'Practice a spoken prompt',
     },
     {
       path: '/app/listening',
@@ -218,12 +218,6 @@ export class DashboardComponent implements OnInit {
       icon: 'cards',
       title: 'Vocabulary practice',
       text: 'Review useful words and sentences',
-    },
-    {
-      path: '/app/chat',
-      icon: 'chat',
-      title: 'Chat with your tutor',
-      text: 'Have a guided conversation',
     },
   ];
 

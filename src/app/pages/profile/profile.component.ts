@@ -469,13 +469,13 @@ function profilePasswordValidator(
                     <h3>Your practice plan is active</h3>
                     <p class="text-muted">
                       You currently have access to guided speaking, listening,
-                      vocabulary, and exam-style exercises.
+                      vocabulary, and generated topic exercises.
                     </p>
                   } @else {
                     <h3>Unlock the full practice plan</h3>
                     <p class="text-muted">
                       Start your subscription to keep using guided practice for
-                      speaking, listening, vocabulary, and exam-style exercises.
+                      speaking, listening, vocabulary, and generated topic exercises.
                     </p>
                   }
                 </div>
@@ -688,8 +688,8 @@ export class ProfileComponent implements OnInit, OnDestroy {
   locationSuggestions = signal<LocationSuggestion[]>([]);
   readonly subscriptionFeatures = [
     'Unlimited speaking and listening practice',
-    'AI-generated exam-style exercises',
-    'Vocabulary support for exam topics',
+    'AI-generated topic exercises',
+    'Vocabulary support for configured topics',
   ];
 
   form = this.fb.nonNullable.group(

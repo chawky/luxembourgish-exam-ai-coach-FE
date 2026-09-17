@@ -76,13 +76,6 @@ export interface VocabCard {
   theme: string;
 }
 
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'coach';
-  text: string;
-  correction?: string;
-}
-
 export type ExerciseLevel = string;
 
 export type ExerciseTopic = string;

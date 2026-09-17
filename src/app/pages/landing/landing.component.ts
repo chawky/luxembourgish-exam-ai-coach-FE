@@ -30,13 +30,13 @@ interface Feature {
         <div class="hero-copy">
           <span class="badge badge-sky">
             <app-icon name="shield" [size]="14"></app-icon>
-            Built for the Luxembourgish citizenship path
+            Luxembourgish practice for citizenship learners
           </span>
-          <h1>Pass the Sproochentest with your own AI language coach.</h1>
+          <h1>Practice Luxembourgish with guided AI exercises.</h1>
           <p class="lead text-pretty">
-            Practice speaking, listening, vocabulary and image descriptions modelled
-            on the official Luxembourgish language test — at your own pace, with
-            instant feedback.
+            Generate speaking, listening, vocabulary, topic and image-description
+            practice for your level, then review feedback where recordings are
+            supported.
           </p>
           <div class="flex gap-2 wrap cta">
             <a routerLink="/signup" class="btn btn-primary btn-lg">
@@ -52,7 +52,7 @@ interface Feature {
               <app-icon name="check" [size]="16"></app-icon> No credit card
             </div>
             <div class="flex items-center gap-1">
-              <app-icon name="check" [size]="16"></app-icon> Image-description ready
+              <app-icon name="check" [size]="16"></app-icon> Audio and recording practice
             </div>
             <div class="flex items-center gap-1">
               <app-icon name="check" [size]="16"></app-icon> Lëtzebuergesch focused
@@ -65,10 +65,10 @@ interface Feature {
             alt="View of Luxembourg City with the Adolphe Bridge and old town"
           />
           <div class="float-card">
-            <span class="eyebrow">Today’s goal</span>
-            <strong>Speaking drill · B1</strong>
+            <span class="eyebrow">Sample activity</span>
+            <strong>Speaking practice · B1</strong>
             <div class="progress"><span style="width: 68%"></span></div>
-            <small class="text-muted">68% to your target score</small>
+            <small class="text-muted">Generated prompt and feedback</small>
           </div>
         </div>
       </div>
@@ -77,12 +77,12 @@ interface Feature {
     <!-- Trust strip -->
     <section class="strip">
       <div class="container flex items-center justify-between wrap gap-3">
-        <span class="text-muted">Designed around the official test structure</span>
+        <span class="text-muted">Built around the practice modes in this app</span>
         <div class="flex gap-4 wrap stats">
-          <div><strong>A2</strong><span>Listening level</span></div>
-          <div><strong>B1</strong><span>Speaking level</span></div>
-          <div><strong>4</strong><span>Practice modes</span></div>
-          <div><strong>12</strong><span>Day study streak</span></div>
+          <div><strong>A1-B1</strong><span>Selectable levels</span></div>
+          <div><strong>AI</strong><span>Generated tasks</span></div>
+          <div><strong>Audio</strong><span>Listening clips</span></div>
+          <div><strong>Progress</strong><span>Activity tracking</span></div>
         </div>
       </div>
     </section>
@@ -92,10 +92,10 @@ interface Feature {
       <div class="container">
         <div class="section-head text-center">
           <span class="eyebrow">Everything in one place</span>
-          <h2>A complete toolkit for the Sproochentest</h2>
+          <h2>Practice tools for Luxembourgish learners</h2>
           <p class="text-muted">
-            Each mode targets a skill the examiners assess, so nothing catches you
-            by surprise on exam day.
+            Each mode maps to a real feature in the app: generated prompts, audio,
+            images, vocabulary, recordings and progress tracking.
           </p>
         </div>
         <div class="feature-grid">
@@ -158,8 +158,8 @@ interface Feature {
           <a routerLink="/signup" class="btn btn-primary btn-lg">Begin your prep</a>
         </div>
         <div class="card card-pad exam-card">
-          <h3>Your readiness snapshot</h3>
-          <p class="text-muted small">Example of what your dashboard tracks.</p>
+          <h3>Your activity snapshot</h3>
+          <p class="text-muted small">Example of the activity your dashboard tracks.</p>
           @for (b of sampleBars; track b.label) {
             <div class="bar-row">
               <div class="flex justify-between">
@@ -175,8 +175,8 @@ interface Feature {
     <!-- CTA -->
     <section class="cta-band">
       <div class="container text-center">
-        <h2>Your citizenship journey deserves real preparation.</h2>
-        <p>Join today and turn exam anxiety into confidence.</p>
+        <h2>Start building consistent Luxembourgish practice.</h2>
+        <p>Create an account and generate your first exercise.</p>
         <a routerLink="/signup" class="btn btn-accent btn-lg">Create your free account</a>
       </div>
     </section>
@@ -185,7 +185,7 @@ interface Feature {
       <div class="container flex items-center justify-between wrap gap-3">
         <app-logo></app-logo>
         <p class="text-muted small">
-          A practice tool with mock content. Not affiliated with any government body.
+          A learning support tool. Not affiliated with any government body.
         </p>
       </div>
     </footer>
@@ -194,18 +194,17 @@ interface Feature {
 })
 export class LandingComponent {
   features: Feature[] = [
-    { icon: 'mic', title: 'Speaking practice', text: 'Answer real exam-style prompts and get structured coaching tips for each one.' },
-    { icon: 'headphones', title: 'Listening comprehension', text: 'Authentic everyday dialogues with comprehension questions and transcripts.' },
+    { icon: 'mic', title: 'Speaking practice', text: 'Generate a spoken prompt, listen to it, record your answer and review feedback.' },
+    { icon: 'headphones', title: 'Listening comprehension', text: 'Create short audio tasks with questions, transcripts and translations.' },
     { icon: 'image', title: 'Image description', text: 'Describe generated scenes aloud and get feedback on your spoken answer.' },
-    { icon: 'cards', title: 'Vocabulary & flashcards', text: 'Themed Luxembourgish vocab decks with examples to build lasting recall.' },
-    { icon: 'chart', title: 'Progress dashboard', text: 'Track your scores, streaks and readiness toward your target levels.' },
-    { icon: 'chat', title: 'AI chat tutor', text: 'Have a guided conversation in Luxembourgish and receive gentle corrections.' },
+    { icon: 'cards', title: 'Vocabulary cards', text: 'Generate useful words and example sentences for the selected level and topic.' },
+    { icon: 'chart', title: 'Progress dashboard', text: 'Track activity counts, streaks, completed attempts and average ratings.' },
   ];
 
   steps = [
-    { n: 1, title: 'Create your account', text: 'Sign up in seconds and tell the coach where you are starting from.' },
-    { n: 2, title: 'Practice every skill', text: 'Work through speaking, listening, vocabulary and image descriptions at your pace.' },
-    { n: 3, title: 'Track your readiness', text: 'Watch your dashboard climb toward exam-day confidence.' },
+    { n: 1, title: 'Create your account', text: 'Sign up and verify your email so your progress can be saved.' },
+    { n: 2, title: 'Choose a practice mode', text: 'Select a level and topic, then generate a focused activity.' },
+    { n: 3, title: 'Review your progress', text: 'Use the dashboard to see activity, completions, ratings and streaks.' },
   ];
 
   sampleBars = [

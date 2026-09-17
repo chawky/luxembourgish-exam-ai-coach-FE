@@ -32,7 +32,7 @@ import { GoogleSignInButtonComponent } from '../../components/google-sign-in-but
       <app-logo></app-logo>
       <h1 class="title">Welcome back</h1>
       <p class="text-muted subtitle">
-        Sign in to continue preparing for your Sproochentest.
+        Sign in to continue your Luxembourgish practice.
       </p>
 
       <form [formGroup]="form" (ngSubmit)="submit()" novalidate>

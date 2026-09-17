@@ -117,11 +117,6 @@ export const routes: Routes = [
             (m) => m.VocabularyComponent,
           ),
       },
-      {
-        path: 'chat',
-        loadComponent: () =>
-          import('./pages/chat/chat.component').then((m) => m.ChatComponent),
-      },
     ],
   },
   { path: '**', redirectTo: '' },

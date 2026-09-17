@@ -12,29 +12,29 @@ import { Component } from '@angular/core';
       </div>
       <aside class="auth-panel" aria-hidden="true">
         <div class="panel-content">
-          <span class="eyebrow light">Official language exam prep</span>
-          <h2>Your path to Luxembourgish citizenship starts with the language.</h2>
+          <span class="eyebrow light">Luxembourgish practice app</span>
+          <h2>Build your Luxembourgish practice across the main skill areas.</h2>
           <p>
-            Practice speaking, listening, vocabulary and image descriptions with an
-            AI coach modelled on the real Sproochentest.
+            Generate speaking, listening, vocabulary, topic and image-description
+            tasks, then track your saved activity in one place.
           </p>
           <ul class="checklist">
             <li>Guided speaking drills with instant feedback</li>
-            <li>Authentic listening exercises</li>
+            <li>Generated listening exercises with audio</li>
             <li>Image description tasks with spoken feedback</li>
           </ul>
           <div class="stat-row">
             <div>
-              <strong>4</strong>
-              <span>practice modes</span>
+              <strong>5</strong>
+              <span>practice areas</span>
             </div>
             <div>
-              <strong>200+</strong>
-              <span>exam-style items</span>
+              <strong>AI</strong>
+              <span>generated tasks</span>
             </div>
             <div>
               <strong>1</strong>
-              <span>friendly coach</span>
+              <span>progress dashboard</span>
             </div>
           </div>
         </div>

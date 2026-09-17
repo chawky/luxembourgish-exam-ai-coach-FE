@@ -46,7 +46,7 @@ function matchPasswords(group: AbstractControl): ValidationErrors | null {
       <app-logo></app-logo>
       <h1 class="title">Create your account</h1>
       <p class="text-muted subtitle">
-        Start your free Sproochentest preparation today.
+        Start generating Luxembourgish practice today.
       </p>
 
       <form [formGroup]="form" (ngSubmit)="submit()" novalidate>

@@ -27,7 +27,7 @@ import { friendlyErrorMessage } from '../../error-message';
     <header class="page-head">
       <div>
         <span class="eyebrow">Speaking practice</span>
-        <h1>Speak like the exam</h1>
+        <h1>Practise spoken Luxembourgish</h1>
         <p class="text-muted">
           Choose a level and topic, generate a prompt, then record your answer.
         </p>

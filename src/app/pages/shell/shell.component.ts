@@ -115,6 +115,7 @@ export class ShellComponent implements OnInit {
     { path: '/app/exercises', label: 'Exercises', icon: 'book' },
     { path: '/app/image-description', label: 'Image Description', icon: 'image' },
     { path: '/app/vocabulary', label: 'Vocabulary', icon: 'cards' },
+    { path: '/support', label: 'Support', icon: 'info' },
   ];
 
   ngOnInit(): void {

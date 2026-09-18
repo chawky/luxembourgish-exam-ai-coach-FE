@@ -186,6 +186,7 @@ interface Feature {
         <app-logo></app-logo>
         <p class="text-muted small">
           A learning support tool. Not affiliated with any government body.
+          <a routerLink="/support">Support</a>
         </p>
       </div>
     </footer>

@@ -13,9 +13,10 @@ import { LogoComponent } from './logo.component';
           <app-logo></app-logo>
         </a>
         <nav class="links" aria-label="Primary">
-          <a href="#features">Features</a>
-          <a href="#how">How it works</a>
-          <a href="#exam">The exam</a>
+          <a routerLink="/" fragment="features">Features</a>
+          <a routerLink="/" fragment="how">How it works</a>
+          <a routerLink="/" fragment="exam">The exam</a>
+          <a routerLink="/support">Support</a>
         </nav>
         <div class="flex items-center gap-2">
           <a routerLink="/login" class="btn btn-ghost">Sign in</a>

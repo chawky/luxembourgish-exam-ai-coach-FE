@@ -27,6 +27,8 @@ server {
     }
 
     location /api/ {
+        client_max_body_size 20m;
+
         set $backend ${BACKEND_URL};
         proxy_pass $backend;
 

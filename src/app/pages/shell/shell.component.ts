@@ -15,6 +15,7 @@ interface NavItem {
   path: string;
   label: string;
   icon: string;
+  fragment?: string;
   adminOnly?: boolean;
 }
 
@@ -41,7 +42,9 @@ interface NavItem {
             <a
               *ngIf="!item.adminOnly || auth.isAdmin()"
               [routerLink]="item.path"
+              [fragment]="item.fragment"
               routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: item.path === '/' }"
               (click)="menuOpen.set(false)"
             >
               <app-icon [name]="item.icon" [size]="20"></app-icon>
@@ -115,7 +118,7 @@ export class ShellComponent implements OnInit {
     { path: '/app/exercises', label: 'Exercises', icon: 'book' },
     { path: '/app/image-description', label: 'Image Description', icon: 'image' },
     { path: '/app/vocabulary', label: 'Vocabulary', icon: 'cards' },
-    { path: '/support', label: 'Support', icon: 'info' },
+    { path: '/', fragment: 'support', label: 'Support', icon: 'info' },
   ];
 
   ngOnInit(): void {

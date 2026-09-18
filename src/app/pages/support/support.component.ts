@@ -2,7 +2,6 @@ import { CommonModule } from '@angular/common';
 import { Component, ElementRef, ViewChild, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { IconComponent } from '../../components/icon.component';
-import { PublicNavComponent } from '../../components/public-nav.component';
 import { friendlyErrorMessage } from '../../error-message';
 import { AuthService } from '../../services/auth.service';
 import { SupportService } from '../../services/support.service';
@@ -22,13 +21,10 @@ const ALLOWED_ATTACHMENT_TYPES = [
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    PublicNavComponent,
     IconComponent,
   ],
   template: `
-    <app-public-nav></app-public-nav>
-
-    <main class="support-page">
+    <main id="support" class="support-page">
       <section class="container support-grid">
         <div class="support-copy">
           <span class="eyebrow">Support</span>

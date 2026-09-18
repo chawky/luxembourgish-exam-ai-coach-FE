@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { PublicNavComponent } from '../../components/public-nav.component';
 import { IconComponent } from '../../components/icon.component';
 import { LogoComponent } from '../../components/logo.component';
+import { SupportComponent } from '../support/support.component';
 
 interface Feature {
   icon: string;
@@ -20,6 +21,7 @@ interface Feature {
     PublicNavComponent,
     IconComponent,
     LogoComponent,
+    SupportComponent,
   ],
   template: `
     <app-public-nav></app-public-nav>
@@ -172,6 +174,8 @@ interface Feature {
       </div>
     </section>
 
+    <app-support></app-support>
+
     <!-- CTA -->
     <section class="cta-band">
       <div class="container text-center">
@@ -186,7 +190,7 @@ interface Feature {
         <app-logo></app-logo>
         <p class="text-muted small">
           A learning support tool. Not affiliated with any government body.
-          <a routerLink="/support">Support</a>
+          <a routerLink="/" fragment="support">Support</a>
         </p>
       </div>
     </footer>

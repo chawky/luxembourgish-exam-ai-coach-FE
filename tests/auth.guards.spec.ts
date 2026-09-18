@@ -309,6 +309,26 @@ test('logout clears the session and leaves protected routes inaccessible', async
   expectNoRouteErrors(unauthenticatedCurrentUser);
 });
 
+test('support nav keeps authenticated users in session context', async ({ page }) => {
+  const learner = testUser();
+  const jwt = 'support-nav-jwt';
+
+  const currentUser = await seedAuthenticatedSession(page, learner, jwt);
+  const progress = await mockDashboardProgress(page, learner, { token: jwt });
+  const quotaStatus = await mockQuota(page, { token: jwt });
+
+  await page.goto('/app/dashboard');
+  await page.getByRole('link', { name: /Support/ }).click();
+
+  await expect(page).toHaveURL(/\/#support$/);
+  await expect(page.getByRole('heading', { name: 'Need help with Letz Speak?' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Dashboard' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Sign in' })).toHaveCount(0);
+  expectNoRouteErrors(currentUser.calls);
+  expectNoRouteErrors(progress.calls);
+  expectNoRouteErrors(quotaStatus.calls);
+});
+
 test('google-linked user does not see profile link prompt', async ({ page }) => {
   const learner = testUser({ googleLinked: true });
 

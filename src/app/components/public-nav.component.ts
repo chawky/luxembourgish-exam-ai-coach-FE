@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { LogoComponent } from './logo.component';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-public-nav',
@@ -16,11 +17,15 @@ import { LogoComponent } from './logo.component';
           <a routerLink="/" fragment="features">Features</a>
           <a routerLink="/" fragment="how">How it works</a>
           <a routerLink="/" fragment="exam">The exam</a>
-          <a routerLink="/support">Support</a>
+          <a routerLink="/" fragment="support">Support</a>
         </nav>
         <div class="flex items-center gap-2">
-          <a routerLink="/login" class="btn btn-ghost">Sign in</a>
-          <a routerLink="/signup" class="btn btn-primary">Get started</a>
+          @if (auth.isLoggedIn()) {
+            <a routerLink="/app/dashboard" class="btn btn-primary">Dashboard</a>
+          } @else {
+            <a routerLink="/login" class="btn btn-ghost">Sign in</a>
+            <a routerLink="/signup" class="btn btn-primary">Get started</a>
+          }
         </div>
       </div>
     </header>
@@ -54,4 +59,6 @@ import { LogoComponent } from './logo.component';
     `,
   ],
 })
-export class PublicNavComponent {}
+export class PublicNavComponent {
+  readonly auth = inject(AuthService);
+}

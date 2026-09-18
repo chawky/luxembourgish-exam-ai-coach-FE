@@ -49,7 +49,7 @@ test('support form validates required fields and invalid email', async ({ page }
   await mockLoggedOut(page);
   const supportCalls = await routeSupport(page);
 
-  await page.goto('/support');
+  await page.goto('/#support');
   await page.getByRole('button', { name: 'Send message' }).click();
 
   await expect(page.getByText('Enter a valid email address.')).toBeVisible();
@@ -69,7 +69,7 @@ test('support form validates attachments and allows removal', async ({ page }) =
   await mockLoggedOut(page);
   await routeSupport(page);
 
-  await page.goto('/support');
+  await page.goto('/#support');
   const fileInput = page.locator('#supportAttachments');
 
   await fileInput.setInputFiles({
@@ -115,7 +115,7 @@ test('support form submits multipart FormData with attachments and shows success
     },
   });
 
-  await page.goto('/support');
+  await page.goto('/#support');
   await page.getByLabel('Email').fill('user@example.com');
   await page.getByLabel('Subject').fill('Subscription problem');
   await page.getByLabel('Message').fill('My subscription page is showing the wrong status.');
@@ -154,7 +154,7 @@ test('support form shows API and rate-limit errors safely', async ({ page }) => 
     response: apiFailure('Could not send support request right now.'),
   });
 
-  await page.goto('/support');
+  await page.goto('/#support');
   await page.getByLabel('Email').fill('user@example.com');
   await page.getByLabel('Subject').fill('Technical issue');
   await page.getByLabel('Message').fill('The page is not loading.');
@@ -178,17 +178,20 @@ test('support form prefills authenticated user email', async ({ page }) => {
     response: apiSuccess(responseUser(user), 'User loaded'),
   });
 
-  await page.goto('/support');
+  await page.goto('/#support');
 
   await expect(page.getByLabel('Email')).toHaveValue('learner@example.com');
 });
 
-test('public nav section links work from support page', async ({ page }) => {
+test('public nav support link stays on landing page', async ({ page }) => {
   await mockLoggedOut(page);
 
-  await page.goto('/support');
-  await page.getByRole('link', { name: 'Features' }).click();
+  await page.goto('/');
+  await page
+    .getByRole('navigation', { name: 'Primary' })
+    .getByRole('link', { name: 'Support' })
+    .click();
 
-  await expect(page).toHaveURL(/\/#features$/);
-  await expect(page.getByRole('heading', { name: 'Practice tools for Luxembourgish learners' })).toBeVisible();
+  await expect(page).toHaveURL(/\/#support$/);
+  await expect(page.getByRole('heading', { name: 'Need help with Letz Speak?' })).toBeVisible();
 });

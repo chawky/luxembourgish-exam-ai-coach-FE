@@ -37,13 +37,6 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'support',
-    loadComponent: () =>
-      import('./pages/support/support.component').then(
-        (m) => m.SupportComponent,
-      ),
-  },
-  {
     path: 'payment/success',
     loadComponent: () =>
       import('./pages/payment/payment-return.component').then(

@@ -135,6 +135,18 @@
   text-overflow: ellipsis;
 }
 
+.user-badges,
+.profile-badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.user-badges {
+  flex-shrink: 0;
+}
+
 .detail-stack {
   gap: 20px;
 }

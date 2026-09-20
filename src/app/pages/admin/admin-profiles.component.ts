@@ -138,13 +138,22 @@ type ConfigKind = 'level' | 'topic' | 'type';
                     <strong>{{ displayName(user) }}</strong>
                     <small class="text-muted">{{ user.email }}</small>
                   </span>
-                  <span
-                    class="badge"
-                    [class.badge-red]="user.adminDisabled"
-                    [class.badge-amber]="!user.adminDisabled && user.emailVerified === false"
-                    [class.badge-green]="!user.adminDisabled && user.emailVerified !== false"
-                  >
-                    {{ accountStatusLabel(user) }}
+                  <span class="user-badges">
+                    <span
+                      class="badge"
+                      [class.badge-red]="user.adminDisabled"
+                      [class.badge-amber]="!user.adminDisabled && user.emailVerified === false"
+                      [class.badge-green]="!user.adminDisabled && user.emailVerified !== false"
+                    >
+                      {{ accountStatusLabel(user) }}
+                    </span>
+                    <span
+                      class="badge"
+                      [class.badge-green]="isPremium(user)"
+                      [class.badge-sky]="!isPremium(user)"
+                    >
+                      {{ subscriptionPlanLabel(user) }}
+                    </span>
                   </span>
                 </button>
               }
@@ -180,13 +189,22 @@ type ConfigKind = 'level' | 'topic' | 'type';
                     <h2>{{ displayName(profile.user) }}</h2>
                     <p class="text-muted">{{ profile.user?.email }}</p>
                   </div>
-                  <span
-                    class="badge"
-                    [class.badge-red]="profile.user?.adminDisabled"
-                    [class.badge-amber]="!profile.user?.adminDisabled && profile.user?.emailVerified === false"
-                    [class.badge-green]="!profile.user?.adminDisabled && profile.user?.emailVerified !== false"
-                  >
-                    {{ accountStatusLabel(profile.user) }}
+                  <span class="profile-badges">
+                    <span
+                      class="badge"
+                      [class.badge-red]="profile.user?.adminDisabled"
+                      [class.badge-amber]="!profile.user?.adminDisabled && profile.user?.emailVerified === false"
+                      [class.badge-green]="!profile.user?.adminDisabled && profile.user?.emailVerified !== false"
+                    >
+                      {{ accountStatusLabel(profile.user) }}
+                    </span>
+                    <span
+                      class="badge"
+                      [class.badge-green]="isPremium(profile.user)"
+                      [class.badge-sky]="!isPremium(profile.user)"
+                    >
+                      {{ subscriptionPlanLabel(profile.user) }}
+                    </span>
                   </span>
                 </div>
 
@@ -1184,6 +1202,14 @@ export class AdminProfilesComponent implements OnInit {
     }
 
     return 'Active';
+  }
+
+  subscriptionPlanLabel(user: AdminUser | undefined): string {
+    return this.isPremium(user) ? 'Premium' : 'Basic';
+  }
+
+  isPremium(user: AdminUser | undefined): boolean {
+    return user?.subscription?.subscribed === true;
   }
 
   isEditingConfig(kind: ConfigKind, code: string | undefined): boolean {

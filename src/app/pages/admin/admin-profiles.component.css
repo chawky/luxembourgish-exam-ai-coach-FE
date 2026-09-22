@@ -57,6 +57,20 @@
   margin-bottom: 16px;
 }
 
+.admin-notice {
+  background: color-mix(in srgb, var(--green) 12%, var(--surface));
+  color: var(--green);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.admin-notice-warning {
+  background: color-mix(in srgb, var(--amber) 14%, var(--surface));
+  color: var(--slate-700);
+}
+
 .admin-layout {
   display: grid;
   grid-template-columns: 1fr;

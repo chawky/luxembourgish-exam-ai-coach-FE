@@ -52,6 +52,13 @@ export interface AdminSupportEmailDetail extends AdminSupportEmailList {
   htmlBody?: string;
   attachments?: AdminSupportEmailAttachment[];
 }
+export interface AdminSupportEmailSyncResult {
+  imported: number;
+  existing: number;
+  ignored: number;
+  attachmentsAdded: number;
+  failed: number;
+}
 export type PageResponse<T> = {
   items?: T[];
   page?: number;
@@ -522,6 +529,24 @@ export class AdminService {
         catchError((error) =>
           throwError(() =>
             this.toApiError(error, 'Could not mark support email as read.'),
+          ),
+        ),
+      );
+  }
+
+  syncSupportEmails(): Observable<AdminSupportEmailSyncResult> {
+    return this.http
+      .post<ApiResponse<AdminSupportEmailSyncResult | null>>(
+        `${this.url}/support-emails/sync`,
+        {},
+      )
+      .pipe(
+        map((response) =>
+          this.unwrapData(response, 'Could not sync support emails.'),
+        ),
+        catchError((error) =>
+          throwError(() =>
+            this.toApiError(error, 'Could not sync support emails.'),
           ),
         ),
       );

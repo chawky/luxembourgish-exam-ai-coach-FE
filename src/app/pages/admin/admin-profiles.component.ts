@@ -16,6 +16,7 @@ import {
   AdminSupportEmailAttachment,
   AdminSupportEmailDetail,
   AdminSupportEmailList,
+  AdminSupportEmailSyncResult,
   AdminTopicOption,
   AdminUser,
   AdminUserDetail,
@@ -624,15 +625,35 @@ type ConfigKind = 'level' | 'topic' | 'type';
               Review inbound learner emails received through the support address.
             </p>
           </div>
-          <button
-            class="btn btn-outline"
-            type="button"
-            [disabled]="supportEmailsLoading()"
-            (click)="loadSupportEmails()"
-          >
-            Refresh inbox
-          </button>
+          <div class="button-row">
+            <button
+              class="btn btn-primary"
+              type="button"
+              [disabled]="supportSyncLoading()"
+              (click)="syncSupportEmails()"
+            >
+              {{ supportSyncLoading() ? 'Syncing...' : 'Sync emails' }}
+            </button>
+            <button
+              class="btn btn-outline"
+              type="button"
+              [disabled]="supportEmailsLoading() || supportSyncLoading()"
+              (click)="loadSupportEmails()"
+            >
+              Refresh inbox
+            </button>
+          </div>
         </div>
+
+        @if (supportSyncMessage()) {
+          <section
+            class="admin-notice"
+            [class.admin-notice-warning]="supportSyncHasFailures()"
+            role="status"
+          >
+            {{ supportSyncMessage() }}
+          </section>
+        }
 
         <div class="support-layout">
           <div class="list-card support-list">
@@ -834,6 +855,7 @@ export class AdminProfilesComponent implements OnInit {
   configSaving = signal(false);
   supportEmailsLoading = signal(false);
   supportDetailLoading = signal(false);
+  supportSyncLoading = signal(false);
   downloadingAttachmentId = signal<number | null>(null);
   auditLoading = signal(false);
   errorMsg = signal('');
@@ -848,6 +870,8 @@ export class AdminProfilesComponent implements OnInit {
   exerciseConfig = signal<AdminExerciseConfig>({});
   supportEmails = signal<AdminSupportEmailList[]>([]);
   selectedSupportEmail = signal<AdminSupportEmailDetail | null>(null);
+  supportSyncMessage = signal('');
+  supportSyncHasFailures = signal(false);
   auditPage = signal<PageResponse<AdminAuditLog>>({});
 
   users = computed(() => this.usersPage().items ?? []);
@@ -1297,6 +1321,28 @@ export class AdminProfilesComponent implements OnInit {
     });
   }
 
+  syncSupportEmails(): void {
+    const selectedEmailId = this.selectedSupportEmailId();
+
+    this.supportSyncLoading.set(true);
+    this.errorMsg.set('');
+    this.supportSyncMessage.set('');
+    this.supportSyncHasFailures.set(false);
+
+    this.admin.syncSupportEmails().subscribe({
+      next: (result) => {
+        this.supportSyncMessage.set(this.syncResultMessage(result));
+        this.supportSyncHasFailures.set((result.failed ?? 0) > 0);
+        this.reloadSupportAfterSync(selectedEmailId);
+      },
+      error: (error) => {
+        this.errorMsg.set(this.errorMessage(error));
+        this.supportSyncLoading.set(false);
+      },
+      complete: () => this.supportSyncLoading.set(false),
+    });
+  }
+
   selectSupportEmail(emailId: number | undefined): void {
     if (emailId === undefined) {
       return;
@@ -1352,6 +1398,22 @@ export class AdminProfilesComponent implements OnInit {
         this.downloadingAttachmentId.set(null);
       },
       complete: () => this.downloadingAttachmentId.set(null),
+    });
+  }
+
+  refreshSelectedSupportEmail(): void {
+    const emailId = this.selectedSupportEmailId();
+
+    if (emailId === null) {
+      return;
+    }
+
+    this.admin.getSupportEmail(emailId).subscribe({
+      next: (email) => {
+        this.selectedSupportEmail.set(email);
+        this.patchSupportEmailRow(email);
+      },
+      error: (error) => this.errorMsg.set(this.errorMessage(error)),
     });
   }
 
@@ -1460,6 +1522,38 @@ export class AdminProfilesComponent implements OnInit {
     }
 
     return `${size.toFixed(size >= 10 ? 0 : 1)} ${units[unitIndex]}`;
+  }
+
+  syncResultMessage(result: AdminSupportEmailSyncResult): string {
+    const imported = result.imported ?? 0;
+    const attachmentsAdded = result.attachmentsAdded ?? 0;
+    const failed = result.failed ?? 0;
+    const ignored = result.ignored ?? 0;
+    const changes: string[] = [];
+
+    if (imported > 0) {
+      changes.push(`${imported} ${imported === 1 ? 'email' : 'emails'} imported`);
+    }
+
+    if (attachmentsAdded > 0) {
+      changes.push(
+        `${attachmentsAdded} ${attachmentsAdded === 1 ? 'attachment' : 'attachments'} added`,
+      );
+    }
+
+    if (ignored > 0) {
+      changes.push(`${ignored} ignored`);
+    }
+
+    const base = changes.length
+      ? `Sync complete — ${changes.join(', ')}.`
+      : 'Sync complete — everything is up to date.';
+
+    if (failed > 0) {
+      return `${base} ${failed} ${failed === 1 ? 'email failed' : 'emails failed'} to sync.`;
+    }
+
+    return base;
   }
 
   promptTitleFallback(prompt: AdminPrompt): string {
@@ -1674,6 +1768,35 @@ export class AdminProfilesComponent implements OnInit {
           : item,
       ),
     );
+  }
+
+  private reloadSupportAfterSync(selectedEmailId: number | null): void {
+    this.supportEmailsLoading.set(true);
+
+    this.admin.getSupportEmails().subscribe({
+      next: (emails) => {
+        this.supportEmails.set(emails);
+
+        if (
+          selectedEmailId !== null &&
+          emails.some((email) => email.id === selectedEmailId)
+        ) {
+          this.selectedSupportEmailId.set(selectedEmailId);
+          this.refreshSelectedSupportEmail();
+          return;
+        }
+
+        if (selectedEmailId !== null) {
+          this.selectedSupportEmailId.set(null);
+          this.selectedSupportEmail.set(null);
+        }
+      },
+      error: (error) => {
+        this.errorMsg.set(this.errorMessage(error));
+        this.supportEmailsLoading.set(false);
+      },
+      complete: () => this.supportEmailsLoading.set(false),
+    });
   }
 
   private saveBlob(blob: Blob, filename: string): void {

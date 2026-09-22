@@ -13,6 +13,8 @@ import {
   AdminLevelOption,
   AdminPrompt,
   AdminService,
+  AdminSupportEmailDetail,
+  AdminSupportEmailList,
   AdminTopicOption,
   AdminUser,
   AdminUserDetail,
@@ -20,7 +22,7 @@ import {
   PageResponse,
 } from '../../services/admin.service';
 
-type AdminSection = 'users' | 'prompts' | 'exercise-config' | 'audit';
+type AdminSection = 'users' | 'prompts' | 'exercise-config' | 'support' | 'audit';
 type ConfigKind = 'level' | 'topic' | 'type';
 
 @Component({
@@ -63,6 +65,14 @@ type ConfigKind = 'level' | 'topic' | 'type';
         (click)="showSection('exercise-config')"
       >
         Exercise config
+      </button>
+      <button
+        type="button"
+        class="admin-tab"
+        [class.active]="activeSection() === 'support'"
+        (click)="showSection('support')"
+      >
+        Support
       </button>
       <button
         type="button"
@@ -603,6 +613,134 @@ type ConfigKind = 'level' | 'topic' | 'type';
       </section>
     }
 
+    @if (activeSection() === 'support') {
+      <section class="card card-pad admin-section">
+        <div class="panel-head inline">
+          <div>
+            <span class="eyebrow">Support inbox</span>
+            <h2>support&#64;letz-speak.com</h2>
+            <p class="text-muted">
+              Review inbound learner emails received through the support address.
+            </p>
+          </div>
+          <button
+            class="btn btn-outline"
+            type="button"
+            [disabled]="supportEmailsLoading()"
+            (click)="loadSupportEmails()"
+          >
+            Refresh inbox
+          </button>
+        </div>
+
+        <div class="support-layout">
+          <div class="list-card support-list">
+            @if (supportEmailsLoading()) {
+              <div class="loading-row">
+                <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
+                Loading support emails...
+              </div>
+            } @else if (supportEmails().length) {
+              @for (email of supportEmails(); track email.id || email.receivedAt) {
+                <button
+                  type="button"
+                  class="support-row"
+                  [class.active]="selectedSupportEmailId() === email.id"
+                  [class.unread]="email.read === false"
+                  (click)="selectSupportEmail(email.id)"
+                >
+                  <span class="support-main">
+                    <strong>{{ email.subject || 'No subject' }}</strong>
+                    <small class="text-muted">{{ email.fromEmail || 'Unknown sender' }}</small>
+                    <small class="text-muted">{{ dateTime(email.receivedAt) }}</small>
+                  </span>
+                  <span
+                    class="badge"
+                    [class.badge-sky]="email.read === false"
+                    [class.badge-green]="email.read !== false"
+                  >
+                    {{ email.read === false ? 'Unread' : 'Read' }}
+                  </span>
+                </button>
+              }
+            } @else {
+              <div class="empty-state support-empty">
+                <span class="stat-icon sky">
+                  <app-icon name="shield" [size]="20"></app-icon>
+                </span>
+                <h3>No support emails yet.</h3>
+                <p class="text-muted">New messages will appear here when learners email support.</p>
+              </div>
+            }
+          </div>
+
+          <section class="card card-pad support-detail">
+            @if (supportDetailLoading()) {
+              <div class="loading-panel">
+                <span class="stat-icon sky loading-icon">
+                  <app-icon name="sparkles" [size]="20"></app-icon>
+                </span>
+                <div>
+                  <strong>Loading email...</strong>
+                  <p class="text-muted">Fetching the selected support message.</p>
+                </div>
+              </div>
+            } @else {
+              @if (selectedSupportEmail(); as email) {
+                <div class="support-detail-head">
+                  <div>
+                    <span class="eyebrow">Selected email</span>
+                    <h3>{{ email.subject || 'No subject' }}</h3>
+                  </div>
+                  <span
+                    class="badge"
+                    [class.badge-sky]="email.read === false"
+                    [class.badge-green]="email.read !== false"
+                  >
+                    {{ email.read === false ? 'Unread' : 'Read' }}
+                  </span>
+                </div>
+
+                <dl class="support-meta">
+                  <div>
+                    <dt>From</dt>
+                    <dd>{{ email.fromEmail || 'Unknown sender' }}</dd>
+                  </div>
+                  <div>
+                    <dt>To</dt>
+                    <dd>{{ email.toEmail || 'Unknown recipient' }}</dd>
+                  </div>
+                  <div>
+                    <dt>Received</dt>
+                    <dd>{{ dateTime(email.receivedAt) || 'Unknown time' }}</dd>
+                  </div>
+                </dl>
+
+                <div class="support-body">
+                  <h4>Message</h4>
+                  @if (email.textBody) {
+                    <pre>{{ email.textBody }}</pre>
+                  } @else {
+                    <p class="text-muted">
+                      No plain-text message body was included for this email.
+                    </p>
+                  }
+                </div>
+              } @else {
+                <div class="empty-state">
+                  <span class="stat-icon sky">
+                    <app-icon name="shield" [size]="20"></app-icon>
+                  </span>
+                  <h3>Select an email</h3>
+                  <p class="text-muted">Choose a support email to read its details.</p>
+                </div>
+              }
+            }
+          </section>
+        </div>
+      </section>
+    }
+
     @if (activeSection() === 'audit') {
       <section class="card card-pad admin-section">
         <div class="panel-head inline">
@@ -659,9 +797,12 @@ export class AdminProfilesComponent implements OnInit {
   promptSaving = signal(false);
   configLoading = signal(false);
   configSaving = signal(false);
+  supportEmailsLoading = signal(false);
+  supportDetailLoading = signal(false);
   auditLoading = signal(false);
   errorMsg = signal('');
   selectedUserId = signal<number | null>(null);
+  selectedSupportEmailId = signal<number | null>(null);
   usersPage = signal<PageResponse<AdminUser>>({});
   detail = signal<AdminUserDetail | null>(null);
   progressPage = signal<PageResponse<AdminUserProgress>>({});
@@ -669,6 +810,8 @@ export class AdminProfilesComponent implements OnInit {
   prompts = signal<AdminPrompt[]>([]);
   selectedPrompt = signal<AdminPrompt | null>(null);
   exerciseConfig = signal<AdminExerciseConfig>({});
+  supportEmails = signal<AdminSupportEmailList[]>([]);
+  selectedSupportEmail = signal<AdminSupportEmailDetail | null>(null);
   auditPage = signal<PageResponse<AdminAuditLog>>({});
 
   users = computed(() => this.usersPage().items ?? []);
@@ -693,6 +836,7 @@ export class AdminProfilesComponent implements OnInit {
     this.loadUsers();
     this.loadPrompts();
     this.loadExerciseConfig();
+    this.loadSupportEmails();
     this.loadAuditLogs();
   }
 
@@ -1093,6 +1237,66 @@ export class AdminProfilesComponent implements OnInit {
     });
   }
 
+  loadSupportEmails(): void {
+    this.supportEmailsLoading.set(true);
+    this.errorMsg.set('');
+
+    this.admin.getSupportEmails().subscribe({
+      next: (emails) => {
+        this.supportEmails.set(emails);
+        const selectedStillVisible = emails.some(
+          (email) => email.id === this.selectedSupportEmailId(),
+        );
+
+        if (!selectedStillVisible) {
+          this.selectedSupportEmailId.set(null);
+          this.selectedSupportEmail.set(null);
+        }
+      },
+      error: (error) => {
+        this.errorMsg.set(this.errorMessage(error));
+        this.supportEmailsLoading.set(false);
+      },
+      complete: () => this.supportEmailsLoading.set(false),
+    });
+  }
+
+  selectSupportEmail(emailId: number | undefined): void {
+    if (emailId === undefined) {
+      return;
+    }
+
+    this.selectedSupportEmailId.set(emailId);
+    this.supportDetailLoading.set(true);
+    this.errorMsg.set('');
+
+    this.admin.getSupportEmail(emailId).subscribe({
+      next: (email) => {
+        this.selectedSupportEmail.set(email);
+        if (email.read === false && email.id !== undefined) {
+          this.markSupportEmailRead(email.id);
+        }
+      },
+      error: (error) => {
+        this.errorMsg.set(this.errorMessage(error));
+        this.supportDetailLoading.set(false);
+      },
+      complete: () => this.supportDetailLoading.set(false),
+    });
+  }
+
+  markSupportEmailRead(emailId: number): void {
+    this.admin.markSupportEmailRead(emailId).subscribe({
+      next: (email) => {
+        if (this.selectedSupportEmailId() === email.id) {
+          this.selectedSupportEmail.set(email);
+        }
+        this.patchSupportEmailRow(email);
+      },
+      error: (error) => this.errorMsg.set(this.errorMessage(error)),
+    });
+  }
+
   loadAuditLogs(): void {
     this.auditLoading.set(true);
 
@@ -1371,6 +1575,26 @@ export class AdminProfilesComponent implements OnInit {
         index === existingIndex ? prompt : item,
       );
     });
+  }
+
+  private patchSupportEmailRow(email: AdminSupportEmailDetail): void {
+    if (email.id === undefined) {
+      return;
+    }
+
+    this.supportEmails.update((emails) =>
+      emails.map((item) =>
+        item.id === email.id
+          ? {
+              ...item,
+              fromEmail: email.fromEmail,
+              subject: email.subject,
+              receivedAt: email.receivedAt,
+              read: email.read,
+            }
+          : item,
+      ),
+    );
   }
 
   private errorMessage(error: unknown): string {

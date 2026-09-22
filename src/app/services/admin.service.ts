@@ -31,6 +31,18 @@ export type AdminTopicConfigRequest =
   components['schemas']['AdminTopicConfigRequest'];
 export type AdminExerciseTypeConfigRequest =
   components['schemas']['AdminExerciseTypeConfigRequest'];
+export interface AdminSupportEmailList {
+  id?: number;
+  fromEmail?: string;
+  subject?: string;
+  receivedAt?: string;
+  read?: boolean;
+}
+export interface AdminSupportEmailDetail extends AdminSupportEmailList {
+  toEmail?: string;
+  textBody?: string;
+  htmlBody?: string;
+}
 export type PageResponse<T> = {
   items?: T[];
   page?: number;
@@ -449,6 +461,59 @@ export class AdminService {
         ),
         catchError((error) =>
           throwError(() => this.toApiError(error, 'Could not load audit logs.')),
+        ),
+      );
+  }
+
+  getSupportEmails(): Observable<AdminSupportEmailList[]> {
+    return this.http
+      .get<ApiResponse<AdminSupportEmailList[] | null>>(
+        `${this.url}/support-emails`,
+      )
+      .pipe(
+        map((response) =>
+          this.unwrapData(response, 'Could not load support emails.'),
+        ),
+        map((emails) => emails ?? []),
+        catchError((error) =>
+          throwError(() =>
+            this.toApiError(error, 'Could not load support emails.'),
+          ),
+        ),
+      );
+  }
+
+  getSupportEmail(id: number): Observable<AdminSupportEmailDetail> {
+    return this.http
+      .get<ApiResponse<AdminSupportEmailDetail | null>>(
+        `${this.url}/support-emails/${id}`,
+      )
+      .pipe(
+        map((response) =>
+          this.unwrapData(response, 'Could not load support email.'),
+        ),
+        catchError((error) =>
+          throwError(() =>
+            this.toApiError(error, 'Could not load support email.'),
+          ),
+        ),
+      );
+  }
+
+  markSupportEmailRead(id: number): Observable<AdminSupportEmailDetail> {
+    return this.http
+      .patch<ApiResponse<AdminSupportEmailDetail | null>>(
+        `${this.url}/support-emails/${id}/read`,
+        {},
+      )
+      .pipe(
+        map((response) =>
+          this.unwrapData(response, 'Could not mark support email as read.'),
+        ),
+        catchError((error) =>
+          throwError(() =>
+            this.toApiError(error, 'Could not mark support email as read.'),
+          ),
         ),
       );
   }

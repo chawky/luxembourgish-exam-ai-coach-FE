@@ -7,6 +7,8 @@ import { friendlyErrorMessage } from '../../error-message';
 import { formatPracticeLabel } from '../../practice-options';
 import {
   AdminAiUsage,
+  AdminAiUsageDashboardSummary,
+  AdminAiUsageModelSummary,
   AdminAuditLog,
   AdminExerciseConfig,
   AdminExerciseTypeOption,
@@ -24,7 +26,13 @@ import {
   PageResponse,
 } from '../../services/admin.service';
 
-type AdminSection = 'users' | 'prompts' | 'exercise-config' | 'support' | 'audit';
+type AdminSection =
+  | 'users'
+  | 'prompts'
+  | 'exercise-config'
+  | 'ai-usage'
+  | 'support'
+  | 'audit';
 type ConfigKind = 'level' | 'topic' | 'type';
 
 @Component({
@@ -67,6 +75,14 @@ type ConfigKind = 'level' | 'topic' | 'type';
         (click)="showSection('exercise-config')"
       >
         Exercise config
+      </button>
+      <button
+        type="button"
+        class="admin-tab"
+        [class.active]="activeSection() === 'ai-usage'"
+        (click)="showSection('ai-usage')"
+      >
+        AI Usage
       </button>
       <button
         type="button"
@@ -615,6 +631,99 @@ type ConfigKind = 'level' | 'topic' | 'type';
       </section>
     }
 
+    @if (activeSection() === 'ai-usage') {
+      <section class="card card-pad admin-section">
+        <div class="panel-head inline">
+          <div>
+            <span class="eyebrow">AI usage</span>
+            <h2>Usage and cost summary</h2>
+            <p class="text-muted">
+              Review backend-recorded AI requests, token usage, and estimated costs by provider and model.
+            </p>
+          </div>
+          <button
+            class="btn btn-outline"
+            type="button"
+            [disabled]="aiSummaryLoading()"
+            (click)="loadAiUsageSummary()"
+          >
+            Refresh summary
+          </button>
+        </div>
+
+        @if (aiSummaryLoading()) {
+          <div class="loading-row">
+            <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
+            Loading AI usage summary...
+          </div>
+        } @else {
+          @if (aiUsageSummary(); as summary) {
+            <div class="stats-grid ai-summary-grid">
+              <div class="stat-card ai-cost-card">
+                <span class="text-muted">Total AI Cost</span>
+                <strong>{{ aiCost(summary.totals.estimatedCostUsd) }}</strong>
+              </div>
+              <div class="stat-card">
+                <span class="text-muted">Total Tokens</span>
+                <strong>{{ number(summary.totals.totalTokens) }}</strong>
+              </div>
+              <div class="stat-card">
+                <span class="text-muted">Total Requests</span>
+                <strong>{{ number(summary.totals.requests) }}</strong>
+              </div>
+            </div>
+
+            @if (summary.models.length) {
+              <div class="usage-summary-table-wrap">
+                <table class="usage-summary-table">
+                  <thead>
+                    <tr>
+                      <th>Provider</th>
+                      <th>Model</th>
+                      <th>Requests</th>
+                      <th>Input Tokens</th>
+                      <th>Output Tokens</th>
+                      <th>Total Tokens</th>
+                      <th>Estimated Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (item of summary.models; track aiUsageModelKey(item)) {
+                      <tr>
+                        <td>{{ providerLabel(item.provider) }}</td>
+                        <td class="model-cell">{{ item.model }}</td>
+                        <td>{{ number(item.requests) }}</td>
+                        <td>{{ number(item.inputTokens) }}</td>
+                        <td>{{ number(item.outputTokens) }}</td>
+                        <td>{{ number(item.totalTokens) }}</td>
+                        <td>{{ aiCost(item.estimatedCostUsd) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <div class="empty-state ai-empty-state">
+                <span class="stat-icon sky">
+                  <app-icon name="sparkles" [size]="20"></app-icon>
+                </span>
+                <h3>No AI usage recorded yet.</h3>
+                <p class="text-muted">Usage and cost totals will appear after AI-backed requests are recorded.</p>
+              </div>
+            }
+          } @else {
+            <div class="empty-state ai-empty-state">
+              <span class="stat-icon sky">
+                <app-icon name="sparkles" [size]="20"></app-icon>
+              </span>
+              <h3>No AI usage summary loaded.</h3>
+              <p class="text-muted">Refresh the summary to load backend usage totals.</p>
+            </div>
+          }
+        }
+      </section>
+    }
+
     @if (activeSection() === 'support') {
       <section class="card card-pad admin-section">
         <div class="panel-head inline">
@@ -853,6 +962,7 @@ export class AdminProfilesComponent implements OnInit {
   promptSaving = signal(false);
   configLoading = signal(false);
   configSaving = signal(false);
+  aiSummaryLoading = signal(false);
   supportEmailsLoading = signal(false);
   supportDetailLoading = signal(false);
   supportSyncLoading = signal(false);
@@ -868,6 +978,7 @@ export class AdminProfilesComponent implements OnInit {
   prompts = signal<AdminPrompt[]>([]);
   selectedPrompt = signal<AdminPrompt | null>(null);
   exerciseConfig = signal<AdminExerciseConfig>({});
+  aiUsageSummary = signal<AdminAiUsageDashboardSummary | null>(null);
   supportEmails = signal<AdminSupportEmailList[]>([]);
   selectedSupportEmail = signal<AdminSupportEmailDetail | null>(null);
   supportSyncMessage = signal('');
@@ -902,6 +1013,10 @@ export class AdminProfilesComponent implements OnInit {
 
   showSection(section: AdminSection): void {
     this.activeSection.set(section);
+
+    if (section === 'ai-usage' && !this.aiUsageSummary()) {
+      this.loadAiUsageSummary();
+    }
   }
 
   loadUsers(forceRefresh = false): void {
@@ -1297,6 +1412,20 @@ export class AdminProfilesComponent implements OnInit {
     });
   }
 
+  loadAiUsageSummary(): void {
+    this.aiSummaryLoading.set(true);
+    this.errorMsg.set('');
+
+    this.admin.getAiUsageSummary().subscribe({
+      next: (summary) => this.aiUsageSummary.set(summary),
+      error: (error) => {
+        this.errorMsg.set(this.errorMessage(error));
+        this.aiSummaryLoading.set(false);
+      },
+      complete: () => this.aiSummaryLoading.set(false),
+    });
+  }
+
   loadSupportEmails(): void {
     this.supportEmailsLoading.set(true);
     this.errorMsg.set('');
@@ -1480,6 +1609,34 @@ export class AdminProfilesComponent implements OnInit {
 
   cost(value: number | undefined): string {
     return value === undefined ? '$0.00' : `$${value.toFixed(4)}`;
+  }
+
+  aiCost(value: number | undefined): string {
+    return value === undefined ? '$0.000000' : `$${value.toFixed(6)}`;
+  }
+
+  number(value: number | undefined): string {
+    return value === undefined ? '0' : value.toLocaleString();
+  }
+
+  providerLabel(value: string): string {
+    const knownProviders: Record<string, string> = {
+      elevenlabs: 'ElevenLabs',
+      kimi: 'Kimi',
+      openrouter: 'OpenRouter',
+      groq: 'Groq',
+    };
+    const normalized = value.toLowerCase();
+
+    if (knownProviders[normalized]) {
+      return knownProviders[normalized];
+    }
+
+    return value ? formatPracticeLabel(value) : 'Provider';
+  }
+
+  aiUsageModelKey(item: AdminAiUsageModelSummary): string {
+    return `${item.provider}:${item.model}`;
   }
 
   usageAmount(item: AdminAiUsage): string {

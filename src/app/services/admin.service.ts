@@ -31,6 +31,26 @@ export type AdminTopicConfigRequest =
   components['schemas']['AdminTopicConfigRequest'];
 export type AdminExerciseTypeConfigRequest =
   components['schemas']['AdminExerciseTypeConfigRequest'];
+export interface AdminAiUsageModelSummary {
+  provider: string;
+  model: string;
+  requests: number;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  estimatedCostUsd: number;
+}
+export interface AdminAiUsageTotals {
+  requests: number;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  estimatedCostUsd: number;
+}
+export interface AdminAiUsageDashboardSummary {
+  models: AdminAiUsageModelSummary[];
+  totals: AdminAiUsageTotals;
+}
 export interface AdminSupportEmailList {
   id?: number;
   fromEmail?: string;
@@ -477,6 +497,23 @@ export class AdminService {
         ),
         catchError((error) =>
           throwError(() => this.toApiError(error, 'Could not load audit logs.')),
+        ),
+      );
+  }
+
+  getAiUsageSummary(): Observable<AdminAiUsageDashboardSummary> {
+    return this.http
+      .get<ApiResponse<AdminAiUsageDashboardSummary | null>>(
+        `${this.url}/ai-usage/summary`,
+      )
+      .pipe(
+        map((response) =>
+          this.unwrapData(response, 'Could not load AI usage summary.'),
+        ),
+        catchError((error) =>
+          throwError(() =>
+            this.toApiError(error, 'Could not load AI usage summary.'),
+          ),
         ),
       );
   }

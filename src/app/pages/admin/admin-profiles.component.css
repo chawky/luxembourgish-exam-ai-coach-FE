@@ -223,6 +223,56 @@
   color: var(--blue-900);
 }
 
+.ai-summary-grid {
+  margin-bottom: 20px;
+}
+
+.ai-cost-card {
+  border-color: var(--blue-700);
+  background: color-mix(in srgb, var(--blue-700) 12%, var(--surface-2));
+}
+
+.ai-cost-card strong {
+  font-size: 28px;
+}
+
+.usage-summary-table-wrap {
+  overflow-x: auto;
+}
+
+.usage-summary-table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: collapse;
+}
+
+.usage-summary-table th,
+.usage-summary-table td {
+  border-bottom: 1px solid var(--border);
+  padding: 12px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.usage-summary-table th {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.usage-summary-table td:not(.model-cell) {
+  white-space: nowrap;
+}
+
+.model-cell {
+  max-width: 320px;
+  overflow-wrap: anywhere;
+}
+
+.ai-empty-state {
+  min-height: 240px;
+}
+
 .status-actions {
   align-items: center;
   flex-wrap: wrap;

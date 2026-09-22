@@ -38,10 +38,19 @@ export interface AdminSupportEmailList {
   receivedAt?: string;
   read?: boolean;
 }
+export interface AdminSupportEmailAttachment {
+  id?: number;
+  filename?: string;
+  contentType?: string;
+  contentDisposition?: string;
+  contentId?: string;
+  sizeBytes?: number;
+}
 export interface AdminSupportEmailDetail extends AdminSupportEmailList {
   toEmail?: string;
   textBody?: string;
   htmlBody?: string;
+  attachments?: AdminSupportEmailAttachment[];
 }
 export type PageResponse<T> = {
   items?: T[];
@@ -513,6 +522,23 @@ export class AdminService {
         catchError((error) =>
           throwError(() =>
             this.toApiError(error, 'Could not mark support email as read.'),
+          ),
+        ),
+      );
+  }
+
+  downloadSupportEmailAttachment(
+    emailId: number,
+    attachmentId: number,
+  ): Observable<Blob> {
+    return this.http
+      .get(`${this.url}/support-emails/${emailId}/attachments/${attachmentId}`, {
+        responseType: 'blob',
+      })
+      .pipe(
+        catchError((error) =>
+          throwError(() =>
+            this.toApiError(error, 'Could not download attachment.'),
           ),
         ),
       );

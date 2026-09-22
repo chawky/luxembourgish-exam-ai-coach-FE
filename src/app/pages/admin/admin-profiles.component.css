@@ -449,6 +449,18 @@
   line-height: 1.6;
 }
 
+.support-attachments {
+  margin-top: 22px;
+}
+
+.support-attachments h4 {
+  margin: 0 0 8px;
+}
+
+.attachment-row .btn {
+  flex-shrink: 0;
+}
+
 .support-empty {
   min-height: 260px;
 }

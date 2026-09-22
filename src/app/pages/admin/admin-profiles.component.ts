@@ -13,6 +13,7 @@ import {
   AdminLevelOption,
   AdminPrompt,
   AdminService,
+  AdminSupportEmailAttachment,
   AdminSupportEmailDetail,
   AdminSupportEmailList,
   AdminTopicOption,
@@ -726,6 +727,40 @@ type ConfigKind = 'level' | 'topic' | 'type';
                     </p>
                   }
                 </div>
+
+                @if (email.attachments?.length) {
+                  <div class="support-attachments">
+                    <h4>Attachments</h4>
+                    <div class="table-list">
+                      @for (attachment of email.attachments; track attachment.id || attachment.filename) {
+                        <div class="table-row attachment-row">
+                          <span>
+                            <strong>{{ attachment.filename || 'Attachment' }}</strong>
+                            <small class="text-muted">
+                              @if (attachment.contentType) {
+                                {{ attachment.contentType }}
+                              }
+                              @if (attachment.contentType && attachment.sizeBytes !== undefined) {
+                                &middot;
+                              }
+                              @if (attachment.sizeBytes !== undefined) {
+                                {{ fileSize(attachment.sizeBytes) }}
+                              }
+                            </small>
+                          </span>
+                          <button
+                            class="btn btn-outline"
+                            type="button"
+                            [disabled]="downloadingAttachmentId() === attachment.id"
+                            (click)="downloadAttachment(email, attachment)"
+                          >
+                            {{ downloadingAttachmentId() === attachment.id ? 'Downloading...' : 'Download' }}
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
               } @else {
                 <div class="empty-state">
                   <span class="stat-icon sky">
@@ -799,6 +834,7 @@ export class AdminProfilesComponent implements OnInit {
   configSaving = signal(false);
   supportEmailsLoading = signal(false);
   supportDetailLoading = signal(false);
+  downloadingAttachmentId = signal<number | null>(null);
   auditLoading = signal(false);
   errorMsg = signal('');
   selectedUserId = signal<number | null>(null);
@@ -1297,6 +1333,28 @@ export class AdminProfilesComponent implements OnInit {
     });
   }
 
+  downloadAttachment(
+    email: AdminSupportEmailDetail,
+    attachment: AdminSupportEmailAttachment,
+  ): void {
+    if (email.id === undefined || attachment.id === undefined) {
+      this.errorMsg.set('Could not download attachment.');
+      return;
+    }
+
+    this.downloadingAttachmentId.set(attachment.id);
+    this.errorMsg.set('');
+
+    this.admin.downloadSupportEmailAttachment(email.id, attachment.id).subscribe({
+      next: (blob) => this.saveBlob(blob, attachment.filename || 'attachment'),
+      error: (error) => {
+        this.errorMsg.set(this.errorMessage(error));
+        this.downloadingAttachmentId.set(null);
+      },
+      complete: () => this.downloadingAttachmentId.set(null),
+    });
+  }
+
   loadAuditLogs(): void {
     this.auditLoading.set(true);
 
@@ -1381,6 +1439,27 @@ export class AdminProfilesComponent implements OnInit {
 
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+  }
+
+  fileSize(sizeBytes: number | undefined): string {
+    if (sizeBytes === undefined || sizeBytes < 0) {
+      return '';
+    }
+
+    if (sizeBytes < 1024) {
+      return `${sizeBytes} B`;
+    }
+
+    const units = ['KB', 'MB', 'GB'];
+    let size = sizeBytes / 1024;
+    let unitIndex = 0;
+
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex += 1;
+    }
+
+    return `${size.toFixed(size >= 10 ? 0 : 1)} ${units[unitIndex]}`;
   }
 
   promptTitleFallback(prompt: AdminPrompt): string {
@@ -1595,6 +1674,20 @@ export class AdminProfilesComponent implements OnInit {
           : item,
       ),
     );
+  }
+
+  private saveBlob(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
   }
 
   private errorMessage(error: unknown): string {

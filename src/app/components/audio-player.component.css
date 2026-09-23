@@ -4,9 +4,10 @@
 
 .audio-player {
   padding: 18px;
-  border: 1px solid var(--blue-100);
-  border-radius: 14px;
-  background: var(--blue-50);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--sky);
+  border-radius: 0 18px 18px 0;
+  background: rgba(16, 56, 76, 0.38);
 }
 
 .audio-top {
@@ -20,7 +21,7 @@
   flex-shrink: 0;
   width: 56px;
   height: 56px;
-  border-radius: 50%;
+  border-radius: 18px;
   border: none;
   background: var(--blue-700);
   color: #fff;
@@ -43,7 +44,7 @@
 }
 
 .is-playing .play-btn {
-  background: #0277a8;
+  background: var(--sky);
 }
 
 .audio-copy {
@@ -86,7 +87,7 @@
 
 .audio-actions button {
   border: 1px solid var(--slate-300);
-  border-radius: 999px;
+  border-radius: 10px;
   background: var(--surface-2);
   color: var(--slate-700);
   padding: 6px 12px;
@@ -109,7 +110,7 @@
 
 .audio-error {
   margin-top: 12px;
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--red-50);
   color: var(--red);
   padding: 10px 12px;

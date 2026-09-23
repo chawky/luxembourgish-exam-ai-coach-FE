@@ -27,8 +27,16 @@ type GoogleButtonText = 'signin_with' | 'signup_with' | 'continue_with';
   `,
   styles: [
     `
+      :host {
+        display: block;
+        max-width: 100%;
+        min-width: 0;
+        overflow: hidden;
+      }
+
       .google-button-host {
         display: block;
+        max-width: 100%;
         width: 100%;
         min-height: 44px;
       }

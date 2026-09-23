@@ -28,6 +28,9 @@ type CheckoutResult = 'success' | 'cancel';
         display: grid;
         place-items: center;
         padding: 24px;
+        background:
+          radial-gradient(680px 360px at 80% 0%, rgba(0, 159, 223, 0.14), transparent 62%),
+          var(--background);
       }
 
       .payment-card {
@@ -35,6 +38,7 @@ type CheckoutResult = 'success' | 'cancel';
         align-items: center;
         gap: 14px;
         max-width: 460px;
+        border-radius: 22px;
       }
 
       .payment-card h1 {

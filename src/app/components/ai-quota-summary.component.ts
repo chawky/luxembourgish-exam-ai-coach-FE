@@ -67,7 +67,8 @@ type QuotaState = 'normal' | 'near' | 'exhausted';
   styles: [
     `
       .quota-card {
-        margin-bottom: 20px;
+        margin-bottom: 22px;
+        border-radius: 22px;
       }
 
       .quota-head {
@@ -85,14 +86,16 @@ type QuotaState = 'normal' | 'near' | 'exhausted';
       .quota-grid {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 12px;
+        gap: 0;
+        border-top: 1px solid var(--border);
       }
 
       .quota-row {
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        background: var(--surface-2);
-        padding: 14px;
+        border: 0;
+        border-bottom: 1px solid var(--border);
+        border-radius: 0;
+        background: transparent;
+        padding: 16px 0;
       }
 
       .quota-row.exhausted {
@@ -120,8 +123,8 @@ type QuotaState = 'normal' | 'near' | 'exhausted';
       }
 
       .quota-badge {
-        border-radius: 999px;
-        background: #e7f4ec;
+        border-radius: 10px;
+        background: #143525;
         color: var(--green);
         flex-shrink: 0;
         font-size: 12px;
@@ -174,6 +177,15 @@ type QuotaState = 'normal' | 'near' | 'exhausted';
       @media (min-width: 760px) {
         .quota-grid {
           grid-template-columns: repeat(2, 1fr);
+        }
+
+        .quota-row {
+          padding: 16px;
+          border-right: 1px solid var(--border);
+        }
+
+        .quota-row:nth-child(even) {
+          border-right: 0;
         }
       }
     `,

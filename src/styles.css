@@ -332,6 +332,11 @@ button:focus-visible {
   color: var(--sky);
 }
 
+.stat-icon > app-icon,
+.profile-icon > app-icon {
+  place-self: center;
+}
+
 .stat-icon.blue {
   background: var(--blue-50);
   color: var(--blue-700);
@@ -592,6 +597,10 @@ button:focus-visible {
   justify-content: center;
   line-height: 0;
   transition: background 0.15s ease;
+}
+
+.record-btn > app-icon {
+  margin: auto;
 }
 
 .record-btn:hover:not(:disabled) {

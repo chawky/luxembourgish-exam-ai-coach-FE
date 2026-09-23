@@ -144,7 +144,7 @@
   display: block;
 }
 
-.quick-icon {
+.quick-item .quick-icon {
   display: inline-grid;
   place-items: center;
   width: 42px;
@@ -154,6 +154,10 @@
   flex-shrink: 0;
   background: var(--blue-50);
   color: var(--sky);
+}
+
+.quick-item .quick-icon > app-icon {
+  place-self: center;
 }
 
 .quick-item > app-icon:last-child {

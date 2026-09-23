@@ -51,6 +51,9 @@
   flex: 0 0 20px;
   color: var(--slate-500);
 }
+.side-nav a > app-icon {
+  margin: auto 0;
+}
 .side-nav a:hover {
   background: transparent;
   color: var(--sky);
@@ -165,6 +168,9 @@
   background: var(--card);
   color: var(--slate-700);
   line-height: 0;
+}
+.icon-btn > app-icon {
+  margin: auto;
 }
 .streak {
   margin-left: auto;

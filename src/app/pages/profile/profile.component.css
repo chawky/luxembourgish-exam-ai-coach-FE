@@ -58,6 +58,10 @@
   line-height: 0;
 }
 
+.profile-icon > app-icon {
+  margin: auto;
+}
+
 .profile-title {
   flex: 1;
   min-width: 0;
@@ -282,6 +286,10 @@
   line-height: 0;
   background: var(--sky-50);
   color: var(--sky);
+}
+
+.subscription-icon > app-icon {
+  place-self: center;
 }
 
 .subscription-features {

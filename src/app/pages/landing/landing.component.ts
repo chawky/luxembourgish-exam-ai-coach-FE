@@ -174,6 +174,9 @@ interface Feature {
               everyday speech and speak about familiar situations. This page avoids
               generic language drills and points practice toward those skills.
             </p>
+          </div>
+
+          <div class="exam-list-stack">
             <ul class="exam-list">
               <li>
                 <app-icon name="mic" [size]="18"></app-icon>
@@ -188,7 +191,8 @@ interface Feature {
                 <div><strong>Everyday topics</strong><span>Work, shops, transport, family and admin</span></div>
               </li>
             </ul>
-            <a routerLink="/signup" class="btn btn-primary btn-lg">Begin your prep</a>
+
+            <a routerLink="/signup" class="btn btn-primary btn-lg exam-cta">Begin your prep</a>
           </div>
 
           <div class="exam-proof" aria-label="Example dashboard progress">

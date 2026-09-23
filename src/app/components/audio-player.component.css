@@ -34,6 +34,10 @@
     transform 0.15s ease;
 }
 
+.play-btn > app-icon {
+  margin: auto;
+}
+
 .play-btn:hover:not(:disabled) {
   background: var(--blue-600);
   transform: scale(1.04);

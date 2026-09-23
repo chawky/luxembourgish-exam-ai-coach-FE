@@ -65,7 +65,23 @@ const PATHS: Record<IconName, string> = {
       <path [attr.d]="path"></path>
     </svg>
   `,
-  styles: [`:host { display: inline-flex; }`],
+  styles: [
+    `
+      :host {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        line-height: 0;
+        vertical-align: middle;
+      }
+
+      svg {
+        display: block;
+        flex: 0 0 auto;
+      }
+    `,
+  ],
 })
 export class IconComponent {
   @Input({ required: true }) name!: IconName | string;

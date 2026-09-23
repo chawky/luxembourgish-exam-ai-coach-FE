@@ -139,10 +139,23 @@
 
 @media (max-width: 520px) {
   .flash-area {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .arrow-btn {
-    display: none;
+  .flashcard {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .arrow-btn:first-child {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: end;
+  }
+
+  .arrow-btn:last-child {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: start;
   }
 }

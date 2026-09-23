@@ -47,6 +47,7 @@
   background: var(--blue-700);
   color: #fff;
   font-weight: 800;
+  line-height: 1;
 }
 
 .profile-icon {
@@ -54,6 +55,7 @@
   height: 44px;
   background: var(--sky-50);
   color: var(--blue-700);
+  line-height: 0;
 }
 
 .profile-title {
@@ -271,13 +273,13 @@
 }
 
 .subscription-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-grid;
+  place-items: center;
   flex-shrink: 0;
   width: 54px;
   height: 54px;
   border-radius: 18px;
+  line-height: 0;
   background: var(--sky-50);
   color: var(--sky);
 }

@@ -28,6 +28,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  line-height: 0;
   transition:
     background 0.15s ease,
     transform 0.15s ease;

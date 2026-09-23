@@ -44,6 +44,11 @@
     color 0.15s ease;
 }
 .side-nav a app-icon {
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 20px;
   color: var(--slate-500);
 }
 .side-nav a:hover {
@@ -106,6 +111,11 @@
 .logout {
   justify-content: flex-start;
 }
+.logout app-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
 
 /* Backdrop */
 .backdrop {
@@ -154,6 +164,7 @@
   border: 1px solid var(--border);
   background: var(--card);
   color: var(--slate-700);
+  line-height: 0;
 }
 .streak {
   margin-left: auto;

@@ -161,6 +161,9 @@ button:focus-visible {
     transform 0.05s ease;
   white-space: nowrap;
 }
+.btn app-icon {
+  flex: 0 0 auto;
+}
 .btn:active {
   transform: translateY(1px);
 }
@@ -318,13 +321,13 @@ button:focus-visible {
 
 .stat-icon,
 .profile-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-grid;
+  place-items: center;
   width: 46px;
   height: 46px;
   border-radius: 14px;
   flex-shrink: 0;
+  line-height: 0;
   background: var(--sky-50);
   color: var(--sky);
 }
@@ -587,6 +590,7 @@ button:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  line-height: 0;
   transition: background 0.15s ease;
 }
 
@@ -780,6 +784,7 @@ input[type='password']::-ms-clear {
 .badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   font-size: 12.5px;
   font-weight: 600;
@@ -787,6 +792,9 @@ input[type='password']::-ms-clear {
   border-radius: 999px;
   background: var(--blue-50);
   color: var(--blue-700);
+}
+.badge app-icon {
+  flex: 0 0 auto;
 }
 .badge-sky {
   background: var(--sky-50);

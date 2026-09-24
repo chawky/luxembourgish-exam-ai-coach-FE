@@ -29,6 +29,20 @@ export const routes: Routes = [
       ).then((m) => m.SproochentestPictureDescriptionComponent),
   },
   {
+    path: 'sproochentest-speaking-practice',
+    loadComponent: () =>
+      import(
+        './pages/sproochentest-speaking-practice/sproochentest-speaking-practice.component'
+      ).then((m) => m.SproochentestSpeakingPracticeComponent),
+  },
+  {
+    path: 'sproochentest-listening-practice',
+    loadComponent: () =>
+      import(
+        './pages/sproochentest-listening-practice/sproochentest-listening-practice.component'
+      ).then((m) => m.SproochentestListeningPracticeComponent),
+  },
+  {
     path: 'login',
     loadComponent: () =>
       import('./pages/auth/login.component').then((m) => m.LoginComponent),

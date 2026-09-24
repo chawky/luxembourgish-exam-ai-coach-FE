@@ -128,6 +128,10 @@ import { PublicNavComponent } from '../../components/public-nav.component';
                 <a routerLink="/sproochentest-topics" class="text-link">
                   Sproochentest topics and example questions guide</a
                 >.
+                For a focused drill page, open the
+                <a routerLink="/sproochentest-speaking-practice" class="text-link">
+                  Sproochentest speaking practice page</a
+                >.
               </p>
               <div class="examples" aria-label="Luxembourgish speaking examples">
                 <p>Wou wunnt Dir?</p>
@@ -196,7 +200,10 @@ import { PublicNavComponent } from '../../components/public-nav.component';
               <p>
                 Letz Speak listening sessions pair Luxembourgish audio with the text
                 and translation so you can check what you missed and repeat the same
-                kind of situation later.
+                kind of situation later. You can also use the
+                <a routerLink="/sproochentest-listening-practice" class="text-link">
+                  B1 listening practice guide</a
+                > for independent drills.
               </p>
             </div>
           </div>

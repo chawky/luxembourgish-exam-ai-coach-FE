@@ -183,7 +183,11 @@ interface TopicExample {
               <p>
                 Do not try to prepare one perfect answer for every theme. Prepare a few
                 flexible sentence patterns: what you usually do, what you like or do not
-                like, what you did recently, and why.
+                like, what you did recently, and why. For question-and-answer drills,
+                use the
+                <a routerLink="/sproochentest-speaking-practice" class="text-link">
+                  Sproochentest speaking practice page</a
+                >.
               </p>
             </div>
           </div>

@@ -1,0 +1,188 @@
+.speaking-hero .exam-note strong {
+  font-size: 48px;
+}
+
+.practice-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 34px;
+}
+
+.practice-heading p {
+  max-width: 590px;
+  margin: 0;
+  color: var(--slate-700);
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.round-ledger {
+  display: grid;
+  gap: 42px;
+}
+
+.round {
+  border-top: 1px solid var(--border);
+}
+
+.round header {
+  padding: 24px 0 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.round h3 {
+  margin: 0 0 8px;
+  font-size: clamp(28px, 4vw, 40px);
+  line-height: 1.04;
+  letter-spacing: -0.032em;
+}
+
+.round header p {
+  max-width: 680px;
+  margin: 0;
+  color: var(--slate-700);
+  font-size: 16px;
+}
+
+.qa-item {
+  display: grid;
+  gap: 16px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.question-block strong,
+.question-block span {
+  display: block;
+}
+
+.question-block strong {
+  color: var(--blue-900);
+  font-family: var(--font-serif);
+  font-size: clamp(23px, 3vw, 32px);
+  line-height: 1.18;
+}
+
+.question-block span {
+  margin-top: 5px;
+  color: var(--slate-500);
+  font-size: 15px;
+}
+
+.answer-block,
+.follow-up,
+.worked-example,
+.phrase-ledger article,
+.mini-drills article {
+  border-left: 2px solid var(--sky);
+  border-radius: 0 16px 16px 0;
+  padding: 16px 18px;
+  background: rgba(16, 56, 76, 0.36);
+}
+
+.follow-up,
+.phrase-ledger article:nth-child(even),
+.mini-drills article:nth-child(even) {
+  border-left-color: var(--red);
+}
+
+.answer-block h4,
+.follow-up h4 {
+  margin: 0 0 7px;
+  color: var(--blue-900);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.answer-block p,
+.follow-up p,
+.worked-example p,
+.phrase-ledger span,
+.mini-drills p {
+  margin: 0;
+  color: var(--slate-700);
+  font-size: 16px;
+  line-height: 1.58;
+}
+
+.worked-example {
+  display: grid;
+  gap: 10px;
+  margin: 24px 0;
+}
+
+.worked-example h3 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.phrase-ledger,
+.mini-drills {
+  display: grid;
+  gap: 14px;
+}
+
+.phrase-ledger strong {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--blue-900);
+  font-family: var(--font-serif);
+  font-size: 21px;
+  line-height: 1.2;
+}
+
+.mini-drills h3 {
+  margin: 0 0 10px;
+  font-size: 23px;
+}
+
+.check-list {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding-left: 20px;
+  color: var(--slate-700);
+  font-size: 17px;
+}
+
+.check-list li::marker {
+  color: var(--sky);
+}
+
+.related-links a {
+  color: var(--sky);
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+@media (min-width: 860px) {
+  .qa-item {
+    grid-template-columns: minmax(0, 1.08fr) minmax(240px, 0.92fr);
+    column-gap: 28px;
+  }
+
+  .question-block {
+    grid-column: 1 / -1;
+  }
+
+  .phrase-ledger,
+  .mini-drills {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 980px) {
+  .practice-layout {
+    grid-template-columns: minmax(260px, 0.34fr) minmax(0, 1fr);
+    gap: 64px;
+    align-items: start;
+  }
+
+  .practice-heading {
+    position: sticky;
+    top: 106px;
+  }
+}

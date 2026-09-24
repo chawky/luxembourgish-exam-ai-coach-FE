@@ -8,6 +8,13 @@ export const routes: Routes = [
       import('./pages/landing/landing.component').then((m) => m.LandingComponent),
   },
   {
+    path: 'sproochentest',
+    loadComponent: () =>
+      import('./pages/sproochentest/sproochentest.component').then(
+        (m) => m.SproochentestComponent,
+      ),
+  },
+  {
     path: 'login',
     loadComponent: () =>
       import('./pages/auth/login.component').then((m) => m.LoginComponent),

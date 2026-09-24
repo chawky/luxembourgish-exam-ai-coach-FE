@@ -16,7 +16,7 @@ import { AuthService } from '../services/auth.service';
         <nav class="links" aria-label="Primary">
           <a routerLink="/" fragment="features">Features</a>
           <a routerLink="/" fragment="how">How it works</a>
-          <a routerLink="/" fragment="exam">The exam</a>
+          <a routerLink="/sproochentest">Sproochentest guide</a>
           <a routerLink="/" fragment="support">Support</a>
         </nav>
         <div class="flex items-center gap-2">

@@ -174,17 +174,22 @@ interface Feature {
               everyday speech and speak about familiar situations. This page avoids
               generic language drills and points practice toward those skills.
             </p>
+            <p class="guide-link">
+              New to the exam?
+              <a routerLink="/sproochentest">Read the Sproochentest preparation guide</a>
+              before choosing your first practice mode.
+            </p>
           </div>
 
           <div class="exam-list-stack">
             <ul class="exam-list">
               <li>
                 <app-icon name="mic" [size]="18"></app-icon>
-                <div><strong>Speaking</strong><span>Assessed around level B1</span></div>
+                <div><strong>Speaking</strong><span>Assessed around level A2</span></div>
               </li>
               <li>
                 <app-icon name="headphones" [size]="18"></app-icon>
-                <div><strong>Listening</strong><span>Assessed around level A2</span></div>
+                <div><strong>Listening</strong><span>Assessed around level B1</span></div>
               </li>
               <li>
                 <app-icon name="clock" [size]="18"></app-icon>

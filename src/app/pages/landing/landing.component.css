@@ -412,6 +412,21 @@
   display: grid;
 }
 
+.guide-link {
+  max-width: 620px;
+  margin: 18px 0 0;
+  color: var(--slate-700);
+  font-size: 16px;
+}
+
+.guide-link a {
+  color: var(--sky);
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
 .exam-list {
   display: grid;
   grid-template-columns: 1fr;

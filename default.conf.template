@@ -16,9 +16,25 @@ server {
         try_files /assets/runtime-config.js =404;
     }
 
+    location = /robots.txt {
+        add_header Cache-Control "public, max-age=3600";
+        try_files /robots.txt =404;
+    }
+
+    location = /sitemap.xml {
+        add_header Cache-Control "public, max-age=3600";
+        try_files /sitemap.xml =404;
+    }
+
     location ~* \.(?:js|css|png|jpg|jpeg|gif|ico|svg|webp|woff2?)$ {
         add_header Cache-Control "public, max-age=31536000, immutable";
         try_files $uri =404;
+    }
+
+    location ~ ^/(?:app|admin|login|signup|otp|forgot-password|reset-password|payment)(?:/|$) {
+        add_header X-Robots-Tag "noindex, nofollow" always;
+        add_header Cache-Control "no-store";
+        try_files $uri $uri/ /index.html;
     }
 
     location / {

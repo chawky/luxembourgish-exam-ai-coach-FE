@@ -24,7 +24,7 @@ import { AuthService } from '../services/auth.service';
             <a routerLink="/app/dashboard" class="btn btn-primary">Dashboard</a>
           } @else {
             <a routerLink="/login" class="btn btn-ghost">Sign in</a>
-            <a routerLink="/signup" class="btn btn-primary">Get started</a>
+            <a routerLink="/signup" class="btn btn-primary">Start preparing</a>
           }
         </div>
       </div>

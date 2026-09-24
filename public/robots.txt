@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /login
+Disallow: /signup
+Disallow: /otp
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /payment/
+
+Sitemap: https://letz-speak.com/sitemap.xml

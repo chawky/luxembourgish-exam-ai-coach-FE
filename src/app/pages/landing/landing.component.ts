@@ -192,7 +192,7 @@ interface Feature {
               </li>
             </ul>
 
-            <a routerLink="/signup" class="btn btn-primary btn-lg exam-cta">Begin your prep</a>
+            <a routerLink="/signup" class="btn btn-primary btn-lg exam-cta">Begin your Sproochentest prep</a>
           </div>
 
           <div class="exam-proof" aria-label="Example dashboard progress">

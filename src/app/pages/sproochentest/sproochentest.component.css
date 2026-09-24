@@ -206,6 +206,14 @@
   text-underline-offset: 4px;
 }
 
+.text-link {
+  color: var(--sky);
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
 .examples {
   display: grid;
   gap: 10px;

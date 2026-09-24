@@ -15,6 +15,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'sproochentest-topics',
+    loadComponent: () =>
+      import('./pages/sproochentest-topics/sproochentest-topics.component').then(
+        (m) => m.SproochentestTopicsComponent,
+      ),
+  },
+  {
     path: 'login',
     loadComponent: () =>
       import('./pages/auth/login.component').then((m) => m.LoginComponent),

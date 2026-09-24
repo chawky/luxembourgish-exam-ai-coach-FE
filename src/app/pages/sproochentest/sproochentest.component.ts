@@ -123,6 +123,12 @@ import { PublicNavComponent } from '../../components/public-nav.component';
                 answers for everyday conversation topics, then practise expanding them
                 with one reason, one example or one detail.
               </p>
+              <p>
+                For more speaking prompts by theme, use the
+                <a routerLink="/sproochentest-topics" class="text-link">
+                  Sproochentest topics and example questions guide</a
+                >.
+              </p>
               <div class="examples" aria-label="Luxembourgish speaking examples">
                 <p>Wou wunnt Dir?</p>
                 <p>Wat maacht Dir berufflech?</p>

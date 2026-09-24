@@ -157,6 +157,12 @@ import { PublicNavComponent } from '../../components/public-nav.component';
                 For an image task, avoid trying to name every object. Start with the
                 main situation, then add visible details in a simple order.
               </p>
+              <p>
+                Need a repeatable structure?
+                <a routerLink="/sproochentest-picture-description" class="text-link">
+                  Read the Sproochentest picture-description guide</a
+                >.
+              </p>
               <ol class="routine-list">
                 <li>Say what you see: a street, a shop, a family, an office.</li>
                 <li>Say where people are: at home, outside, at work, in town.</li>

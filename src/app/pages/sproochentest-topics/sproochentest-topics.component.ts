@@ -209,9 +209,9 @@ interface TopicExample {
               <p class="sample-answer">
                 For picture-description preparation, start from the same everyday
                 vocabulary and practise describing what people are doing in a scene.
-                The main guide includes a
-                <a routerLink="/sproochentest" fragment="picture-description">
-                  picture-description preparation section</a
+                Use the
+                <a routerLink="/sproochentest-picture-description">
+                  dedicated picture-description guide</a
                 >.
               </p>
             </div>

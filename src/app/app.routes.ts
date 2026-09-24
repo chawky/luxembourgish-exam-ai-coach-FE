@@ -22,6 +22,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'sproochentest-picture-description',
+    loadComponent: () =>
+      import(
+        './pages/sproochentest-picture-description/sproochentest-picture-description.component'
+      ).then((m) => m.SproochentestPictureDescriptionComponent),
+  },
+  {
     path: 'login',
     loadComponent: () =>
       import('./pages/auth/login.component').then((m) => m.LoginComponent),

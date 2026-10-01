@@ -37,17 +37,21 @@ export class ImageDescriptionService {
   uploadRecording(
     audio: Blob,
     imageDescription: string,
-    attemptId?: number,
+    attemptId: number,
     durationSeconds?: number,
   ): Observable<SpeakingEvaluationDto> {
+    if (!Number.isInteger(attemptId) || attemptId <= 0) {
+      return throwError(
+        () => new Error('Please generate a new image before recording.'),
+      );
+    }
+
     const formData = new FormData();
     formData.append('audio', this.toRecordingFile(audio));
 
-    let params = new HttpParams().set('imageDescription', imageDescription);
-
-    if (attemptId !== undefined) {
-      params = params.set('attemptId', attemptId);
-    }
+    let params = new HttpParams()
+      .set('imageDescription', imageDescription)
+      .set('attemptId', attemptId);
 
     if (durationSeconds !== undefined) {
       params = params.set('durationSeconds', durationSeconds);
@@ -75,7 +79,12 @@ export class ImageDescriptionService {
       throw new Error(response.message || 'Could not generate image practice.');
     }
 
-    if (!response.data?.image || !response.data.imageDescription) {
+    if (
+      !response.data?.image ||
+      !response.data.imageDescription ||
+      !response.data.attemptId ||
+      response.data.attemptId <= 0
+    ) {
       throw new Error('The image task was incomplete. Please generate a new one.');
     }
 

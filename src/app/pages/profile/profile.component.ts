@@ -28,6 +28,7 @@ import { AuthService } from '../../services/auth.service';
 import { GoogleSignInService } from '../../services/google-sign-in.service';
 import { LocationService } from '../../services/location.service';
 import { PaymentService } from '../../services/payment.service';
+import { AiQuotaService } from '../../services/ai-quota.service';
 import { friendlyErrorMessage } from '../../error-message';
 
 type ProfileTab = 'account' | 'subscription';
@@ -630,6 +631,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   private googleSignIn = inject(GoogleSignInService);
   private locationService = inject(LocationService);
   private paymentService = inject(PaymentService);
+  private aiQuota = inject(AiQuotaService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private locationSearchTimer: ReturnType<typeof setTimeout> | null = null;
@@ -1083,6 +1085,14 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
     const checkout = queryParams.get('checkout');
     if (checkout === 'success') {
+      this.aiQuota.getMyQuota(true).subscribe({
+        next: (quota) => {
+          if (quota.tier?.toUpperCase() !== 'PREMIUM') {
+            this.aiQuota.clearCache();
+          }
+        },
+        error: () => this.aiQuota.clearCache(),
+      });
       this.subscriptionSuccess.set(
         'Checkout completed. Your access may take a moment to update.',
       );

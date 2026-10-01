@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { IconComponent } from '../../components/icon.component';
 import {
   GenerateExerciseRequest,
@@ -19,7 +20,7 @@ import { friendlyErrorMessage } from '../../error-message';
 
 interface ImageDescriptionExerciseView {
   id: string;
-  attemptId?: number;
+  attemptId: number;
   level: string;
   topic: string;
   imageUrl: string;
@@ -29,7 +30,7 @@ interface ImageDescriptionExerciseView {
 @Component({
   selector: 'app-image-description',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, IconComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, IconComponent],
   template: `
     <header class="page-head">
       <div>
@@ -85,7 +86,12 @@ interface ImageDescriptionExerciseView {
             <div class="form-error" role="alert">{{ errorMsg() }}</div>
           }
           @if (imageQuotaMessage()) {
-            <div class="form-error" role="alert">{{ imageQuotaMessage() }}</div>
+            <div class="form-error" role="alert">
+              {{ imageQuotaMessage() }}
+              <a routerLink="/app/profile" [queryParams]="{ tab: 'subscription' }" class="quota-upgrade-link">
+                Upgrade to Premium
+              </a>
+            </div>
           }
 
           <button
@@ -161,7 +167,7 @@ interface ImageDescriptionExerciseView {
                 class="record-btn"
                 [class.recording]="recording()"
                 (click)="toggleRecord()"
-                [disabled]="uploadingRecording() || !exercise.imageDescription || (!recording() && recordingQuotaBlocked())"
+                [disabled]="uploadingRecording() || !exercise.imageDescription"
                 [attr.aria-label]="recording() ? 'Stop recording' : 'Start recording'"
               >
                 <app-icon [name]="recording() ? 'check' : 'mic'" [size]="26"></app-icon>
@@ -187,17 +193,11 @@ interface ImageDescriptionExerciseView {
                 {{ recordingError() }}
               </div>
             }
-            @if (recordingQuotaMessage()) {
-              <div class="form-error recording-error" role="alert">
-                {{ recordingQuotaMessage() }}
-              </div>
-            }
-
             @if (retryableRecording()) {
               <button
                 type="button"
                 class="btn btn-outline retry-recording-btn"
-                [disabled]="uploadingRecording() || recordingQuotaBlocked()"
+                [disabled]="uploadingRecording()"
                 (click)="resendRecording()"
               >
                 Resend recording
@@ -239,7 +239,7 @@ interface ImageDescriptionExerciseView {
                 <button
                   type="button"
                   class="btn btn-primary"
-                  [disabled]="recording() || uploadingRecording() || recordingQuotaBlocked()"
+                  [disabled]="recording() || uploadingRecording()"
                   (click)="recordNewAnswer()"
                 >
                   <app-icon name="mic" [size]="18"></app-icon>
@@ -392,11 +392,6 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
     if (this.recording()) {
       this.stopRecording(true);
     } else {
-      if (this.recordingQuotaBlocked()) {
-        this.recordingError.set(this.recordingQuotaMessage());
-        return;
-      }
-
       void this.startRecording();
     }
   }
@@ -406,21 +401,11 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
       return;
     }
 
-    if (this.recordingQuotaBlocked()) {
-      this.recordingError.set(this.recordingQuotaMessage());
-      return;
-    }
-
     this.uploadRecordedAudio(this.lastRecordingAudio);
   }
 
   recordNewAnswer(): void {
     if (!this.current() || this.loading() || this.recording() || this.uploadingRecording()) {
-      return;
-    }
-
-    if (this.recordingQuotaBlocked()) {
-      this.recordingError.set(this.recordingQuotaMessage());
       return;
     }
 
@@ -443,22 +428,12 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
   }
 
   imageQuotaBlocked(): boolean {
-    return this.aiQuota.isExhausted(this.quota(), 'IMAGE');
+    return this.aiQuota.isExhausted(this.quota(), 'IMAGE_DESCRIPTION');
   }
 
   imageQuotaMessage(): string {
     return this.imageQuotaBlocked()
-      ? this.aiQuota.blockedMessage(this.quota(), 'IMAGE')
-      : '';
-  }
-
-  recordingQuotaBlocked(): boolean {
-    return this.aiQuota.isExhausted(this.quota(), 'STT');
-  }
-
-  recordingQuotaMessage(): string {
-    return this.recordingQuotaBlocked()
-      ? this.aiQuota.blockedMessage(this.quota(), 'STT')
+      ? this.aiQuota.blockedMessage(this.quota(), 'IMAGE_DESCRIPTION')
       : '';
   }
 
@@ -533,7 +508,7 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
   ): ImageDescriptionExerciseView {
     return {
       id: `${request.level}-${request.topic}-${Date.now()}`,
-      attemptId: image.attemptId,
+      attemptId: image.attemptId!,
       level: request.level,
       topic: request.topic,
       imageUrl: this.toImageUrl(image),
@@ -712,13 +687,8 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
   private uploadRecordedAudio(audio: Blob): void {
     const currentExercise = this.current();
 
-    if (!currentExercise?.imageDescription) {
+    if (!currentExercise?.imageDescription || currentExercise.attemptId <= 0) {
       this.recordingError.set('Please generate a new image before recording.');
-      return;
-    }
-
-    if (this.recordingQuotaBlocked()) {
-      this.recordingError.set(this.recordingQuotaMessage());
       return;
     }
 
@@ -742,9 +712,10 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
           this.loadQuota(true);
         },
         error: (error) => {
-          this.recordingError.set(this.errorMessage(error));
+          const message = this.errorMessage(error);
+          this.recordingError.set(message);
           this.loadQuota(true);
-          this.retryableRecording.set(true);
+          this.retryableRecording.set(!message.toLowerCase().includes('already been evaluated'));
           this.uploadingRecording.set(false);
         },
         complete: () => {

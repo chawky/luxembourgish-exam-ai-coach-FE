@@ -6,6 +6,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { IconComponent } from '../../components/icon.component';
 import {
   AudioExerciseDto,
@@ -53,6 +54,7 @@ interface ListeningExerciseView {
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
+    RouterLink,
     IconComponent,
     AudioPlayerComponent,
   ],
@@ -120,7 +122,12 @@ interface ListeningExerciseView {
             <div class="form-error" role="alert">{{ errorMsg() }}</div>
           }
           @if (quotaMessage()) {
-            <div class="form-error" role="alert">{{ quotaMessage() }}</div>
+            <div class="form-error" role="alert">
+              {{ quotaMessage() }}
+              <a routerLink="/app/profile" [queryParams]="{ tab: 'subscription' }" class="quota-upgrade-link">
+                Upgrade to Premium
+              </a>
+            </div>
           }
 
           <button
@@ -419,12 +426,12 @@ export class ListeningComponent implements OnDestroy, OnInit {
   }
 
   quotaBlocked(): boolean {
-    return this.aiQuota.isExhausted(this.quota(), 'TTS');
+    return this.aiQuota.isExhausted(this.quota(), 'LISTENING');
   }
 
   quotaMessage(): string {
     return this.quotaBlocked()
-      ? this.aiQuota.blockedMessage(this.quota(), 'TTS')
+      ? this.aiQuota.blockedMessage(this.quota(), 'LISTENING')
       : '';
   }
 

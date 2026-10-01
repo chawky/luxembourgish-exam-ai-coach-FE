@@ -92,7 +92,9 @@ export function requestBody(request: Request): unknown {
     return undefined;
   }
 
-  return request.postDataJSON();
+  return request.headers()['content-type']?.includes('application/json')
+    ? request.postDataJSON()
+    : postData;
 }
 
 export function expectBearerAuth(request: Request, token: string): void {

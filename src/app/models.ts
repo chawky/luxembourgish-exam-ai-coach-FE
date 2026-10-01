@@ -49,7 +49,7 @@ export interface SkillProgress {
 
 export interface SpeakingPrompt {
   id: string;
-  attemptId?: number;
+  attemptId: number;
   topic: string;
   level: string;
   question: string;

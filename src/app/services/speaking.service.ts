@@ -37,16 +37,18 @@ export class SpeakingService {
 
   uploadRecording(
     audio: Blob,
-    attemptId?: number,
+    attemptId: number,
     durationSeconds?: number,
   ): Observable<SpeakingEvaluationDto> {
+    if (!Number.isInteger(attemptId) || attemptId <= 0) {
+      return throwError(
+        () => new Error('Please generate a new speaking prompt before recording.'),
+      );
+    }
+
     const formData = new FormData();
     formData.append('audio', this.toRecordingFile(audio));
-    let params = new HttpParams();
-
-    if (attemptId !== undefined) {
-      params = params.set('attemptId', attemptId);
-    }
+    let params = new HttpParams().set('attemptId', attemptId);
 
     if (durationSeconds !== undefined) {
       params = params.set('durationSeconds', durationSeconds);
@@ -78,7 +80,7 @@ export class SpeakingService {
       );
     }
 
-    if (!response.data) {
+    if (!response.data || !response.data.attemptId || response.data.attemptId <= 0) {
       throw new Error('Speaking practice response did not include prompt data.');
     }
 

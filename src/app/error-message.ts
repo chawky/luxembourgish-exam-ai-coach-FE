@@ -64,6 +64,13 @@ export function friendlyMessage(
   }
 
   if (
+    normalizedMessage.includes('already evaluated') ||
+    normalizedMessage.includes('already been evaluated')
+  ) {
+    return 'This answer has already been evaluated. Generate a new exercise to try again.';
+  }
+
+  if (
     normalizedMessage.includes('speaking practice response did not include') ||
     normalizedMessage.includes('generated prompt did not include')
   ) {

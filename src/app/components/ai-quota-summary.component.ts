@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
 import {
-  AiQuotaCategoryStatus,
+  AiQuotaFeatureStatus,
   AiQuotaStatus,
 } from '../services/ai-quota.service';
 
@@ -17,7 +17,7 @@ type QuotaState = 'normal' | 'near' | 'exhausted';
         <div>
           <h2 class="card-title">{{ title }}</h2>
           @if (quota?.tier) {
-            <p class="text-muted">{{ tierLabel(quota?.tier) }} plan limits</p>
+            <p class="text-muted">{{ tierSummary(quota?.tier) }}</p>
           } @else {
             <p class="text-muted">{{ subtitle }}</p>
           }
@@ -30,11 +30,11 @@ type QuotaState = 'normal' | 'near' | 'exhausted';
         <p class="quota-error" role="alert">{{ error }}</p>
       } @else if (quotaRows().length) {
         <div class="quota-grid">
-          @for (item of quotaRows(); track item.category || $index) {
+          @for (item of quotaRows(); track item.feature || $index) {
             <article class="quota-row" [class.exhausted]="state(item) === 'exhausted'">
               <div class="quota-row-head">
                 <div>
-                  <strong>{{ categoryLabel(item.category) }}</strong>
+                  <strong>{{ featureLabel(item.feature) }}</strong>
                   <small class="text-muted">{{ windowLabel(item.window) }}</small>
                 </div>
                 <span class="quota-badge" [class.warning]="state(item) === 'near'" [class.danger]="state(item) === 'exhausted'">
@@ -42,20 +42,22 @@ type QuotaState = 'normal' | 'near' | 'exhausted';
                 </span>
               </div>
 
-              <div class="quota-numbers">
-                <span>
-                  <strong>{{ numberLabel(item.used) }}</strong>
-                  <small class="text-muted">used</small>
-                </span>
-                <span>
-                  <strong>{{ limitLabel(item.limit) }}</strong>
-                  <small class="text-muted">limit</small>
-                </span>
-              </div>
+              @if (!isUnlimited(item)) {
+                <div class="quota-numbers">
+                  <span>
+                    <strong>{{ numberLabel(item.used) }}</strong>
+                    <small class="text-muted">used this week</small>
+                  </span>
+                  <span>
+                    <strong>{{ limitLabel(item.weeklyLimit) }}</strong>
+                    <small class="text-muted">weekly limit</small>
+                  </span>
+                </div>
 
-              <div class="quota-progress" aria-hidden="true">
-                <span [style.width.%]="usedPercent(item)"></span>
-              </div>
+                <div class="quota-progress" aria-hidden="true">
+                  <span [style.width.%]="usedPercent(item)"></span>
+                </div>
+              }
             </article>
           }
         </div>
@@ -199,91 +201,98 @@ export class AiQuotaSummaryComponent {
   @Input() subtitle = 'Your current generated practice usage.';
   @Input() emptyText = 'No usage limits were returned yet.';
 
-  quotaRows(): AiQuotaCategoryStatus[] {
-    const categories = this.quota?.categories ?? [];
-    const order = ['CHAT', 'TTS', 'STT', 'IMAGE'];
+  quotaRows(): AiQuotaFeatureStatus[] {
+    const features = this.quota?.features ?? [];
+    const order = [
+      'SPEAKING',
+      'LISTENING',
+      'IMAGE_DESCRIPTION',
+      'VOCABULARY',
+      'TOPIC_EXERCISE',
+    ];
 
-    return [...categories].sort((left, right) => {
-      const leftIndex = order.indexOf(left.category?.toUpperCase() ?? '');
-      const rightIndex = order.indexOf(right.category?.toUpperCase() ?? '');
+    return [...features].sort((left, right) => {
+      const leftIndex = order.indexOf(left.feature?.toUpperCase() ?? '');
+      const rightIndex = order.indexOf(right.feature?.toUpperCase() ?? '');
 
       return this.sortIndex(leftIndex) - this.sortIndex(rightIndex);
     });
   }
 
-  categoryLabel(category: string | undefined): string {
-    const normalized = category?.toUpperCase();
-
-    if (normalized === 'CHAT') {
-      return 'AI practice';
-    }
-
-    if (normalized === 'TTS') {
-      return 'Audio generation';
-    }
-
-    if (normalized === 'STT') {
-      return 'Recording evaluation';
-    }
-
-    if (normalized === 'IMAGE') {
-      return 'Image generation';
-    }
-
-    return this.fallbackLabel(category || 'Practice');
+  featureLabel(feature: string | undefined): string {
+    return this.fallbackLabel(feature || 'Practice');
   }
 
-  tierLabel(tier: string | undefined): string {
-    return this.fallbackLabel(tier || 'Current');
+  tierSummary(tier: string | undefined): string {
+    const label = this.fallbackLabel(tier || 'Current');
+    return tier?.toUpperCase() === 'PREMIUM'
+      ? `${label} plan · Unlimited practice`
+      : `${label} plan · Weekly limits`;
   }
 
   windowLabel(window: string | undefined): string {
     const normalized = window?.toUpperCase();
 
-    if (normalized === 'DAILY') {
-      return 'Daily allowance';
+    if (
+      this.quota?.tier?.toUpperCase() === 'PREMIUM' ||
+      normalized === 'UNLIMITED'
+    ) {
+      return 'Unlimited practice';
     }
 
-    if (normalized === 'MONTHLY') {
-      return 'Monthly allowance';
-    }
-
-    return window ? `${this.fallbackLabel(window)} allowance` : 'Current allowance';
+    return 'Weekly allowance';
   }
 
-  remainingLabel(item: AiQuotaCategoryStatus): string {
-    if (item.remaining === undefined) {
+  remainingLabel(item: AiQuotaFeatureStatus): string {
+    if (this.isUnlimited(item)) {
+      return 'Unlimited';
+    }
+
+    if (item.remaining === undefined || item.remaining === null) {
       return 'Left not available';
     }
 
     return `${this.numberLabel(item.remaining)} left`;
   }
 
-  limitLabel(limit: number | undefined): string {
-    return limit === undefined ? 'Not set' : this.numberLabel(limit);
+  limitLabel(limit: number | null | undefined): string {
+    return limit === undefined || limit === null ? 'Unlimited' : this.numberLabel(limit);
   }
 
-  numberLabel(value: number | undefined): string {
-    return value === undefined ? '0' : new Intl.NumberFormat().format(value);
+  numberLabel(value: number | null | undefined): string {
+    return value === undefined || value === null
+      ? '0'
+      : new Intl.NumberFormat().format(value);
   }
 
-  usedPercent(item: AiQuotaCategoryStatus): number {
+  usedPercent(item: AiQuotaFeatureStatus): number {
     const used = item.used ?? 0;
-    const limit = item.limit ?? 0;
+    const limit = item.weeklyLimit ?? 0;
 
     if (limit <= 0) {
-      return item.remaining !== undefined && item.remaining <= 0 ? 100 : 0;
+      return typeof item.remaining === 'number' && item.remaining <= 0 ? 100 : 0;
     }
 
     return Math.min(100, Math.max(0, Math.round((used / limit) * 100)));
   }
 
-  state(item: AiQuotaCategoryStatus): QuotaState {
-    if (item.remaining !== undefined && item.remaining <= 0) {
+  state(item: AiQuotaFeatureStatus): QuotaState {
+    if (this.isUnlimited(item)) {
+      return 'normal';
+    }
+
+    if (typeof item.remaining === 'number' && item.remaining <= 0) {
       return 'exhausted';
     }
 
     return this.usedPercent(item) >= 80 ? 'near' : 'normal';
+  }
+
+  isUnlimited(item: AiQuotaFeatureStatus): boolean {
+    return (
+      this.quota?.tier?.toUpperCase() === 'PREMIUM' ||
+      item.window?.toUpperCase() === 'UNLIMITED'
+    );
   }
 
   private fallbackLabel(value: string): string {

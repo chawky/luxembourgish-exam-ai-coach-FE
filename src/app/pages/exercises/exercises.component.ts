@@ -6,6 +6,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { ExerciseService } from '../../services/exercise.service';
 import { IconComponent } from '../../components/icon.component';
 import { friendlyErrorMessage } from '../../error-message';
@@ -32,7 +33,13 @@ interface NormalizedOption {
 @Component({
   selector: 'app-exercises',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, IconComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    RouterLink,
+    IconComponent,
+  ],
   template: `
     <header class="page-head">
       <div>
@@ -97,7 +104,12 @@ interface NormalizedOption {
             <div class="form-error" role="alert">{{ errorMsg() }}</div>
           }
           @if (quotaMessage()) {
-            <div class="form-error" role="alert">{{ quotaMessage() }}</div>
+            <div class="form-error" role="alert">
+              {{ quotaMessage() }}
+              <a routerLink="/app/profile" [queryParams]="{ tab: 'subscription' }" class="quota-upgrade-link">
+                Upgrade to Premium
+              </a>
+            </div>
           }
 
           <button
@@ -385,12 +397,12 @@ export class ExercisesComponent implements OnInit {
   }
 
   quotaBlocked(): boolean {
-    return this.aiQuota.isExhausted(this.quota(), 'CHAT');
+    return this.aiQuota.isExhausted(this.quota(), 'TOPIC_EXERCISE');
   }
 
   quotaMessage(): string {
     return this.quotaBlocked()
-      ? this.aiQuota.blockedMessage(this.quota(), 'CHAT')
+      ? this.aiQuota.blockedMessage(this.quota(), 'TOPIC_EXERCISE')
       : '';
   }
 

@@ -36,12 +36,78 @@ test('dashboard renders progress, quota, and quick links', async ({ page }) => {
   await expect(page.getByText('Total activities')).toBeVisible();
   await expect(page.getByText('Completed activities')).toBeVisible();
   await expect(page.getByText('Practice usage')).toBeVisible();
-  await expect(page.getByText('AI practice')).toBeVisible();
+  const speakingQuota = page.locator('.quota-row').filter({ hasText: 'Speaking' });
+  await expect(speakingQuota.getByText('Weekly allowance')).toBeVisible();
+  await expect(speakingQuota.getByText('12 left')).toBeVisible();
+  await expect(speakingQuota.getByText('3', { exact: true })).toBeVisible();
+  await expect(speakingQuota.getByText('15', { exact: true })).toBeVisible();
+  await expect(
+    page.locator('.quota-row').filter({ hasText: 'Image Description' }),
+  ).toBeVisible();
+  await expect(
+    page.locator('.quota-row').filter({ hasText: 'Topic Exercise' }),
+  ).toBeVisible();
   await expect(page.getByRole('link', { name: /Speaking drill/ })).toBeVisible();
   await expect(page.getByRole('link', { name: /Listening exercise/ })).toBeVisible();
   expectNoRouteErrors(currentUser.calls);
   expectNoRouteErrors(progress.calls);
   expectNoRouteErrors(quotaStatus.calls);
+});
+
+test('dashboard shows Premium feature quotas as unlimited', async ({ page }) => {
+  const user = testUser();
+  const jwt = 'dashboard-premium-jwt';
+
+  const currentUser = await seedAuthenticatedSession(page, user, jwt);
+  const progress = await mockDashboardProgress(page, user, { token: jwt });
+  const quotaStatus = await mockQuota(page, {
+    token: jwt,
+    data: quota({ tier: 'PREMIUM' }),
+  });
+
+  await page.goto('/app/dashboard');
+
+  await expect(page.getByText('Premium plan · Unlimited practice')).toBeVisible();
+  await expect(page.getByText('Unlimited', { exact: true })).toHaveCount(5);
+  await expect(page.getByText('used this week')).toHaveCount(0);
+  await expect(page.getByText('weekly limit')).toHaveCount(0);
+  expectNoRouteErrors(currentUser.calls);
+  expectNoRouteErrors(progress.calls);
+  expectNoRouteErrors(quotaStatus.calls);
+});
+
+test('dashboard exercise cards open the matching practice page', async ({ page }) => {
+  const user = testUser();
+  const jwt = 'dashboard-navigation-jwt';
+
+  await seedAuthenticatedSession(page, user, jwt);
+  await mockDashboardProgress(page, user, {
+    token: jwt,
+    data: progressDashboard(user, {
+      skillProgress: [
+        { exerciseType: 'SPEAKING', totalActivities: 1 },
+        { exerciseType: 'LISTENING', totalActivities: 1 },
+        { exerciseType: 'TEXT_EXERCISE', totalActivities: 1 },
+        { exerciseType: 'IMAGE_DESCRIPTION', totalActivities: 1 },
+        { exerciseType: 'VOCABULARY', totalActivities: 1 },
+      ],
+    }),
+  });
+  await mockQuota(page, { token: jwt, data: quota() });
+
+  const cards = [
+    { name: 'Speaking', path: '/app/speaking' },
+    { name: 'Listening', path: '/app/listening' },
+    { name: 'Text Exercise', path: '/app/exercises' },
+    { name: 'Image Description', path: '/app/image-description' },
+    { name: 'Vocabulary', path: '/app/vocabulary' },
+  ];
+
+  for (const card of cards) {
+    await page.goto('/app/dashboard');
+    await page.getByRole('link', { name: `Practice ${card.name}`, exact: true }).click();
+    await expect(page).toHaveURL(card.path);
+  }
 });
 
 test('dashboard renders an empty progress state cleanly', async ({ page }) => {

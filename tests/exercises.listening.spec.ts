@@ -315,14 +315,14 @@ test('shows listening generation failures and re-enables generation', async ({
   const listeningCalls = await routeApi(page, '**/api/exercises/listening', {
     method: 'POST',
     status: 429,
-    response: apiFailure('Daily audio generation limit reached. Upgrade to continue.'),
+    response: apiFailure('Listening weekly limit reached.'),
   });
 
   await page.goto('/app/listening');
   await page.getByRole('button', { name: /Generate listening exercise/ }).click();
 
   await expect(page.getByRole('alert')).toHaveText(
-    'Daily audio generation limit reached. Upgrade to continue.',
+    'Listening weekly limit reached.',
   );
   await expect(
     page.getByRole('button', { name: /Generate listening exercise/ }),
@@ -334,7 +334,7 @@ test('shows listening generation failures and re-enables generation', async ({
   expectNoRouteErrors(dashboardProgress.calls);
 });
 
-test('disables listening generation when TTS quota is exhausted', async ({
+test('disables listening generation when LISTENING quota is exhausted', async ({
   page,
 }) => {
   const { token, currentUser, dashboardProgress } =
@@ -344,7 +344,7 @@ test('disables listening generation when TTS quota is exhausted', async ({
   const configCalls = await mockPracticeConfig(page);
   const quotaStatus = await mockQuota(page, {
     token,
-    data: quota({ exhausted: 'TTS' }),
+    data: quota({ exhausted: 'LISTENING' }),
   });
   await page.route('**/api/exercises/listening', async (route) => {
     listeningCalls += 1;
@@ -354,7 +354,7 @@ test('disables listening generation when TTS quota is exhausted', async ({
   await page.goto('/app/listening');
 
   await expect(
-    page.getByText('Daily audio generation limit reached. Upgrade to continue.'),
+    page.getByText(/You've used your 15 Listening exercises for this week/),
   ).toBeVisible();
   await expect(
     page.getByRole('button', { name: /Generate listening exercise/ }),

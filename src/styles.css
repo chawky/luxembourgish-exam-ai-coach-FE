@@ -381,6 +381,15 @@ button:focus-visible {
   color: var(--blue-900);
 }
 
+.quota-upgrade-link {
+  display: block;
+  width: fit-content;
+  margin-top: 6px;
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
 :is(app-exercises, app-speaking, app-listening, app-vocabulary, app-image-description)
   .exercise-head {
   display: flex;

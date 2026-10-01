@@ -116,6 +116,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/webhooks/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["handle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/verifyOtp": {
         parameters: {
             query?: never;
@@ -286,6 +302,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["createUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/support": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["sendSupportRequest"];
         delete?: never;
         options?: never;
         head?: never;
@@ -468,6 +500,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/support-emails/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["sync"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/prompts": {
         parameters: {
             query?: never;
@@ -546,6 +594,22 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["updateUserStatus"];
+        trace?: never;
+    };
+    "/api/admin/support-emails/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["markRead"];
         trace?: never;
     };
     "/api/users": {
@@ -724,6 +788,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/support-emails": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/support-emails/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/support-emails/{emailId}/attachments/{attachmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["downloadAttachment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/exercise-config": {
         parameters: {
             query?: never;
@@ -748,6 +860,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["getAuditLogs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/ai-usage/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAiUsageSummary"];
         put?: never;
         post?: never;
         delete?: never;
@@ -882,15 +1010,118 @@ export interface components {
             message?: string;
             data?: components["schemas"]["AdminLevelOptionDto"];
         };
-        VerifyOtpRequest: {
-            /** Format: int32 */
-            otp?: number;
-            email?: string;
+        ContentDisposition: {
+            type?: string;
+            name?: string;
+            filename?: string;
+            charset?: string;
+            inline?: boolean;
+            formData?: boolean;
+            attachment?: boolean;
+        };
+        HttpHeaders: {
+            empty?: boolean;
+            /** Format: uri */
+            location?: string;
+            host?: {
+                address?: {
+                    hostAddress?: string;
+                    /** Format: byte */
+                    address?: string;
+                    hostName?: string;
+                    linkLocalAddress?: boolean;
+                    multicastAddress?: boolean;
+                    anyLocalAddress?: boolean;
+                    loopbackAddress?: boolean;
+                    siteLocalAddress?: boolean;
+                    mcglobal?: boolean;
+                    mcnodeLocal?: boolean;
+                    mclinkLocal?: boolean;
+                    mcsiteLocal?: boolean;
+                    mcorgLocal?: boolean;
+                    canonicalHostName?: string;
+                };
+                /** Format: int32 */
+                port?: number;
+                unresolved?: boolean;
+                hostName?: string;
+                hostString?: string;
+            };
+            all?: {
+                [key: string]: string;
+            };
+            /** Format: int64 */
+            lastModified?: number;
+            /** Format: int64 */
+            date?: number;
+            /** Format: int64 */
+            contentLength?: number;
+            connection?: string[];
+            contentType?: components["schemas"]["MediaType"];
+            origin?: string;
+            /** Format: int64 */
+            ifModifiedSince?: number;
+            range?: components["schemas"]["HttpRange"][];
+            contentDisposition?: components["schemas"]["ContentDisposition"];
+            acceptCharset?: string[];
+            cacheControl?: string;
+            contentLanguage?: string;
+            etag?: string;
+            basicAuth?: string;
+            acceptLanguage?: {
+                range?: string;
+                /** Format: double */
+                weight?: number;
+            }[];
+            accept?: components["schemas"]["MediaType"][];
+            /** Format: int64 */
+            expires?: number;
+            allow?: components["schemas"]["HttpMethod"][];
+            acceptPatch?: components["schemas"]["MediaType"][];
+            bearerAuth?: string;
+            ifMatch?: string[];
+            pragma?: string;
+            vary?: string[];
+            ifNoneMatch?: string[];
+            upgrade?: string;
+            acceptLanguageAsLocales?: string[];
+            accessControlAllowCredentials?: boolean;
+            accessControlAllowHeaders?: string[];
+            accessControlAllowMethods?: components["schemas"]["HttpMethod"][];
+            accessControlRequestMethod?: components["schemas"]["HttpMethod"];
+            accessControlAllowOrigin?: string;
+            /** Format: int64 */
+            ifUnmodifiedSince?: number;
+            /** Format: int64 */
+            accessControlMaxAge?: number;
+            accessControlRequestHeaders?: string[];
+            accessControlExposeHeaders?: string[];
+        };
+        HttpMethod: unknown;
+        HttpRange: unknown;
+        MediaType: {
+            type?: string;
+            subtype?: string;
+            parameters?: {
+                [key: string]: string;
+            };
+            /** Format: double */
+            qualityValue?: number;
+            charset?: string;
+            concrete?: boolean;
+            wildcardType?: boolean;
+            wildcardSubtype?: boolean;
+            subtypeSuffix?: string;
         };
         ApiResponseVoid: {
             success?: boolean;
             message?: string;
             data?: unknown;
+        };
+        VerifyOtpRequest: {
+            /** Format: int32 */
+            otp?: number;
+            email?: string;
         };
         SendOtpRequest: {
             email?: string;
@@ -911,6 +1142,12 @@ export interface components {
         };
         GoogleLoginRequestDto: {
             idToken: string;
+        };
+        SupportRequestDto: {
+            email?: string;
+            subject?: string;
+            message?: string;
+            attachments?: string[];
         };
         CompleteExerciseRequest: {
             learnerAnswer?: string;
@@ -1047,6 +1284,23 @@ export interface components {
             image?: string;
             imageDescription?: string;
         };
+        AdminSupportEmailSyncResultDto: {
+            /** Format: int32 */
+            imported?: number;
+            /** Format: int32 */
+            existing?: number;
+            /** Format: int32 */
+            ignored?: number;
+            /** Format: int32 */
+            attachmentsAdded?: number;
+            /** Format: int32 */
+            failed?: number;
+        };
+        ApiResponseAdminSupportEmailSyncResultDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["AdminSupportEmailSyncResultDto"];
+        };
         AdminPromptCreateRequest: {
             key: string;
             title?: string;
@@ -1075,23 +1329,23 @@ export interface components {
             aiUsage?: components["schemas"]["AdminAiUsageSummaryDto"];
             aiQuota?: components["schemas"]["AiQuotaStatusDto"];
         };
-        AiQuotaCategoryStatusDto: {
-            category?: string;
+        AiQuotaFeatureStatusDto: {
+            feature?: string;
             window?: string;
             /** Format: int32 */
-            limit?: number;
+            weeklyLimit?: number | null;
             /** Format: int64 */
             used?: number;
             /** Format: int64 */
-            remaining?: number;
+            remaining?: number | null;
             /** Format: date-time */
-            windowStart?: string;
+            windowStart?: string | null;
             /** Format: date-time */
-            windowEnd?: string;
+            windowEnd?: string | null;
         };
         AiQuotaStatusDto: {
             tier?: string;
-            categories?: components["schemas"]["AiQuotaCategoryStatusDto"][];
+            features?: components["schemas"]["AiQuotaFeatureStatusDto"][];
         };
         ApiResponseAdminUserDetailDto: {
             success?: boolean;
@@ -1131,6 +1385,35 @@ export interface components {
             /** Format: double */
             averageRatingOverall?: number;
             latestExerciseName?: string;
+        };
+        AdminSupportEmailAttachmentDto: {
+            /** Format: int64 */
+            id?: number;
+            filename?: string;
+            contentType?: string;
+            contentDisposition?: string;
+            contentId?: string;
+            /** Format: int64 */
+            sizeBytes?: number;
+        };
+        AdminSupportEmailDetailDto: {
+            /** Format: int64 */
+            id?: number;
+            fromEmail?: string;
+            toEmail?: string;
+            subject?: string;
+            textBody?: string;
+            /** @description Raw untrusted inbound email HTML. Admin UI must sanitize or sandbox before rendering. */
+            htmlBody?: string;
+            /** Format: date-time */
+            receivedAt?: string;
+            read?: boolean;
+            attachments?: components["schemas"]["AdminSupportEmailAttachmentDto"][];
+        };
+        ApiResponseAdminSupportEmailDetailDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["AdminSupportEmailDetailDto"];
         };
         ApiResponseListResponseUserDto: {
             success?: boolean;
@@ -1271,6 +1554,20 @@ export interface components {
             message?: string;
             data?: components["schemas"]["AdminAiUsageSummaryDto"];
         };
+        AdminSupportEmailListDto: {
+            /** Format: int64 */
+            id?: number;
+            fromEmail?: string;
+            subject?: string;
+            /** Format: date-time */
+            receivedAt?: string;
+            read?: boolean;
+        };
+        ApiResponseListAdminSupportEmailListDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["AdminSupportEmailListDto"][];
+        };
         ApiResponseListAdminPromptDto: {
             success?: boolean;
             message?: string;
@@ -1322,6 +1619,39 @@ export interface components {
             totalItems?: number;
             /** Format: int32 */
             totalPages?: number;
+        };
+        AdminAiUsageDashboardSummaryDto: {
+            models?: components["schemas"]["AdminAiUsageModelSummaryDto"][];
+            totals?: components["schemas"]["AdminAiUsageTotalsDto"];
+        };
+        AdminAiUsageModelSummaryDto: {
+            provider?: string;
+            model?: string;
+            /** Format: int64 */
+            requests?: number;
+            /** Format: int64 */
+            inputTokens?: number;
+            /** Format: int64 */
+            outputTokens?: number;
+            /** Format: int64 */
+            totalTokens?: number;
+            estimatedCostUsd?: number;
+        };
+        AdminAiUsageTotalsDto: {
+            /** Format: int64 */
+            requests?: number;
+            /** Format: int64 */
+            inputTokens?: number;
+            /** Format: int64 */
+            outputTokens?: number;
+            /** Format: int64 */
+            totalTokens?: number;
+            estimatedCostUsd?: number;
+        };
+        ApiResponseAdminAiUsageDashboardSummaryDto: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["AdminAiUsageDashboardSummaryDto"];
         };
     };
     responses: never;
@@ -1686,6 +2016,32 @@ export interface operations {
             };
         };
     };
+    handle: {
+        parameters: {
+            query?: never;
+            header: {
+                headers: components["schemas"]["HttpHeaders"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": string;
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
     verifyOtp: {
         parameters: {
             query?: never;
@@ -1946,6 +2302,30 @@ export interface operations {
             };
         };
     };
+    sendSupportRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["SupportRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
     completeExercise: {
         parameters: {
             query?: never;
@@ -2060,9 +2440,9 @@ export interface operations {
     };
     receiveRecording: {
         parameters: {
-            query?: {
+            query: {
                 durationSeconds?: number;
-                attemptId?: number;
+                attemptId: number;
             };
             header?: never;
             path?: never;
@@ -2141,7 +2521,7 @@ export interface operations {
             query: {
                 imageDescription: string;
                 durationSeconds?: number;
-                attemptId?: number;
+                attemptId: number;
             };
             header?: never;
             path?: never;
@@ -2211,6 +2591,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseGeneratedImageDto"];
+                };
+            };
+        };
+    };
+    sync: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminSupportEmailSyncResultDto"];
                 };
             };
         };
@@ -2353,6 +2753,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseAdminUserDetailDto"];
+                };
+            };
+        };
+    };
+    markRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminSupportEmailDetailDto"];
                 };
             };
         };
@@ -2628,6 +3050,71 @@ export interface operations {
             };
         };
     };
+    list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListAdminSupportEmailListDto"];
+                };
+            };
+        };
+    };
+    get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminSupportEmailDetailDto"];
+                };
+            };
+        };
+    };
+    downloadAttachment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                emailId: number;
+                attachmentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
     getExerciseConfig_1: {
         parameters: {
             query?: never;
@@ -2672,6 +3159,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponsePageResponseDtoAdminAuditLogDto"];
+                };
+            };
+        };
+    };
+    getAiUsageSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseAdminAiUsageDashboardSummaryDto"];
                 };
             };
         };

@@ -106,7 +106,11 @@ import { formatPracticeLabel } from '../../practice-options';
         @if (skillProgress().length) {
           <div class="skills">
             @for (p of skillProgress(); track skillTrack(p, $index)) {
-              <div class="skill">
+              <a
+                class="skill"
+                [routerLink]="skillPath(p)"
+                [attr.aria-label]="'Practice ' + skillLabel(p)"
+              >
                 <div class="flex items-center justify-between">
                   <span class="skill-label">{{ skillLabel(p) }}</span>
                   <span class="text-muted small">
@@ -123,7 +127,7 @@ import { formatPracticeLabel } from '../../practice-options';
                     <span>Latest: {{ latestExerciseLabel(p) }}</span>
                   }
                 </div>
-              </div>
+              </a>
             }
           </div>
         } @else {
@@ -190,30 +194,35 @@ export class DashboardComponent implements OnInit {
 
   quickLinks = [
     {
+      exerciseType: 'SPEAKING',
       path: '/app/speaking',
       icon: 'mic',
       title: 'Speaking drill',
       text: 'Practice a spoken prompt',
     },
     {
+      exerciseType: 'LISTENING',
       path: '/app/listening',
       icon: 'headphones',
       title: 'Listening exercise',
       text: 'Sharpen your comprehension',
     },
     {
+      exerciseType: 'TEXT_EXERCISE',
       path: '/app/exercises',
       icon: 'book',
       title: 'Topic exercises',
       text: 'Generate practice by level and topic',
     },
     {
+      exerciseType: 'IMAGE_DESCRIPTION',
       path: '/app/image-description',
       icon: 'image',
       title: 'Image description',
       text: 'Describe a generated scene aloud',
     },
     {
+      exerciseType: 'VOCABULARY',
       path: '/app/vocabulary',
       icon: 'cards',
       title: 'Vocabulary practice',
@@ -310,6 +319,13 @@ export class DashboardComponent implements OnInit {
     return progress.exerciseType
       ? formatPracticeLabel(progress.exerciseType)
       : 'Practice';
+  }
+
+  skillPath(progress: SkillProgressDto): string {
+    return (
+      this.quickLinks.find((link) => link.exerciseType === progress.exerciseType)
+        ?.path ?? '/app/exercises'
+    );
   }
 
   totalCount(progress: SkillProgressDto): number {

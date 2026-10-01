@@ -165,14 +165,14 @@ test('shows backend generation failures and re-enables generation', async ({ pag
   const generateCalls = await routeApi(page, '**/api/exercises/generate', {
     method: 'POST',
     status: 429,
-    response: apiFailure('Daily AI practice limit reached. Upgrade to continue.'),
+    response: apiFailure('Topic exercise weekly limit reached.'),
   });
 
   await page.goto('/app/exercises');
   await page.getByRole('button', { name: /Generate exercise/ }).click();
 
   await expect(page.getByRole('alert')).toHaveText(
-    'Daily AI practice limit reached. Upgrade to continue.',
+    'Topic exercise weekly limit reached.',
   );
   await expect(page.getByRole('button', { name: /Generate exercise/ })).toBeEnabled();
 
@@ -183,7 +183,7 @@ test('shows backend generation failures and re-enables generation', async ({ pag
   expectNoRouteErrors(dashboardProgress.calls);
 });
 
-test('disables generation when CHAT quota is exhausted', async ({ page }) => {
+test('disables generation when TOPIC_EXERCISE quota is exhausted', async ({ page }) => {
   const { token, currentUser, dashboardProgress } =
     await setupAuthenticatedExercisePage(page);
   let generateCalls = 0;
@@ -193,7 +193,7 @@ test('disables generation when CHAT quota is exhausted', async ({ page }) => {
   });
   const quotaCalls = await mockQuota(page, {
     token,
-    data: quota({ exhausted: 'CHAT' }),
+    data: quota({ exhausted: 'TOPIC_EXERCISE' }),
   });
   await page.route('**/api/exercises/generate', async (route) => {
     generateCalls += 1;
@@ -203,7 +203,7 @@ test('disables generation when CHAT quota is exhausted', async ({ page }) => {
   await page.goto('/app/exercises');
 
   await expect(
-    page.getByText('Daily AI practice limit reached. Upgrade to continue.'),
+    page.getByText(/You've used your 15 topic exercises for this week/),
   ).toBeVisible();
   await expect(page.getByRole('button', { name: /Generate exercise/ })).toBeDisabled();
   expect(generateCalls).toBe(0);

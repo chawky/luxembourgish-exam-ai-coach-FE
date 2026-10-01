@@ -2,22 +2,50 @@ import { type Page, type Request } from '@playwright/test';
 import { apiSuccess, routeApi } from './api.fixture';
 import { type MockedProtectedRoute } from './auth.fixture';
 
-export type QuotaCategory = 'CHAT' | 'TTS' | 'STT' | 'IMAGE';
+export type QuotaFeature =
+  | 'SPEAKING'
+  | 'LISTENING'
+  | 'IMAGE_DESCRIPTION'
+  | 'VOCABULARY'
+  | 'TOPIC_EXERCISE';
 
-const quotaCategories: QuotaCategory[] = ['CHAT', 'TTS', 'STT', 'IMAGE'];
+const quotaFeatures: QuotaFeature[] = [
+  'SPEAKING',
+  'LISTENING',
+  'IMAGE_DESCRIPTION',
+  'VOCABULARY',
+  'TOPIC_EXERCISE',
+];
 
-export function quota(options: { exhausted?: QuotaCategory } = {}): Record<string, unknown> {
+export function quota(
+  options: { exhausted?: QuotaFeature; tier?: 'BASIC' | 'PREMIUM' } = {},
+): Record<string, unknown> {
+  const tier = options.tier ?? 'BASIC';
+
   return {
-    tier: 'BASIC',
-    categories: quotaCategories.map((category) => {
-      const exhausted = options.exhausted === category;
+    tier,
+    features: quotaFeatures.map((feature) => {
+      if (tier === 'PREMIUM') {
+        return {
+          feature,
+          weeklyLimit: null,
+          used: 0,
+          remaining: null,
+          windowStart: null,
+          windowEnd: null,
+        };
+      }
+
+      const exhausted = options.exhausted === feature;
 
       return {
-        category,
-        window: 'DAILY',
-        used: exhausted ? 10 : 1,
-        limit: 10,
-        remaining: exhausted ? 0 : 9,
+        feature,
+        window: 'WEEKLY',
+        weeklyLimit: 15,
+        used: exhausted ? 15 : 3,
+        remaining: exhausted ? 0 : 12,
+        windowStart: '2026-09-28T00:00:00Z',
+        windowEnd: '2026-10-05T00:00:00Z',
       };
     }),
   };

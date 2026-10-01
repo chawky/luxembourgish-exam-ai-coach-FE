@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { IconComponent } from '../../components/icon.component';
 import { friendlyErrorMessage } from '../../error-message';
 import {
@@ -20,7 +21,7 @@ import { VocabularyService } from '../../services/vocabulary.service';
 @Component({
   selector: 'app-vocabulary',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, IconComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, IconComponent],
   template: `
     <header class="page-head">
       <div>
@@ -76,7 +77,12 @@ import { VocabularyService } from '../../services/vocabulary.service';
             <div class="form-error" role="alert">{{ errorMsg() }}</div>
           }
           @if (quotaMessage()) {
-            <div class="form-error" role="alert">{{ quotaMessage() }}</div>
+            <div class="form-error" role="alert">
+              {{ quotaMessage() }}
+              <a routerLink="/app/profile" [queryParams]="{ tab: 'subscription' }" class="quota-upgrade-link">
+                Upgrade to Premium
+              </a>
+            </div>
           }
 
           <button
@@ -343,12 +349,12 @@ export class VocabularyComponent implements OnInit {
   }
 
   quotaBlocked(): boolean {
-    return this.aiQuota.isExhausted(this.quota(), 'CHAT');
+    return this.aiQuota.isExhausted(this.quota(), 'VOCABULARY');
   }
 
   quotaMessage(): string {
     return this.quotaBlocked()
-      ? this.aiQuota.blockedMessage(this.quota(), 'CHAT')
+      ? this.aiQuota.blockedMessage(this.quota(), 'VOCABULARY')
       : '';
   }
 

@@ -93,8 +93,14 @@
 }
 
 .skill {
+  display: block;
   padding-top: 16px;
   border-top: 1px solid var(--border);
+}
+
+.skill:hover .skill-label,
+.skill:focus-visible .skill-label {
+  color: var(--sky);
 }
 
 .skill:first-child {

@@ -233,14 +233,14 @@ test('shows vocabulary generation failures and re-enables generation', async ({
   const vocabularyCalls = await routeApi(page, '**/api/exercises/vocabulary', {
     method: 'POST',
     status: 429,
-    response: apiFailure('Daily AI practice limit reached. Upgrade to continue.'),
+    response: apiFailure('Vocabulary weekly limit reached.'),
   });
 
   await page.goto('/app/vocabulary');
   await page.getByRole('button', { name: /Generate vocabulary/ }).click();
 
   await expect(page.getByRole('alert')).toHaveText(
-    'Daily AI practice limit reached. Upgrade to continue.',
+    'Vocabulary weekly limit reached.',
   );
   await expect(page.getByRole('button', { name: /Generate vocabulary/ })).toBeEnabled();
   expectNoRouteErrors(configCalls);
@@ -250,7 +250,7 @@ test('shows vocabulary generation failures and re-enables generation', async ({
   expectNoRouteErrors(dashboardProgress.calls);
 });
 
-test('disables vocabulary generation when CHAT quota is exhausted', async ({
+test('disables vocabulary generation when VOCABULARY quota is exhausted', async ({
   page,
 }) => {
   const { token, currentUser, dashboardProgress } =
@@ -260,7 +260,7 @@ test('disables vocabulary generation when CHAT quota is exhausted', async ({
   const configCalls = await mockPracticeConfig(page);
   const quotaStatus = await mockQuota(page, {
     token,
-    data: quota({ exhausted: 'CHAT' }),
+    data: quota({ exhausted: 'VOCABULARY' }),
   });
   await page.route('**/api/exercises/vocabulary', async (route) => {
     vocabularyCalls += 1;
@@ -270,7 +270,7 @@ test('disables vocabulary generation when CHAT quota is exhausted', async ({
   await page.goto('/app/vocabulary');
 
   await expect(
-    page.getByText('Daily AI practice limit reached. Upgrade to continue.'),
+    page.getByText(/You've used your 15 Vocabulary exercises for this week/),
   ).toBeVisible();
   await expect(page.getByRole('button', { name: /Generate vocabulary/ })).toBeDisabled();
   expect(vocabularyCalls).toBe(0);

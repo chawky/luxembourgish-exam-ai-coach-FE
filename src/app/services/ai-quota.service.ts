@@ -6,11 +6,16 @@ import type { components } from '../api/backend-schema';
 import { ApiResponse } from '../models';
 import { CacheRegistryService } from './cache-registry.service';
 
-export type AiQuotaCategory = 'CHAT' | 'TTS' | 'STT' | 'IMAGE';
+export type AiQuotaFeature =
+  | 'SPEAKING'
+  | 'LISTENING'
+  | 'IMAGE_DESCRIPTION'
+  | 'VOCABULARY'
+  | 'TOPIC_EXERCISE';
 export type AiQuotaTier = 'BASIC' | 'PREMIUM' | string;
 export type AiQuotaStatus = components['schemas']['AiQuotaStatusDto'];
-export type AiQuotaCategoryStatus =
-  components['schemas']['AiQuotaCategoryStatusDto'];
+export type AiQuotaFeatureStatus =
+  components['schemas']['AiQuotaFeatureStatusDto'];
 
 type AiQuotaResponse = components['schemas']['ApiResponseAiQuotaStatusDto'];
 
@@ -46,38 +51,41 @@ export class AiQuotaService {
     this.quotaRequest = undefined;
   }
 
-  category(
+  feature(
     quota: AiQuotaStatus | null,
-    category: AiQuotaCategory,
-  ): AiQuotaCategoryStatus | null {
+    feature: AiQuotaFeature,
+  ): AiQuotaFeatureStatus | null {
     return (
-      quota?.categories?.find(
-        (item) => item.category?.toUpperCase() === category,
+      quota?.features?.find(
+        (item) => item.feature?.toUpperCase() === feature,
       ) ?? null
     );
   }
 
-  isExhausted(quota: AiQuotaStatus | null, category: AiQuotaCategory): boolean {
-    const categoryStatus = this.category(quota, category);
-    return categoryStatus?.remaining !== undefined && categoryStatus.remaining <= 0;
+  isExhausted(quota: AiQuotaStatus | null, feature: AiQuotaFeature): boolean {
+    if (quota?.tier?.toUpperCase() !== 'BASIC') {
+      return false;
+    }
+
+    const featureStatus = this.feature(quota, feature);
+    return typeof featureStatus?.remaining === 'number' && featureStatus.remaining <= 0;
   }
 
   blockedMessage(
     quota: AiQuotaStatus | null,
-    category: AiQuotaCategory,
+    feature: AiQuotaFeature,
   ): string {
-    const tier = quota?.tier?.toUpperCase();
-    const categoryName = this.categoryLabel(category);
+    const status = this.feature(quota, feature);
+    const featureName = this.featureLabel(feature);
+    const limit = status?.weeklyLimit;
+    const usage = typeof limit === 'number' ? `${limit} ` : '';
+    const reset = this.resetLabel(status?.windowEnd);
 
-    if (tier === 'BASIC') {
-      return `Daily ${categoryName} limit reached. Upgrade to continue.`;
+    if (quota?.tier?.toUpperCase() === 'BASIC') {
+      return `You've used your ${usage}${featureName} exercises for this week. ${reset}`;
     }
 
-    if (tier === 'PREMIUM') {
-      return `Monthly ${categoryName} limit reached.`;
-    }
-
-    return `${categoryName} limit reached.`;
+    return `${featureName} practice is currently unavailable.`;
   }
 
   private unwrapQuota(response: AiQuotaResponse): AiQuotaStatus {
@@ -92,20 +100,31 @@ export class AiQuotaService {
     return response.data;
   }
 
-  private categoryLabel(category: AiQuotaCategory): string {
-    if (category === 'TTS') {
-      return 'audio generation';
+  private featureLabel(feature: AiQuotaFeature): string {
+    if (feature === 'TOPIC_EXERCISE') {
+      return 'topic';
     }
 
-    if (category === 'STT') {
-      return 'recording evaluation';
+    return feature
+      .toLowerCase()
+      .split('_')
+      .map((part) => part[0].toUpperCase() + part.slice(1))
+      .join(' ');
+  }
+
+  private resetLabel(windowEnd: string | null | undefined): string {
+    if (!windowEnd) {
+      return 'Your weekly allowance will reset automatically.';
     }
 
-    if (category === 'IMAGE') {
-      return 'image generation';
+    const date = new Date(windowEnd);
+    if (Number.isNaN(date.getTime())) {
+      return 'Your weekly allowance will reset automatically.';
     }
 
-    return 'AI practice';
+    return `Your allowance resets on ${new Intl.DateTimeFormat(undefined, {
+      dateStyle: 'medium',
+    }).format(date)}.`;
   }
 
   private toApiError(error: unknown, fallbackMessage: string): Error {

@@ -167,7 +167,7 @@ interface ImageDescriptionExerciseView {
                 class="record-btn"
                 [class.recording]="recording()"
                 (click)="toggleRecord()"
-                [disabled]="uploadingRecording() || !exercise.imageDescription"
+                [disabled]="uploadingRecording() || !exercise.imageDescription || attemptEvaluationClosed()"
                 [attr.aria-label]="recording() ? 'Stop recording' : 'Start recording'"
               >
                 <app-icon [name]="recording() ? 'check' : 'mic'" [size]="26"></app-icon>
@@ -239,11 +239,11 @@ interface ImageDescriptionExerciseView {
                 <button
                   type="button"
                   class="btn btn-primary"
-                  [disabled]="recording() || uploadingRecording()"
-                  (click)="recordNewAnswer()"
+                  [disabled]="loading() || configLoading() || form.invalid || imageQuotaBlocked()"
+                  (click)="generate()"
                 >
-                  <app-icon name="mic" [size]="18"></app-icon>
-                  Record new description
+                  <app-icon name="sparkles" [size]="18"></app-icon>
+                  Generate another image
                 </button>
               </div>
             }
@@ -310,6 +310,7 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
   recording = signal(false);
   uploadingRecording = signal(false);
   evaluation = signal<SpeakingEvaluationDto | null>(null);
+  attemptEvaluationClosed = signal(false);
   recordingError = signal('');
   retryableRecording = signal(false);
   elapsed = signal(0);
@@ -385,7 +386,7 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
   }
 
   toggleRecord(): void {
-    if (!this.current() || this.loading() || this.uploadingRecording()) {
+    if (!this.current() || this.loading() || this.uploadingRecording() || this.attemptEvaluationClosed()) {
       return;
     }
 
@@ -397,25 +398,11 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
   }
 
   resendRecording(): void {
-    if (!this.lastRecordingAudio || this.uploadingRecording()) {
+    if (!this.lastRecordingAudio || this.uploadingRecording() || this.attemptEvaluationClosed()) {
       return;
     }
 
     this.uploadRecordedAudio(this.lastRecordingAudio);
-  }
-
-  recordNewAnswer(): void {
-    if (!this.current() || this.loading() || this.recording() || this.uploadingRecording()) {
-      return;
-    }
-
-    this.evaluation.set(null);
-    this.recordingError.set('');
-    this.retryableRecording.set(false);
-    this.lastRecordingAudio = null;
-    this.elapsed.set(0);
-
-    void this.startRecording();
   }
 
   formattedTime(): string {
@@ -613,6 +600,7 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
   private resetPracticeSession(): void {
     this.clearImage();
     this.evaluation.set(null);
+    this.attemptEvaluationClosed.set(false);
     this.recordingError.set('');
     this.retryableRecording.set(false);
     this.lastRecordingAudio = null;
@@ -685,6 +673,10 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
   }
 
   private uploadRecordedAudio(audio: Blob): void {
+    if (this.attemptEvaluationClosed()) {
+      return;
+    }
+
     const currentExercise = this.current();
 
     if (!currentExercise?.imageDescription || currentExercise.attemptId <= 0) {
@@ -708,14 +700,18 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
       .subscribe({
         next: (evaluation) => {
           this.evaluation.set(evaluation);
+          this.attemptEvaluationClosed.set(true);
+          this.retryableRecording.set(false);
           this.lastRecordingAudio = null;
           this.loadQuota(true);
         },
         error: (error) => {
           const message = this.errorMessage(error);
+          const alreadyEvaluated = message.toLowerCase().includes('already been evaluated');
           this.recordingError.set(message);
           this.loadQuota(true);
-          this.retryableRecording.set(!message.toLowerCase().includes('already been evaluated'));
+          this.attemptEvaluationClosed.set(alreadyEvaluated);
+          this.retryableRecording.set(!alreadyEvaluated);
           this.uploadingRecording.set(false);
         },
         complete: () => {

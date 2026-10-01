@@ -58,7 +58,7 @@ async function mockRecording(page: Page): Promise<void> {
   });
 }
 
-test('Speaking evaluation sends the generated attemptId', async ({ page }) => {
+test('successful Speaking evaluation cannot submit the same attemptId again', async ({ page }) => {
   const token = 'speaking-attempt-jwt';
   const attemptIds: string[] = [];
 
@@ -93,10 +93,15 @@ test('Speaking evaluation sends the generated attemptId', async ({ page }) => {
   await page.getByRole('button', { name: 'Stop recording' }).click();
 
   await expect(page.getByText('Good answer.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Record new answer' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Generate new speaking prompt' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start recording' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Start recording' }).dispatchEvent('click');
+  await page.waitForTimeout(100);
   expect(attemptIds).toEqual(['1201']);
 });
 
-test('Image Description evaluation sends the generated attemptId', async ({
+test('successful Image Description evaluation cannot submit the same attemptId again', async ({
   page,
 }) => {
   const token = 'image-attempt-jwt';
@@ -132,13 +137,65 @@ test('Image Description evaluation sends the generated attemptId', async ({
   await page.getByRole('button', { name: 'Stop recording' }).click();
 
   await expect(page.getByText('Clear description.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Record new description' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Generate another image' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start recording' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Start recording' }).dispatchEvent('click');
+  await page.waitForTimeout(100);
   expect(attemptIds).toEqual(['2302']);
+});
+
+test('failed provider evaluation can resend the retained recording', async ({ page }) => {
+  const token = 'speaking-retry-jwt';
+  const attemptIds: string[] = [];
+
+  await mockRecording(page);
+  await setupPracticePage(page, token);
+  await mockQuota(page, { token });
+  await routeApi(page, '**/api/exercises/practice', {
+    method: 'POST',
+    response: apiSuccess({
+      attemptId: 1203,
+      question: 'Wéi geet et?',
+      questionTranslation: 'How are you?',
+      audio: 'AAAA',
+    }),
+  });
+  await page.route('**/api/exercises/recording**', async (route) => {
+    attemptIds.push(new URL(route.request().url()).searchParams.get('attemptId') ?? '');
+    if (attemptIds.length === 1) {
+      await fulfillJson(route, apiFailure('The evaluation provider is temporarily unavailable.'), 502);
+      return;
+    }
+
+    await fulfillJson(
+      route,
+      apiSuccess({
+        transcript: 'Et geet mir gutt.',
+        score: 4,
+        feedback: 'Retry worked.',
+        corrections: [],
+      }),
+    );
+  });
+
+  await page.goto('/app/speaking');
+  await page.getByRole('button', { name: /Generate prompt/ }).click();
+  await page.getByRole('button', { name: 'Start recording' }).click();
+  await page.getByRole('button', { name: 'Stop recording' }).click();
+
+  await expect(page.getByRole('button', { name: 'Resend recording' })).toBeVisible();
+  await page.getByRole('button', { name: 'Resend recording' }).click();
+  await expect(page.getByText('Retry worked.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Resend recording' })).toHaveCount(0);
+  expect(attemptIds).toEqual(['1203', '1203']);
 });
 
 test('already evaluated recordings show a clear non-retryable message', async ({
   page,
 }) => {
   const token = 'speaking-evaluated-jwt';
+  let evaluationRequests = 0;
 
   await mockRecording(page);
   await setupPracticePage(page, token);
@@ -156,6 +213,9 @@ test('already evaluated recordings show a clear non-retryable message', async ({
     method: 'POST',
     status: 409,
     response: apiFailure('Exercise attempt has already been evaluated.'),
+    onRequest: () => {
+      evaluationRequests += 1;
+    },
   });
 
   await page.goto('/app/speaking');
@@ -168,7 +228,64 @@ test('already evaluated recordings show a clear non-retryable message', async ({
       'This answer has already been evaluated. Generate a new exercise to try again.',
     ),
   ).toBeVisible();
-  await expect(page.getByRole('button', { name: /Send recording again/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Resend recording' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Start recording' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Start recording' }).dispatchEvent('click');
+  await page.waitForTimeout(100);
+  expect(evaluationRequests).toBe(1);
+});
+
+test('a newly generated Speaking attempt can be evaluated normally', async ({ page }) => {
+  const token = 'speaking-new-attempt-jwt';
+  const generatedAttemptIds = [1204, 1205];
+  const evaluatedAttemptIds: string[] = [];
+  let generationRequests = 0;
+
+  await mockRecording(page);
+  await setupPracticePage(page, token);
+  await mockQuota(page, { token });
+  await page.route('**/api/exercises/practice', async (route) => {
+    const attemptId = generatedAttemptIds[generationRequests];
+    generationRequests += 1;
+    await fulfillJson(
+      route,
+      apiSuccess({
+        attemptId,
+        question: `Speaking prompt ${attemptId}`,
+        questionTranslation: `Translation ${attemptId}`,
+        audio: 'AAAA',
+      }),
+    );
+  });
+  await page.route('**/api/exercises/recording**', async (route) => {
+    const attemptId = new URL(route.request().url()).searchParams.get('attemptId') ?? '';
+    evaluatedAttemptIds.push(attemptId);
+    await fulfillJson(
+      route,
+      apiSuccess({
+        transcript: `Answer for ${attemptId}`,
+        score: 5,
+        feedback: `Evaluation for ${attemptId}`,
+        corrections: [],
+      }),
+    );
+  });
+
+  await page.goto('/app/speaking');
+  await page.getByRole('button', { name: /Generate prompt/ }).click();
+  await page.getByRole('button', { name: 'Start recording' }).click();
+  await page.getByRole('button', { name: 'Stop recording' }).click();
+  await expect(page.getByText('Evaluation for 1204')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Generate new speaking prompt' }).click();
+  await expect.poll(() => generationRequests).toBe(2);
+  await expect(page.getByRole('button', { name: 'Start recording' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Start recording' }).click();
+  await page.getByRole('button', { name: 'Stop recording' }).click();
+  await expect(page.getByText('Evaluation for 1205')).toBeVisible();
+
+  expect(generationRequests).toBe(2);
+  expect(evaluatedAttemptIds).toEqual(['1204', '1205']);
 });
 
 test('429 refreshes Speaking quota without blocking Listening', async ({ page }) => {

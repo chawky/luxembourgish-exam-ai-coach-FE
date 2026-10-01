@@ -212,7 +212,7 @@ test('already evaluated recordings show a clear non-retryable message', async ({
   await routeApi(page, '**/api/exercises/recording**', {
     method: 'POST',
     status: 409,
-    response: apiFailure('Exercise attempt has already been evaluated.'),
+    response: apiFailure('Exercise attempt cannot be evaluated'),
     onRequest: () => {
       evaluationRequests += 1;
     },

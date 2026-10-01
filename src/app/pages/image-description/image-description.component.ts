@@ -707,7 +707,10 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
         },
         error: (error) => {
           const message = this.errorMessage(error);
-          const alreadyEvaluated = message.toLowerCase().includes('already been evaluated');
+          const normalizedMessage = message.toLowerCase();
+          const alreadyEvaluated =
+            normalizedMessage.includes('already been evaluated') ||
+            normalizedMessage.includes('exercise attempt cannot be evaluated');
           this.recordingError.set(message);
           this.loadQuota(true);
           this.attemptEvaluationClosed.set(alreadyEvaluated);

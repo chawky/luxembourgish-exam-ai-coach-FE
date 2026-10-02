@@ -17,6 +17,7 @@ import { ApiResponse, User } from '../models';
 import type { components } from '../api/backend-schema';
 import { displayName } from '../location-utils';
 import { CacheRegistryService } from './cache-registry.service';
+import { PracticeSessionService } from './practice-session.service';
 
 type ResponseUserDto = components['schemas']['ResponseUserDto'];
 type GoogleLoginRequestDto = components['schemas']['GoogleLoginRequestDto'];
@@ -71,6 +72,7 @@ export class AuthService {
   private readonly url = apiUrl('/users');
   private readonly https = inject(HttpClient);
   private readonly cacheRegistry = inject(CacheRegistryService);
+  private readonly practiceSession = inject(PracticeSessionService);
   private currentUserRequest?: Observable<User | null>;
 
   readonly currentUser = signal<User | null>(null);
@@ -299,6 +301,7 @@ export class AuthService {
 
   private clearUserScopedCaches(): void {
     this.cacheRegistry.clearUserScopedCaches();
+    this.practiceSession.clearAll();
   }
 
   private savePassword(

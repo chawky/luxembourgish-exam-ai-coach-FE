@@ -25,6 +25,8 @@ import { ListeningService } from '../../services/listening.service';
 import { PracticeConfigService } from '../../services/practice-config.service';
 import { AudioPlayerComponent } from '../../components/audio-player.component';
 import { friendlyErrorMessage } from '../../error-message';
+import { AuthService } from '../../services/auth.service';
+import { PracticeSessionService } from '../../services/practice-session.service';
 
 interface NormalizedOption {
   label: string;
@@ -45,6 +47,21 @@ interface ListeningExerciseView {
   expectedAnswer: string;
   audioUrl: string;
   options: Array<string | ExerciseOptionDto>;
+}
+
+interface ListeningSessionState {
+  exercise: Omit<ListeningExerciseView, 'audioUrl'>;
+  audio?: AudioExerciseDto['audio'];
+  audioContentType?: string;
+  audioMimeType?: string;
+  form: GenerateExerciseRequest;
+  showTranscript: boolean;
+  showTranslation: boolean;
+  showTaskTranslation: boolean;
+  showAnswer: boolean;
+  selectedOption: number | null;
+  draftAnswer: string;
+  completed: boolean;
 }
 
 @Component({
@@ -102,7 +119,7 @@ interface ListeningExerciseView {
 
           <div class="field">
             <label for="topic">Topic</label>
-            <select id="topic" class="input" formControlName="topic">
+            <select id="topic" class="input" formControlName="topic" (change)="saveSession()">
               @for (topic of topicsForSelectedLevel(); track topic.value) {
                 <option [value]="topic.value">{{ topic.label }}</option>
               }
@@ -111,7 +128,7 @@ interface ListeningExerciseView {
 
           <div class="field">
             <label for="type">Answer type</label>
-            <select id="type" class="input" formControlName="type">
+            <select id="type" class="input" formControlName="type" (change)="saveSession()">
               @for (type of exerciseTypes; track type.value) {
                 <option [value]="type.value">{{ type.label }}</option>
               }
@@ -170,6 +187,9 @@ interface ListeningExerciseView {
               <div class="badges">
                 <span class="badge badge-sky">{{ exercise.level }}</span>
                 <span class="badge">{{ topicLabel(exercise.topic) }}</span>
+                <button type="button" class="btn btn-ghost" (click)="clearExercise()">
+                  Clear exercise
+                </button>
               </div>
             </div>
 
@@ -199,11 +219,11 @@ interface ListeningExerciseView {
             </p>
 
             <div class="reveal-actions">
-              <button class="link-btn" type="button" (click)="showTranscript.update(toggle)">
+              <button class="link-btn" type="button" (click)="toggleTranscript()">
                 {{ showTranscript() ? 'Hide transcript' : 'Show transcript' }}
               </button>
               @if (exercise.translation) {
-                <button class="link-btn" type="button" (click)="showTranslation.update(toggle)">
+                <button class="link-btn" type="button" (click)="toggleTranslation()">
                   {{ showTranslation() ? 'Hide translation' : 'Show translation' }}
                 </button>
               }
@@ -227,7 +247,7 @@ interface ListeningExerciseView {
                   <button
                     class="link-btn"
                     type="button"
-                    (click)="showTaskTranslation.update(toggle)"
+                    (click)="toggleTaskTranslation()"
                   >
                     {{ showTaskTranslation() ? 'Hide task translation' : 'Show task translation' }}
                   </button>
@@ -262,6 +282,7 @@ interface ListeningExerciseView {
                   <textarea
                     class="input answer-input"
                     [(ngModel)]="draftAnswer"
+                    (ngModelChange)="saveSession()"
                     [ngModelOptions]="{ standalone: true }"
                     placeholder="Write what you understood from the audio..."
                   ></textarea>
@@ -313,6 +334,8 @@ export class ListeningComponent implements OnDestroy, OnInit {
   private exercises = inject(ExerciseService);
   private practiceConfig = inject(PracticeConfigService);
   private aiQuota = inject(AiQuotaService);
+  private auth = inject(AuthService);
+  private practiceSession = inject(PracticeSessionService);
 
   levels: SelectOption[] = [];
   topics: TopicOption[] = [];
@@ -336,6 +359,7 @@ export class ListeningComponent implements OnDestroy, OnInit {
   completedAttemptIds = new Set<number>();
 
   private audioObjectUrl: string | null = null;
+  private audioSource: AudioExerciseDto | null = null;
 
   form = this.fb.nonNullable.group({
     level: ['', [Validators.required]],
@@ -363,6 +387,7 @@ export class ListeningComponent implements OnDestroy, OnInit {
   });
 
   ngOnInit(): void {
+    this.restoreSession();
     this.loadPracticeConfig();
     this.loadQuota();
   }
@@ -387,14 +412,21 @@ export class ListeningComponent implements OnDestroy, OnInit {
     this.showTranscript.set(false);
     this.showTranslation.set(false);
     this.showTaskTranslation.set(false);
-    this.resetAttempt();
+    this.resetAttempt(false);
     this.clearAudio();
+    this.audioSource = null;
 
     const request = this.request();
 
     this.listening.generateListeningExercise(request).subscribe({
       next: (exercise) => {
+        this.audioSource = {
+          audio: exercise.audio,
+          audioContentType: exercise.audioContentType,
+          audioMimeType: exercise.audioMimeType,
+        };
         this.current.set(this.toView(exercise, request));
+        this.saveSession();
         this.loadQuota(true);
       },
       error: (error) => {
@@ -410,6 +442,7 @@ export class ListeningComponent implements OnDestroy, OnInit {
 
   onLevelChange(): void {
     this.ensureTopicMatchesLevel();
+    this.saveSession();
   }
 
   topicsForSelectedLevel(): TopicOption[] {
@@ -435,6 +468,35 @@ export class ListeningComponent implements OnDestroy, OnInit {
       : '';
   }
 
+  toggleTranscript(): void {
+    this.showTranscript.update(this.toggle);
+    this.saveSession();
+  }
+
+  toggleTranslation(): void {
+    this.showTranslation.update(this.toggle);
+    this.saveSession();
+  }
+
+  toggleTaskTranslation(): void {
+    this.showTaskTranslation.update(this.toggle);
+    this.saveSession();
+  }
+
+  clearExercise(): void {
+    this.clearAudio();
+    this.current.set(null);
+    this.audioSource = null;
+    this.showTranscript.set(false);
+    this.showTranslation.set(false);
+    this.showTaskTranslation.set(false);
+    this.resetAttempt(false);
+    this.completedAttemptIds.clear();
+    this.errorMsg.set('');
+    this.audioError.set('');
+    this.practiceSession.clear('LISTENING', this.auth.currentUser());
+  }
+
   selectOption(index: number): void {
     if (this.showAnswer()) {
       return;
@@ -456,15 +518,19 @@ export class ListeningComponent implements OnDestroy, OnInit {
     return this.selectedOption() === index ? 'wrong' : '';
   }
 
-  resetAttempt(): void {
+  resetAttempt(save = true): void {
     this.selectedOption.set(null);
     this.showAnswer.set(false);
     this.draftAnswer = '';
+    if (save) {
+      this.saveSession();
+    }
   }
 
   revealAnswer(): void {
     this.showAnswer.set(true);
     this.completeCurrentAttempt();
+    this.saveSession();
   }
 
   private request(): GenerateExerciseRequest {
@@ -635,6 +701,7 @@ export class ListeningComponent implements OnDestroy, OnInit {
       error: (error) => {
         this.completedAttemptIds.delete(attemptId);
         this.errorMsg.set(this.errorMessage(error));
+        this.saveSession();
       },
     });
   }
@@ -647,6 +714,63 @@ export class ListeningComponent implements OnDestroy, OnInit {
     }
 
     return this.draftAnswer.trim();
+  }
+
+  saveSession(): void {
+    const exercise = this.current();
+    if (!exercise) {
+      return;
+    }
+
+    const { audioUrl: _audioUrl, ...storedExercise } = exercise;
+    this.practiceSession.save<ListeningSessionState>(
+      'LISTENING',
+      this.auth.currentUser(),
+      {
+        exercise: storedExercise,
+        audio: this.audioSource?.audio,
+        audioContentType: this.audioSource?.audioContentType,
+        audioMimeType: this.audioSource?.audioMimeType,
+        form: this.request(),
+        showTranscript: this.showTranscript(),
+        showTranslation: this.showTranslation(),
+        showTaskTranslation: this.showTaskTranslation(),
+        showAnswer: this.showAnswer(),
+        selectedOption: this.selectedOption(),
+        draftAnswer: this.draftAnswer,
+        completed: !!exercise.attemptId && this.completedAttemptIds.has(exercise.attemptId),
+      },
+    );
+  }
+
+  private restoreSession(): void {
+    const state = this.practiceSession.restore<ListeningSessionState>(
+      'LISTENING',
+      this.auth.currentUser(),
+    );
+    if (!state?.exercise) {
+      return;
+    }
+
+    this.form.patchValue(state.form);
+    this.audioSource = {
+      audio: state.audio,
+      audioContentType: state.audioContentType,
+      audioMimeType: state.audioMimeType,
+    };
+    this.current.set({
+      ...state.exercise,
+      audioUrl: this.toAudioUrl(this.audioSource),
+    });
+    this.showTranscript.set(state.showTranscript);
+    this.showTranslation.set(state.showTranslation);
+    this.showTaskTranslation.set(state.showTaskTranslation);
+    this.showAnswer.set(state.showAnswer);
+    this.selectedOption.set(state.selectedOption);
+    this.draftAnswer = state.draftAnswer;
+    if (state.completed && state.exercise.attemptId) {
+      this.completedAttemptIds.add(state.exercise.attemptId);
+    }
   }
 
   private errorMessage(error: unknown): string {

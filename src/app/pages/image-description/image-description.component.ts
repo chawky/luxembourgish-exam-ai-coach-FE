@@ -17,6 +17,8 @@ import { AiQuotaService, AiQuotaStatus } from '../../services/ai-quota.service';
 import { ImageDescriptionService } from '../../services/image-description.service';
 import { PracticeConfigService } from '../../services/practice-config.service';
 import { friendlyErrorMessage } from '../../error-message';
+import { AuthService } from '../../services/auth.service';
+import { PracticeSessionService } from '../../services/practice-session.service';
 
 interface ImageDescriptionExerciseView {
   id: string;
@@ -25,6 +27,14 @@ interface ImageDescriptionExerciseView {
   topic: string;
   imageUrl: string;
   imageDescription: string;
+}
+
+interface ImageDescriptionSessionState {
+  exercise: Omit<ImageDescriptionExerciseView, 'imageUrl'>;
+  image?: GeneratedImageDto['image'];
+  form: GenerateExerciseRequest;
+  evaluation: SpeakingEvaluationDto | null;
+  attemptEvaluationClosed: boolean;
 }
 
 @Component({
@@ -75,7 +85,7 @@ interface ImageDescriptionExerciseView {
 
           <div class="field">
             <label for="topic">Topic</label>
-            <select id="topic" class="input" formControlName="topic">
+            <select id="topic" class="input" formControlName="topic" (change)="saveSession()">
               @for (topic of topicsForSelectedLevel(); track topic.value) {
                 <option [value]="topic.value">{{ topic.label }}</option>
               }
@@ -134,6 +144,9 @@ interface ImageDescriptionExerciseView {
               <div class="badges">
                 <span class="badge badge-sky">{{ exercise.level }}</span>
                 <span class="badge">{{ topicLabel(exercise.topic) }}</span>
+                <button type="button" class="btn btn-ghost" (click)="clearExercise()">
+                  Clear exercise
+                </button>
               </div>
             </div>
 
@@ -297,6 +310,8 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
   private imageDescription = inject(ImageDescriptionService);
   private practiceConfig = inject(PracticeConfigService);
   private aiQuota = inject(AiQuotaService);
+  private auth = inject(AuthService);
+  private practiceSession = inject(PracticeSessionService);
 
   levels: SelectOption[] = [];
   topics: TopicOption[] = [];
@@ -323,6 +338,7 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
   private recordedChunks: Blob[] = [];
   private lastRecordingAudio: Blob | null = null;
   private shouldUploadStoppedRecording = false;
+  private imageSource: GeneratedImageDto['image'] | undefined;
 
   form = this.fb.nonNullable.group({
     level: ['', [Validators.required]],
@@ -330,6 +346,7 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
   });
 
   ngOnInit(): void {
+    this.restoreSession();
     this.loadPracticeConfig();
     this.loadQuota();
   }
@@ -353,12 +370,15 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
     this.loading.set(true);
     this.resetPracticeSession();
     this.current.set(null);
+    this.imageSource = undefined;
 
     const request = this.request();
 
     this.imageDescription.generateImage(request).subscribe({
       next: (image) => {
+        this.imageSource = image.image;
         this.current.set(this.toView(image, request));
+        this.saveSession();
         this.loadQuota(true);
       },
       error: (error) => {
@@ -374,6 +394,7 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
 
   onLevelChange(): void {
     this.ensureTopicMatchesLevel();
+    this.saveSession();
   }
 
   topicsForSelectedLevel(): TopicOption[] {
@@ -383,6 +404,16 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
 
   topicLabel(topic: string): string {
     return topicLabel(topic, this.topics);
+  }
+
+  clearExercise(): void {
+    this.stopRecording(false);
+    this.resetPracticeSession();
+    this.current.set(null);
+    this.imageSource = undefined;
+    this.errorMsg.set('');
+    this.imageError.set('');
+    this.practiceSession.clear('IMAGE_DESCRIPTION', this.auth.currentUser());
   }
 
   toggleRecord(): void {
@@ -703,6 +734,7 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
           this.attemptEvaluationClosed.set(true);
           this.retryableRecording.set(false);
           this.lastRecordingAudio = null;
+          this.saveSession();
           this.loadQuota(true);
         },
         error: (error) => {
@@ -715,6 +747,9 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
           this.loadQuota(true);
           this.attemptEvaluationClosed.set(alreadyEvaluated);
           this.retryableRecording.set(!alreadyEvaluated);
+          if (alreadyEvaluated) {
+            this.saveSession();
+          }
           this.uploadingRecording.set(false);
         },
         complete: () => {
@@ -735,6 +770,45 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
 
     this.mediaStream?.getTracks().forEach((track) => track.stop());
     this.mediaStream = null;
+  }
+
+  saveSession(): void {
+    const exercise = this.current();
+    if (!exercise) {
+      return;
+    }
+
+    const { imageUrl: _imageUrl, ...storedExercise } = exercise;
+    this.practiceSession.save<ImageDescriptionSessionState>(
+      'IMAGE_DESCRIPTION',
+      this.auth.currentUser(),
+      {
+        exercise: storedExercise,
+        image: this.imageSource,
+        form: this.request(),
+        evaluation: this.evaluation(),
+        attemptEvaluationClosed: this.attemptEvaluationClosed(),
+      },
+    );
+  }
+
+  private restoreSession(): void {
+    const state = this.practiceSession.restore<ImageDescriptionSessionState>(
+      'IMAGE_DESCRIPTION',
+      this.auth.currentUser(),
+    );
+    if (!state?.exercise?.attemptId) {
+      return;
+    }
+
+    this.form.patchValue(state.form);
+    this.imageSource = state.image;
+    this.current.set({
+      ...state.exercise,
+      imageUrl: this.toImageUrl({ image: state.image }),
+    });
+    this.evaluation.set(state.evaluation);
+    this.attemptEvaluationClosed.set(state.attemptEvaluationClosed);
   }
 
   private errorMessage(error: unknown): string {

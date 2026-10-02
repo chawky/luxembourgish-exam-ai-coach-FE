@@ -23,11 +23,22 @@ import {
 } from '../../practice-options';
 import { AiQuotaService, AiQuotaStatus } from '../../services/ai-quota.service';
 import { PracticeConfigService } from '../../services/practice-config.service';
+import { AuthService } from '../../services/auth.service';
+import { PracticeSessionService } from '../../services/practice-session.service';
 
 interface NormalizedOption {
   label: string;
   text: string;
   correct?: boolean;
+}
+
+interface TopicExerciseSessionState {
+  exercise: ExerciseDto;
+  form: GenerateExerciseRequest;
+  selectedOption: number | null;
+  showAnswer: boolean;
+  draftAnswer: string;
+  completed: boolean;
 }
 
 @Component({
@@ -84,7 +95,7 @@ interface NormalizedOption {
 
           <div class="field">
             <label for="topic">Topic</label>
-            <select id="topic" class="input" formControlName="topic">
+            <select id="topic" class="input" formControlName="topic" (change)="saveSession()">
               @for (topic of topicsForSelectedLevel(); track topic.value) {
                 <option [value]="topic.value">{{ topic.label }}</option>
               }
@@ -93,7 +104,7 @@ interface NormalizedOption {
 
           <div class="field">
             <label for="type">Exercise type</label>
-            <select id="type" class="input" formControlName="type">
+            <select id="type" class="input" formControlName="type" (change)="saveSession()">
               @for (type of exerciseTypes; track type.value) {
                 <option [value]="type.value">{{ type.label }}</option>
               }
@@ -153,6 +164,9 @@ interface NormalizedOption {
               <div class="badges">
                 <span class="badge badge-sky">{{ exerciseLevel(ex) }}</span>
                 <span class="badge">{{ exerciseTopicLabel(ex) }}</span>
+                <button type="button" class="btn btn-ghost" (click)="clearExercise()">
+                  Clear exercise
+                </button>
               </div>
             </div>
 
@@ -203,6 +217,7 @@ interface NormalizedOption {
                   class="input answer-input"
                   placeholder="Write your answer here..."
                   [(ngModel)]="draftAnswer"
+                  (ngModelChange)="saveSession()"
                   [ngModelOptions]="{ standalone: true }"
                 ></textarea>
               </label>
@@ -266,6 +281,8 @@ export class ExercisesComponent implements OnInit {
   private exercises = inject(ExerciseService);
   private practiceConfig = inject(PracticeConfigService);
   private aiQuota = inject(AiQuotaService);
+  private auth = inject(AuthService);
+  private practiceSession = inject(PracticeSessionService);
 
   levels: SelectOption[] = [];
   topics: TopicOption[] = [];
@@ -317,6 +334,7 @@ export class ExercisesComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.restoreSession();
     this.loadPracticeConfig();
     this.loadQuota();
   }
@@ -349,6 +367,7 @@ export class ExercisesComponent implements OnInit {
           topic: exercise.topic || request.topic,
           type: exercise.type || request.type,
         });
+        this.saveSession();
         this.loadQuota(true);
       },
       error: (error) => {
@@ -365,10 +384,12 @@ export class ExercisesComponent implements OnInit {
   selectOption(index: number): void {
     this.selectedOption.set(index);
     this.completeCurrentAttempt();
+    this.saveSession();
   }
 
   onLevelChange(): void {
     this.ensureTopicMatchesLevel();
+    this.saveSession();
   }
 
   topicsForSelectedLevel(): TopicOption[] {
@@ -410,6 +431,16 @@ export class ExercisesComponent implements OnInit {
     return topicLabel(topic, this.topics);
   }
 
+  clearExercise(): void {
+    this.exercise.set(null);
+    this.selectedOption.set(null);
+    this.showAnswer.set(false);
+    this.draftAnswer = '';
+    this.completedAttemptIds.clear();
+    this.errorMsg.set('');
+    this.practiceSession.clear('TOPIC_EXERCISE', this.auth.currentUser());
+  }
+
   toggleAnswer(): void {
     const nextValue = !this.showAnswer();
     this.showAnswer.set(nextValue);
@@ -417,6 +448,7 @@ export class ExercisesComponent implements OnInit {
     if (nextValue) {
       this.completeCurrentAttempt();
     }
+    this.saveSession();
   }
 
   answerText(): string {
@@ -533,6 +565,7 @@ export class ExercisesComponent implements OnInit {
       error: (error) => {
         this.completedAttemptIds.delete(attemptId);
         this.errorMsg.set(this.errorMessage(error));
+        this.saveSession();
       },
     });
   }
@@ -545,6 +578,46 @@ export class ExercisesComponent implements OnInit {
     }
 
     return this.draftAnswer.trim();
+  }
+
+  saveSession(): void {
+    const exercise = this.exercise();
+    if (!exercise) {
+      return;
+    }
+
+    this.practiceSession.save<TopicExerciseSessionState>(
+      'TOPIC_EXERCISE',
+      this.auth.currentUser(),
+      {
+        exercise,
+        form: this.request(),
+        selectedOption: this.selectedOption(),
+        showAnswer: this.showAnswer(),
+        draftAnswer: this.draftAnswer,
+        completed:
+          !!exercise.attemptId && this.completedAttemptIds.has(exercise.attemptId),
+      },
+    );
+  }
+
+  private restoreSession(): void {
+    const state = this.practiceSession.restore<TopicExerciseSessionState>(
+      'TOPIC_EXERCISE',
+      this.auth.currentUser(),
+    );
+    if (!state?.exercise) {
+      return;
+    }
+
+    this.form.patchValue(state.form);
+    this.exercise.set(state.exercise);
+    this.selectedOption.set(state.selectedOption);
+    this.showAnswer.set(state.showAnswer);
+    this.draftAnswer = state.draftAnswer;
+    if (state.completed && state.exercise.attemptId) {
+      this.completedAttemptIds.add(state.exercise.attemptId);
+    }
   }
 
   private errorMessage(error: unknown): string {

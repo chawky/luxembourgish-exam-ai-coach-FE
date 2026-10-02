@@ -17,6 +17,17 @@ import { AiQuotaService, AiQuotaStatus } from '../../services/ai-quota.service';
 import { ExerciseService } from '../../services/exercise.service';
 import { PracticeConfigService } from '../../services/practice-config.service';
 import { VocabularyService } from '../../services/vocabulary.service';
+import { AuthService } from '../../services/auth.service';
+import { PracticeSessionService } from '../../services/practice-session.service';
+
+interface VocabularySessionState {
+  vocabulary: VocabularyExerciseDto;
+  request: GenerateVocabularyRequest;
+  form: GenerateVocabularyRequest;
+  index: number;
+  flipped: boolean;
+  completed: boolean;
+}
 
 @Component({
   selector: 'app-vocabulary',
@@ -66,7 +77,7 @@ import { VocabularyService } from '../../services/vocabulary.service';
 
           <div class="field">
             <label for="topic">Topic</label>
-            <select id="topic" class="input" formControlName="topic">
+            <select id="topic" class="input" formControlName="topic" (change)="saveSession()">
               @for (topic of topicsForSelectedLevel(); track topic.value) {
                 <option [value]="topic.value">{{ topic.label }}</option>
               }
@@ -127,6 +138,9 @@ import { VocabularyService } from '../../services/vocabulary.service';
                 <div class="badges">
                   <span class="badge badge-sky">{{ exerciseLevel() }}</span>
                   <span class="badge">{{ exerciseTopicLabel() }}</span>
+                  <button type="button" class="btn btn-ghost" (click)="clearExercise()">
+                    Clear exercise
+                  </button>
                 </div>
               </div>
 
@@ -236,6 +250,8 @@ export class VocabularyComponent implements OnInit {
   private practiceConfig = inject(PracticeConfigService);
   private exercises = inject(ExerciseService);
   private aiQuota = inject(AiQuotaService);
+  private auth = inject(AuthService);
+  private practiceSession = inject(PracticeSessionService);
 
   levels: SelectOption[] = [];
   topics: TopicOption[] = [];
@@ -260,6 +276,7 @@ export class VocabularyComponent implements OnInit {
   currentSentence = computed(() => this.sentences()[this.index()] ?? null);
 
   ngOnInit(): void {
+    this.restoreSession();
     this.loadPracticeConfig();
     this.loadQuota();
   }
@@ -287,6 +304,7 @@ export class VocabularyComponent implements OnInit {
       next: (vocabulary) => {
         this.vocabulary.set(vocabulary);
         this.requestContext.set(request);
+        this.saveSession();
         this.loadQuota(true);
       },
       error: (error) => {
@@ -306,6 +324,7 @@ export class VocabularyComponent implements OnInit {
     if (this.flipped()) {
       this.completeCurrentAttempt();
     }
+    this.saveSession();
   }
 
   next(): void {
@@ -316,6 +335,7 @@ export class VocabularyComponent implements OnInit {
 
     this.flipped.set(false);
     this.index.update((value) => (value + 1) % count);
+    this.saveSession();
   }
 
   prev(): void {
@@ -326,10 +346,12 @@ export class VocabularyComponent implements OnInit {
 
     this.flipped.set(false);
     this.index.update((value) => (value - 1 + count) % count);
+    this.saveSession();
   }
 
   onLevelChange(): void {
     this.ensureTopicMatchesLevel();
+    this.saveSession();
   }
 
   topicsForSelectedLevel(): TopicOption[] {
@@ -356,6 +378,16 @@ export class VocabularyComponent implements OnInit {
     return this.quotaBlocked()
       ? this.aiQuota.blockedMessage(this.quota(), 'VOCABULARY')
       : '';
+  }
+
+  clearExercise(): void {
+    this.vocabulary.set(null);
+    this.requestContext.set(null);
+    this.index.set(0);
+    this.flipped.set(false);
+    this.completedAttemptIds.clear();
+    this.errorMsg.set('');
+    this.practiceSession.clear('VOCABULARY', this.auth.currentUser());
   }
 
   private request(): GenerateVocabularyRequest {
@@ -423,11 +455,53 @@ export class VocabularyComponent implements OnInit {
       error: (error) => {
         this.completedAttemptIds.delete(attemptId);
         this.errorMsg.set(this.errorMessage(error));
+        this.saveSession();
       },
     });
   }
 
   private errorMessage(error: unknown): string {
     return friendlyErrorMessage(error);
+  }
+
+  saveSession(): void {
+    const vocabulary = this.vocabulary();
+    const request = this.requestContext();
+    if (!vocabulary || !request) {
+      return;
+    }
+
+    this.practiceSession.save<VocabularySessionState>(
+      'VOCABULARY',
+      this.auth.currentUser(),
+      {
+        vocabulary,
+        request,
+        form: this.request(),
+        index: this.index(),
+        flipped: this.flipped(),
+        completed:
+          !!vocabulary.attemptId && this.completedAttemptIds.has(vocabulary.attemptId),
+      },
+    );
+  }
+
+  private restoreSession(): void {
+    const state = this.practiceSession.restore<VocabularySessionState>(
+      'VOCABULARY',
+      this.auth.currentUser(),
+    );
+    if (!state?.vocabulary) {
+      return;
+    }
+
+    this.form.patchValue(state.form);
+    this.vocabulary.set(state.vocabulary);
+    this.requestContext.set(state.request);
+    this.index.set(state.index);
+    this.flipped.set(state.flipped);
+    if (state.completed && state.vocabulary.attemptId) {
+      this.completedAttemptIds.add(state.vocabulary.attemptId);
+    }
   }
 }

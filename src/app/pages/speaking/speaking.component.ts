@@ -19,6 +19,20 @@ import {
 import { AiQuotaService, AiQuotaStatus } from '../../services/ai-quota.service';
 import { PracticeConfigService } from '../../services/practice-config.service';
 import { friendlyErrorMessage } from '../../error-message';
+import { AuthService } from '../../services/auth.service';
+import { PracticeSessionService } from '../../services/practice-session.service';
+
+interface SpeakingSessionState {
+  prompt: Omit<SpeakingPrompt, 'audioUrl'>;
+  audio?: SpeakingPracticeDto['audio'];
+  audioContentType?: string;
+  audioMimeType?: string;
+  form: GenerateExerciseRequest;
+  showQuestion: boolean;
+  showTranslation: boolean;
+  evaluation: SpeakingEvaluationDto | null;
+  attemptEvaluationClosed: boolean;
+}
 
 @Component({
   selector: 'app-speaking',
@@ -73,7 +87,7 @@ import { friendlyErrorMessage } from '../../error-message';
 
           <div class="field">
             <label for="topic">Topic</label>
-            <select id="topic" class="input" formControlName="topic">
+            <select id="topic" class="input" formControlName="topic" (change)="saveSession()">
               @for (topic of topicsForSelectedLevel(); track topic.value) {
                 <option [value]="topic.value">{{ topic.label }}</option>
               }
@@ -124,9 +138,14 @@ import { friendlyErrorMessage } from '../../error-message';
           </div>
         } @else {
           @if (current(); as prompt) {
-            <span class="badge badge-sky">
-              {{ promptTopicLabel(prompt) }} &middot; {{ prompt.level }}
-            </span>
+            <div class="prompt-actions">
+              <span class="badge badge-sky">
+                {{ promptTopicLabel(prompt) }} &middot; {{ prompt.level }}
+              </span>
+              <button type="button" class="btn btn-ghost" (click)="clearExercise()">
+                Clear exercise
+              </button>
+            </div>
 
             @if (prompt.audioUrl) {
               <app-audio-player
@@ -148,7 +167,7 @@ import { friendlyErrorMessage } from '../../error-message';
               <button
                 type="button"
                 class="btn btn-primary prompt-action-btn"
-                (click)="showQuestion.set(!showQuestion())"
+                (click)="toggleQuestion()"
               >
                 {{ showQuestion() ? 'Hide original' : 'See original' }}
               </button>
@@ -157,7 +176,7 @@ import { friendlyErrorMessage } from '../../error-message';
                 <button
                   type="button"
                   class="btn btn-outline prompt-action-btn"
-                  (click)="showTranslation.set(!showTranslation())"
+                  (click)="toggleTranslation()"
                 >
                   {{ showTranslation() ? 'Hide translation' : 'Translate' }}
                 </button>
@@ -294,6 +313,8 @@ export class SpeakingComponent implements OnDestroy, OnInit {
   private speaking = inject(SpeakingService);
   private practiceConfig = inject(PracticeConfigService);
   private aiQuota = inject(AiQuotaService);
+  private auth = inject(AuthService);
+  private practiceSession = inject(PracticeSessionService);
 
   @ViewChild(AudioPlayerComponent)
   private promptAudioPlayer?: AudioPlayerComponent;
@@ -325,6 +346,7 @@ export class SpeakingComponent implements OnDestroy, OnInit {
   private recordedChunks: Blob[] = [];
   private lastRecordingAudio: Blob | null = null;
   private shouldUploadStoppedRecording = false;
+  private audioSource: SpeakingPracticeDto | null = null;
 
   form = this.fb.nonNullable.group({
     level: ['', [Validators.required]],
@@ -332,6 +354,7 @@ export class SpeakingComponent implements OnDestroy, OnInit {
   });
 
   ngOnInit(): void {
+    this.restoreSession();
     this.loadPracticeConfig();
     this.loadQuota();
   }
@@ -354,11 +377,18 @@ export class SpeakingComponent implements OnDestroy, OnInit {
     this.loading.set(true);
     this.resetPracticeSession();
     this.current.set(null);
+    this.audioSource = null;
     const request = this.request();
 
     this.speaking.generatePractice(request).subscribe({
       next: (practice) => {
+        this.audioSource = {
+          audio: practice.audio,
+          audioContentType: practice.audioContentType,
+          audioMimeType: practice.audioMimeType,
+        };
         this.current.set(this.toPrompt(practice, request));
+        this.saveSession();
         this.loadQuota(true);
       },
       error: (error) => {
@@ -374,6 +404,7 @@ export class SpeakingComponent implements OnDestroy, OnInit {
 
   onLevelChange(): void {
     this.ensureTopicMatchesLevel();
+    this.saveSession();
   }
 
   topicsForSelectedLevel(): TopicOption[] {
@@ -383,6 +414,25 @@ export class SpeakingComponent implements OnDestroy, OnInit {
 
   promptTopicLabel(prompt: SpeakingPrompt): string {
     return topicLabel(prompt.topic, this.topics);
+  }
+
+  toggleQuestion(): void {
+    this.showQuestion.update((value) => !value);
+    this.saveSession();
+  }
+
+  toggleTranslation(): void {
+    this.showTranslation.update((value) => !value);
+    this.saveSession();
+  }
+
+  clearExercise(): void {
+    this.stopRecording(false);
+    this.resetPracticeSession();
+    this.current.set(null);
+    this.audioSource = null;
+    this.errorMsg.set('');
+    this.practiceSession.clear('SPEAKING', this.auth.currentUser());
   }
 
   toggleRecord(): void {
@@ -547,6 +597,7 @@ export class SpeakingComponent implements OnDestroy, OnInit {
         this.attemptEvaluationClosed.set(true);
         this.retryableRecording.set(false);
         this.lastRecordingAudio = null;
+        this.saveSession();
         this.loadQuota(true);
       },
       error: (error) => {
@@ -559,6 +610,9 @@ export class SpeakingComponent implements OnDestroy, OnInit {
         this.loadQuota(true);
         this.attemptEvaluationClosed.set(alreadyEvaluated);
         this.retryableRecording.set(!alreadyEvaluated);
+        if (alreadyEvaluated) {
+          this.saveSession();
+        }
         this.uploadingRecording.set(false);
       },
       complete: () => {
@@ -707,6 +761,55 @@ export class SpeakingComponent implements OnDestroy, OnInit {
       URL.revokeObjectURL(this.promptAudioObjectUrl);
       this.promptAudioObjectUrl = null;
     }
+  }
+
+  saveSession(): void {
+    const prompt = this.current();
+    if (!prompt) {
+      return;
+    }
+
+    const { audioUrl: _audioUrl, ...storedPrompt } = prompt;
+    this.practiceSession.save<SpeakingSessionState>(
+      'SPEAKING',
+      this.auth.currentUser(),
+      {
+        prompt: storedPrompt,
+        audio: this.audioSource?.audio,
+        audioContentType: this.audioSource?.audioContentType,
+        audioMimeType: this.audioSource?.audioMimeType,
+        form: this.request(),
+        showQuestion: this.showQuestion(),
+        showTranslation: this.showTranslation(),
+        evaluation: this.evaluation(),
+        attemptEvaluationClosed: this.attemptEvaluationClosed(),
+      },
+    );
+  }
+
+  private restoreSession(): void {
+    const state = this.practiceSession.restore<SpeakingSessionState>(
+      'SPEAKING',
+      this.auth.currentUser(),
+    );
+    if (!state?.prompt?.attemptId) {
+      return;
+    }
+
+    this.form.patchValue(state.form);
+    this.audioSource = {
+      audio: state.audio,
+      audioContentType: state.audioContentType,
+      audioMimeType: state.audioMimeType,
+    };
+    this.current.set({
+      ...state.prompt,
+      audioUrl: this.toPromptAudioUrl(this.audioSource),
+    });
+    this.showQuestion.set(state.showQuestion);
+    this.showTranslation.set(state.showTranslation);
+    this.evaluation.set(state.evaluation);
+    this.attemptEvaluationClosed.set(state.attemptEvaluationClosed);
   }
 
   private translationText(practice: SpeakingPracticeDto): string {

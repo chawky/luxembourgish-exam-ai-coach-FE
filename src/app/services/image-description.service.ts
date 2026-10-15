@@ -153,10 +153,22 @@ export class ImageDescriptionService {
       return null;
     }
 
+    const trimmedBody = errorBody.trim();
+    const normalizedBody = trimmedBody.toLowerCase();
+
+    // Reverse proxies may return an HTML error page (for example a 504 timeout).
+    // Never expose that raw HTML to the user.
+    if (
+      normalizedBody.startsWith('<!doctype html') ||
+      normalizedBody.startsWith('<html')
+    ) {
+      return null;
+    }
+
     try {
-      return this.getApiErrorMessage(JSON.parse(errorBody));
+      return this.getApiErrorMessage(JSON.parse(trimmedBody));
     } catch {
-      return errorBody;
+      return trimmedBody;
     }
   }
 }

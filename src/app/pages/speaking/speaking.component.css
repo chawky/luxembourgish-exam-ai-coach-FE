@@ -38,3 +38,10 @@ app-audio-player {
 .retry-recording-btn {
   margin-bottom: 20px;
 }
+
+.recording-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}

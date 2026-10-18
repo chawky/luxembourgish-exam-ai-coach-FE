@@ -50,6 +50,7 @@ export interface SkillProgress {
 export interface SpeakingPrompt {
   id: string;
   attemptId: number;
+  type?: string;
   topic: string;
   level: string;
   question: string;
@@ -182,3 +183,5 @@ export interface SpeakingEvaluationDto {
   feedback?: string;
   corrections?: string[];
 }
+
+export type RetryExerciseResponse = Required<components['schemas']['RetryExerciseResponse']>;

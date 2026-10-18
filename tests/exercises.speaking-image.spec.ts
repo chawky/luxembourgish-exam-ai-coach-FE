@@ -392,6 +392,144 @@ for (const mode of ['speaking', 'image-description'] as const) {
   }
 }
 
+async function recordAndSubmit(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Start recording' }).click();
+  await page.getByRole('button', { name: 'Stop recording' }).click();
+  await expect(page.getByText('Recording ready', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Submit recording' }).click();
+}
+
+async function storedPractice(page: Page, feature: string) {
+  return page.evaluate(feature => {
+    const key = Object.keys(sessionStorage).find(key =>
+      key.startsWith('sproochen.practice-session.') && key.endsWith('.' + feature));
+    return key ? JSON.parse(sessionStorage.getItem(key)!) : null;
+  }, feature);
+}
+
+for (const mode of ['speaking', 'image-description'] as const) {
+  const feature = mode === 'speaking' ? 'SPEAKING' : 'IMAGE_DESCRIPTION';
+  const generationPath = mode === 'speaking' ? 'practice' : 'generate-image';
+  const recordingPath = mode === 'speaking' ? 'recording' : 'image-description/recording';
+  const generateLabel = mode === 'speaking' ? 'Generate prompt' : 'Generate image';
+  const newLabel = mode === 'speaking' ? 'Generate new speaking prompt' : 'Generate another image';
+
+  test(`${mode}: generation respects backend remaining without assuming a tier`, async ({ page }) => {
+    await setupPracticePage(page, 'quota-tier-jwt');
+    await mockQuota(page, { data: { ...quota({ exhausted: feature }), tier: 'CUSTOM_TIER' } });
+    await page.goto('/app/' + mode);
+    await expect(page.getByRole('button', { name: generateLabel, exact: true })).toBeDisabled();
+  });
+
+  async function setupRedo(page: Page) {
+    await mockRecording(page);
+    await setupPracticePage(page, 'redo-jwt');
+    let generations = 0;
+    const submissions: Request[] = [];
+    await page.route('**/api/users/me/ai-quota', route => fulfillJson(route, apiSuccess(
+      quota(generations ? { exhausted: feature } : {}),
+    )));
+    await page.route(`**/api/exercises/${generationPath}`, async route => {
+      generations += 1;
+      await fulfillJson(route, apiSuccess({
+        attemptId: 100, question: 'Original question', questionTranslation: 'Original translation',
+        hint: 'Original hint', hintTranslation: 'Translated hint', type: 'CUSTOM_FORMAT',
+        audio: 'AAAA', image: 'iVBORw0KGgo=', imageDescription: 'Original image description',
+      }));
+    });
+    await page.route(`**/api/exercises/${recordingPath}`, async route => {
+      submissions.push(route.request());
+      await fulfillJson(route, apiSuccess({
+        transcript: 'Answer transcript', score: 86,
+        feedback: 'Evaluated ' + multipartField(route.request(), 'attemptId'),
+        corrections: ['A correction'],
+      }));
+    });
+    await page.goto('/app/' + mode);
+    await page.getByRole('button', { name: generateLabel, exact: true }).click();
+    await recordAndSubmit(page);
+    await expect(page.getByText('Evaluated 100', { exact: true })).toBeVisible();
+    return { submissions, generations: () => generations };
+  }
+
+  test(`${mode}: redo chains preserve content and restore the new attempt with exhausted quota`, async ({ page }) => {
+    const harness = await setupRedo(page);
+    const retried: number[] = [];
+    let releaseRetry!: () => void;
+    const pending = new Promise<void>(resolve => { releaseRetry = resolve; });
+    await page.route('**/api/exercises/*/retry', async route => {
+      expect(route.request().method()).toBe('POST');
+      const oldId = Number(route.request().url().split('/').at(-2));
+      retried.push(oldId);
+      if (retried.length === 1) await pending;
+      await fulfillJson(route, apiSuccess({ attemptId: oldId + 1, retryOfAttemptId: oldId }));
+    });
+    const before = await storedPractice(page, feature);
+    const originalMedia = await page.locator(mode === 'speaking' ? 'app-audio-player' : 'figure img').elementHandle();
+    await expect(page.getByRole('button', { name: newLabel, exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Redo same exercise' })).toBeEnabled();
+    await page.getByRole('button', { name: 'Redo same exercise' }).click();
+    await expect(page.getByRole('button', { name: 'Preparing another attempt...' })).toBeDisabled();
+    await page.getByRole('button', { name: 'Preparing another attempt...' }).dispatchEvent('click');
+    await expect(page.getByText('Evaluated 100', { exact: true })).toBeVisible();
+    releaseRetry();
+    await expect(page.getByRole('button', { name: 'Start recording' })).toBeEnabled();
+    await expect(page.getByText('Evaluated 100', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Answer transcript', { exact: true })).toHaveCount(0);
+    expect(await originalMedia!.evaluate(element => element.isConnected)).toBe(true);
+    const after = await storedPractice(page, feature);
+    const contentKey = mode === 'speaking' ? 'prompt' : 'exercise';
+    expect(after[contentKey]).toEqual({ ...before[contentKey], attemptId: 101 });
+    expect(after.audio ?? after.image).toBe(before.audio ?? before.image);
+    expect(after.evaluation).toBeNull();
+    await page.reload();
+    await expect(page.getByRole('button', { name: 'Start recording' })).toBeEnabled();
+    expect((await storedPractice(page, feature))[contentKey].attemptId).toBe(101);
+    await expect(page.getByRole('button', { name: generateLabel, exact: true })).toBeDisabled();
+    await recordAndSubmit(page);
+    await expect(page.getByText('Evaluated 101', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Redo same exercise' }).click();
+    await expect(page.getByRole('button', { name: 'Start recording' })).toBeEnabled();
+    await recordAndSubmit(page);
+    await expect(page.getByText('Evaluated 102', { exact: true })).toBeVisible();
+    expect(retried).toEqual([100, 101]);
+    expect(harness.submissions.map(request => multipartField(request, 'attemptId'))).toEqual(['100', '101', '102']);
+    if (mode === 'image-description') {
+      expect(harness.submissions.map(request => multipartField(request, 'imageDescription')))
+        .toEqual(Array(3).fill('Original image description'));
+    }
+    expect(harness.generations()).toBe(1);
+  });
+
+  for (const failure of ['http', 'envelope', 'missing-data'] as const) {
+    test(`${mode}: ${failure} retry failure preserves evaluation and current attempt`, async ({ page }) => {
+      const harness = await setupRedo(page);
+      const before = await storedPractice(page, feature);
+      const retried: string[] = [];
+      await page.route('**/api/exercises/*/retry', async route => {
+        retried.push(route.request().url().split('/').at(-2)!);
+        if (retried.length > 1) {
+          await fulfillJson(route, apiSuccess({ attemptId: 101, retryOfAttemptId: 100 }));
+        } else {
+          await fulfillJson(route, failure === 'missing-data' ? apiSuccess(null) :
+            apiFailure('Please try this exercise again later.'), failure === 'http' ? 409 : 200);
+        }
+      });
+      await page.getByRole('button', { name: 'Redo same exercise' }).click();
+      await expect(page.getByText(failure === 'missing-data'
+        ? 'Could not restart this exercise. Please try again.'
+        : 'Please try this exercise again later.', { exact: true })).toBeVisible();
+      await expect(page.getByText('Evaluated 100', { exact: true })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Start recording' })).toBeDisabled();
+      expect(await storedPractice(page, feature)).toEqual(before);
+      await page.getByRole('button', { name: 'Redo same exercise' }).click();
+      await expect(page.getByRole('button', { name: 'Start recording' })).toBeEnabled();
+      expect(retried).toEqual(['100', '100']);
+      expect(harness.generations()).toBe(1);
+    });
+  }
+}
+
 test('429 refreshes Speaking quota without blocking Listening', async ({ page }) => {
   const token = 'speaking-quota-jwt';
   let quotaRequests = 0;

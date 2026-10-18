@@ -20,6 +20,7 @@ import { AiQuotaService, AiQuotaStatus } from '../../services/ai-quota.service';
 import { PracticeConfigService } from '../../services/practice-config.service';
 import { friendlyErrorMessage } from '../../error-message';
 import { AuthService } from '../../services/auth.service';
+import { ExerciseService } from '../../services/exercise.service';
 import { PracticeSessionService } from '../../services/practice-session.service';
 
 interface SpeakingSessionState {
@@ -108,7 +109,7 @@ interface SpeakingSessionState {
           <button
             type="submit"
             class="btn btn-primary btn-block"
-            [disabled]="loading() || configLoading() || form.invalid || recording() || uploadingRecording() || recordingBusy() || recordingReady() || retryableRecording() || promptQuotaBlocked()"
+            [disabled]="retryingExercise() || loading() || configLoading() || form.invalid || recording() || uploadingRecording() || recordingBusy() || recordingReady() || retryableRecording() || promptQuotaBlocked()"
           >
             @if (configLoading()) {
               <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
@@ -141,7 +142,7 @@ interface SpeakingSessionState {
               <span class="badge badge-sky">
                 {{ promptTopicLabel(prompt) }} &middot; {{ prompt.level }}
               </span>
-              <button type="button" class="btn btn-ghost" [disabled]="uploadingRecording()" (click)="clearExercise()">
+              <button type="button" class="btn btn-ghost" [disabled]="uploadingRecording() || retryingExercise()" (click)="clearExercise()">
                 Clear exercise
               </button>
             </div>
@@ -279,11 +280,24 @@ interface SpeakingSessionState {
                 }
               </div>
 
+              @if (retryError()) {
+                <div class="form-error" role="alert">{{ retryError() }}</div>
+              }
+              <p class="text-muted">Redo keeps this exercise for another answer. Generate new creates a different exercise.</p>
               <div class="record-again-actions">
+                <button type="button" class="btn btn-outline"
+                  [disabled]="retryingExercise()" (click)="redoExercise()">
+                  @if (retryingExercise()) {
+                    <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
+                    Preparing another attempt...
+                  } @else {
+                    Redo same exercise
+                  }
+                </button>
                 <button
                   type="button"
                   class="btn btn-primary"
-                  [disabled]="loading() || configLoading() || form.invalid || promptQuotaBlocked()"
+                  [disabled]="retryingExercise() || loading() || configLoading() || form.invalid || promptQuotaBlocked()"
                   (click)="generate()"
                 >
                   <app-icon name="sparkles" [size]="18"></app-icon>
@@ -326,6 +340,7 @@ export class SpeakingComponent implements OnDestroy, OnInit {
   private aiQuota = inject(AiQuotaService);
   private auth = inject(AuthService);
   private practiceSession = inject(PracticeSessionService);
+  private exercises = inject(ExerciseService);
 
   @ViewChild(AudioPlayerComponent)
   private promptAudioPlayer?: AudioPlayerComponent;
@@ -340,6 +355,8 @@ export class SpeakingComponent implements OnDestroy, OnInit {
   current = signal<SpeakingPrompt | null>(null);
   recording = signal(false);
   uploadingRecording = signal(false);
+  retryingExercise = signal(false);
+  retryError = signal('');
   evaluation = signal<SpeakingEvaluationDto | null>(null);
   recordingError = signal('');
   retryableRecording = signal(false);
@@ -373,7 +390,7 @@ export class SpeakingComponent implements OnDestroy, OnInit {
   }
 
   generate(): void {
-    if (this.recordingBusy() || this.recording() || this.uploadingRecording()) return;
+    if (this.retryingExercise() || this.recordingBusy() || this.recording() || this.uploadingRecording()) return;
     this.errorMsg.set('');
 
     if (this.promptQuotaBlocked()) {
@@ -441,7 +458,7 @@ export class SpeakingComponent implements OnDestroy, OnInit {
   }
 
   clearExercise(): void {
-    if (this.uploadingRecording()) return;
+    if (this.uploadingRecording() || this.retryingExercise()) return;
     this.stopRecording(false);
     this.resetPracticeSession();
     this.current.set(null);
@@ -475,6 +492,31 @@ export class SpeakingComponent implements OnDestroy, OnInit {
   resendRecording(): void {
     if (!this.retryableRecording() || !this.lastRecordingAudio || this.uploadingRecording()) return;
     this.uploadRecordedAudio(this.lastRecordingAudio);
+  }
+
+  redoExercise(): void {
+    const exercise = this.current();
+    if (!exercise || this.retryingExercise() || this.uploadingRecording() || this.loading()) return;
+
+    this.retryError.set('');
+    this.retryingExercise.set(true);
+    this.exercises.retryExercise(exercise.attemptId).subscribe({
+      next: (retry) => {
+        this.current.set({ ...exercise, attemptId: retry.attemptId });
+        this.evaluation.set(null);
+        this.recordingError.set('');
+        this.lastRecordingAudio = null;
+        this.retryableRecording.set(false);
+        this.recordingReady.set(false);
+        this.elapsed.set(0);
+        this.saveSession();
+      },
+      error: (error) => {
+        this.retryError.set(this.errorMessage(error));
+        this.retryingExercise.set(false);
+      },
+      complete: () => this.retryingExercise.set(false),
+    });
   }
 
   formattedTime(): string {
@@ -521,6 +563,7 @@ export class SpeakingComponent implements OnDestroy, OnInit {
   private resetPracticeSession(): void {
     this.clearPromptAudio();
     this.evaluation.set(null);
+    this.retryError.set('');
     this.recordingError.set('');
     this.retryableRecording.set(false);
     this.lastRecordingAudio = null;
@@ -725,6 +768,7 @@ export class SpeakingComponent implements OnDestroy, OnInit {
     return {
       id: practice.id || `${request.level}-${request.topic}-${Date.now()}`,
       attemptId: practice.attemptId!,
+      type: practice.type || request.type,
       topic: practiceTopic,
       level: practice.level || request.level,
       question:

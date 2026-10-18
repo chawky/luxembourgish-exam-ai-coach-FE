@@ -388,6 +388,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/exercises/{attemptId}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["retryExercise"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/exercises/vocabulary": {
         parameters: {
             query?: never;
@@ -1176,6 +1192,8 @@ export interface components {
             completedAt?: string;
             /** Format: date-time */
             evaluatedAt?: string;
+            /** Format: int64 */
+            retryOfAttemptId?: number | null;
         };
         ApiResponseStripeSessionURLDto: {
             success?: boolean;
@@ -1184,6 +1202,17 @@ export interface components {
         };
         StripeSessionURLDto: {
             stripeSessionUrl?: string;
+        };
+        ApiResponseRetryExerciseResponse: {
+            success?: boolean;
+            message?: string;
+            data?: components["schemas"]["RetryExerciseResponse"];
+        };
+        RetryExerciseResponse: {
+            /** Format: int64 */
+            attemptId?: number;
+            /** Format: int64 */
+            retryOfAttemptId?: number;
         };
         VocabularyRequestDto: {
             level: string;
@@ -2410,6 +2439,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseStripeSessionURLDto"];
+                };
+            };
+        };
+    };
+    retryExercise: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attemptId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseRetryExerciseResponse"];
                 };
             };
         };

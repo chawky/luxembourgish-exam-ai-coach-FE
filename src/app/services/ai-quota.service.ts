@@ -63,10 +63,6 @@ export class AiQuotaService {
   }
 
   isExhausted(quota: AiQuotaStatus | null, feature: AiQuotaFeature): boolean {
-    if (quota?.tier?.toUpperCase() !== 'BASIC') {
-      return false;
-    }
-
     const featureStatus = this.feature(quota, feature);
     return typeof featureStatus?.remaining === 'number' && featureStatus.remaining <= 0;
   }

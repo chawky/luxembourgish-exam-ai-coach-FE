@@ -6,6 +6,7 @@ import {
   ApiResponse,
   GeneratedExerciseDto,
   GenerateExerciseRequest,
+  RetryExerciseResponse,
 } from '../models';
 import { DashboardService } from './dashboard.service';
 
@@ -17,6 +18,27 @@ export class ExerciseService {
   private readonly url = apiUrl('/exercises');
   private readonly http = inject(HttpClient);
   private readonly dashboard = inject(DashboardService);
+
+  retryExercise(attemptId: number): Observable<RetryExerciseResponse> {
+    return this.http
+      .post<ApiResponse<RetryExerciseResponse | null>>(`${this.url}/${attemptId}/retry`, null)
+      .pipe(
+        map((response) => {
+          if (!response.success) {
+            throw new Error(response.message || 'Could not restart this exercise. Please try again.');
+          }
+          if (!response.data || typeof response.data.attemptId !== 'number' ||
+              typeof response.data.retryOfAttemptId !== 'number') {
+            throw new Error('Could not restart this exercise. Please try again.');
+          }
+          return response.data;
+        }),
+        tap(() => this.dashboard.clearCache()),
+        catchError((error) => throwError(() =>
+          this.toApiError(error, 'Could not restart this exercise. Please try again.'),
+        )),
+      );
+  }
 
   generateExercise(
     request: GenerateExerciseRequest,

@@ -206,7 +206,7 @@ interface ImageDescriptionSessionState {
             </div>
 
             @if (recordingReady()) {
-              <div class="record-again-actions">
+              <div class="recording-review-actions">
                 <button type="button" class="btn btn-primary" (click)="submitRecording()">Submit recording</button>
                 <button type="button" class="btn btn-outline" (click)="recordAgain()">Record again</button>
               </div>

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type Request } from '@playwright/test';
 import {
   apiFailure,
   apiSuccess,
@@ -7,8 +7,13 @@ import {
 } from './fixtures/api.fixture';
 import { seedAuthenticatedSession, testUser } from './fixtures/auth.fixture';
 import { mockDashboardProgress } from './fixtures/dashboard.fixture';
-import { mockPracticeConfig } from './fixtures/practice-config.fixture';
+import { mockPracticeConfig, practiceConfig } from './fixtures/practice-config.fixture';
 import { mockQuota, quota } from './fixtures/quota.fixture';
+
+function multipartField(request: Request, name: string): string {
+  const body = request.postDataBuffer()?.toString() ?? '';
+  return body.split(`name="${name}"\r\n\r\n`)[1]?.split('\r\n')[0] ?? '';
+}
 
 async function setupPracticePage(page: Page, token: string): Promise<void> {
   const user = testUser();
@@ -35,8 +40,10 @@ async function mockRecording(page: Page): Promise<void> {
 
       state: RecordingState = 'inactive';
       mimeType = 'audio/webm';
+      static recordings = 0;
 
       start(): void {
+        FakeMediaRecorder.recordings += 1;
         this.state = 'recording';
       }
 
@@ -44,10 +51,12 @@ async function mockRecording(page: Page): Promise<void> {
         this.state = 'inactive';
         const dataEvent = new Event('dataavailable');
         Object.defineProperty(dataEvent, 'data', {
-          value: new Blob(['recording'], { type: this.mimeType }),
+          value: new Blob([`recording-${FakeMediaRecorder.recordings}`], { type: this.mimeType }),
         });
-        this.dispatchEvent(dataEvent);
-        this.dispatchEvent(new Event('stop'));
+        setTimeout(() => {
+          this.dispatchEvent(dataEvent);
+          this.dispatchEvent(new Event('stop'));
+        }, 0);
       }
     }
 
@@ -83,7 +92,7 @@ test('successful Speaking evaluation cannot submit the same attemptId again', as
       corrections: [],
     }),
     onRequest: (request) => {
-      attemptIds.push(new URL(request.url()).searchParams.get('attemptId') ?? '');
+      attemptIds.push(multipartField(request, 'attemptId'));
     },
   });
 
@@ -91,6 +100,8 @@ test('successful Speaking evaluation cannot submit the same attemptId again', as
   await page.getByRole('button', { name: /Generate prompt/ }).click();
   await page.getByRole('button', { name: 'Start recording' }).click();
   await page.getByRole('button', { name: 'Stop recording' }).click();
+  await expect(page.getByText('Recording ready', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Submit recording' }).click();
 
   await expect(page.getByText('Good answer.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Record new answer' })).toHaveCount(0);
@@ -127,7 +138,7 @@ test('successful Image Description evaluation cannot submit the same attemptId a
       corrections: [],
     }),
     onRequest: (request) => {
-      attemptIds.push(new URL(request.url()).searchParams.get('attemptId') ?? '');
+      attemptIds.push(multipartField(request, 'attemptId'));
     },
   });
 
@@ -135,6 +146,8 @@ test('successful Image Description evaluation cannot submit the same attemptId a
   await page.getByRole('button', { name: /Generate image/ }).click();
   await page.getByRole('button', { name: 'Start recording' }).click();
   await page.getByRole('button', { name: 'Stop recording' }).click();
+  await expect(page.getByText('Recording ready', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Submit recording' }).click();
 
   await expect(page.getByText('Clear description.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Record new description' })).toHaveCount(0);
@@ -162,7 +175,7 @@ test('failed provider evaluation can resend the retained recording', async ({ pa
     }),
   });
   await page.route('**/api/exercises/recording**', async (route) => {
-    attemptIds.push(new URL(route.request().url()).searchParams.get('attemptId') ?? '');
+    attemptIds.push(multipartField(route.request(), 'attemptId'));
     if (attemptIds.length === 1) {
       await fulfillJson(route, apiFailure('The evaluation provider is temporarily unavailable.'), 502);
       return;
@@ -183,6 +196,8 @@ test('failed provider evaluation can resend the retained recording', async ({ pa
   await page.getByRole('button', { name: /Generate prompt/ }).click();
   await page.getByRole('button', { name: 'Start recording' }).click();
   await page.getByRole('button', { name: 'Stop recording' }).click();
+  await expect(page.getByText('Recording ready', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Submit recording' }).click();
 
   await expect(page.getByRole('button', { name: 'Resend recording' })).toBeVisible();
   await page.getByRole('button', { name: 'Resend recording' }).click();
@@ -191,7 +206,7 @@ test('failed provider evaluation can resend the retained recording', async ({ pa
   expect(attemptIds).toEqual(['1203', '1203']);
 });
 
-test('already evaluated recordings show a clear non-retryable message', async ({
+test('backend rejection retains recording and leaves retry eligibility to the backend', async ({
   page,
 }) => {
   const token = 'speaking-evaluated-jwt';
@@ -222,13 +237,15 @@ test('already evaluated recordings show a clear non-retryable message', async ({
   await page.getByRole('button', { name: /Generate prompt/ }).click();
   await page.getByRole('button', { name: 'Start recording' }).click();
   await page.getByRole('button', { name: 'Stop recording' }).click();
+  await expect(page.getByText('Recording ready', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Submit recording' }).click();
 
   await expect(
     page.getByText(
-      'This answer has already been evaluated. Generate a new exercise to try again.',
+      'This recording cannot be evaluated right now. Try again or generate a new exercise.',
     ),
   ).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Resend recording' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Resend recording' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Start recording' })).toBeDisabled();
   await page.getByRole('button', { name: 'Start recording' }).dispatchEvent('click');
   await page.waitForTimeout(100);
@@ -258,7 +275,7 @@ test('a newly generated Speaking attempt can be evaluated normally', async ({ pa
     );
   });
   await page.route('**/api/exercises/recording**', async (route) => {
-    const attemptId = new URL(route.request().url()).searchParams.get('attemptId') ?? '';
+    const attemptId = multipartField(route.request(), 'attemptId');
     evaluatedAttemptIds.push(attemptId);
     await fulfillJson(
       route,
@@ -275,6 +292,8 @@ test('a newly generated Speaking attempt can be evaluated normally', async ({ pa
   await page.getByRole('button', { name: /Generate prompt/ }).click();
   await page.getByRole('button', { name: 'Start recording' }).click();
   await page.getByRole('button', { name: 'Stop recording' }).click();
+  await expect(page.getByText('Recording ready', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Submit recording' }).click();
   await expect(page.getByText('Evaluation for 1204')).toBeVisible();
 
   await page.getByRole('button', { name: 'Generate new speaking prompt' }).click();
@@ -282,11 +301,96 @@ test('a newly generated Speaking attempt can be evaluated normally', async ({ pa
   await expect(page.getByRole('button', { name: 'Start recording' })).toBeEnabled();
   await page.getByRole('button', { name: 'Start recording' }).click();
   await page.getByRole('button', { name: 'Stop recording' }).click();
+  await expect(page.getByText('Recording ready', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Submit recording' }).click();
   await expect(page.getByText('Evaluation for 1205')).toBeVisible();
 
   expect(generationRequests).toBe(2);
   expect(evaluatedAttemptIds).toEqual(['1204', '1205']);
 });
+
+for (const mode of ['speaking', 'image-description'] as const) {
+  for (const premium of [false, true]) {
+    test(`${mode}: review, discard and resend keep the attempt with ${premium ? 'nullable premium' : 'exhausted generation'} quota`, async ({ page }) => {
+      await mockRecording(page);
+      await setupPracticePage(page, 'review-jwt');
+      await mockPracticeConfig(page, { data: practiceConfig({
+        levels: [{ code: 'CUSTOM_LEVEL', label: 'Custom level' }],
+        topics: [{ code: 'CUSTOM_TOPIC', label: 'Custom topic', levelCode: 'CUSTOM_LEVEL' }],
+        exerciseTypes: [{ code: 'CUSTOM_FORMAT', label: 'Custom format' }],
+      }) });
+      let generations = 0;
+      const requests: Request[] = [];
+      const feature = mode === 'speaking' ? 'SPEAKING' : 'IMAGE_DESCRIPTION';
+      const generationPath = mode === 'speaking' ? 'practice' : 'generate-image';
+      const recordingPath = mode === 'speaking' ? 'recording' : 'image-description/recording';
+      await page.route('**/api/users/me/ai-quota', route => fulfillJson(route, apiSuccess(
+        premium ? quota({ tier: 'PREMIUM' }) : quota(generations ? { exhausted: feature } : {}),
+      )));
+      await page.route(`**/api/exercises/${generationPath}`, async route => {
+        generations += 1;
+        expect(route.request().postDataJSON()).toEqual({
+          level: 'CUSTOM_LEVEL', topic: 'CUSTOM_TOPIC', type: 'CUSTOM_FORMAT',
+        });
+        await fulfillJson(route, apiSuccess({
+          attemptId: 9876,
+          question: 'A question',
+          questionTranslation: 'English question',
+          hint: 'A Luxembourgish hint',
+          hintTranslation: 'An English hint',
+          image: 'iVBORw0KGgo=',
+          imageDescription: 'The original image description',
+        }));
+      });
+      await page.route(`**/api/exercises/${recordingPath}`, async route => {
+        requests.push(route.request());
+        if (requests.length === 1) {
+          await fulfillJson(route, apiFailure('Evaluation temporarily unavailable.'), 502);
+        } else {
+          await fulfillJson(route, apiSuccess({
+            transcript: 'Retained answer', score: 85, feedback: 'Resend succeeded', corrections: [],
+          }));
+        }
+      });
+      await page.goto(`/app/${mode}`);
+      const generate = page.getByRole('button', { name: mode === 'speaking' ? /Generate prompt/ : /Generate image/ });
+      await generate.click();
+      await expect(page.getByRole('button', { name: 'Start recording' })).toBeEnabled();
+      if (!premium) await expect(generate).toBeDisabled();
+      if (mode === 'speaking') await expect(page.getByText('An English hint', { exact: true })).toBeVisible();
+      await page.getByRole('button', { name: 'Start recording' }).click();
+      await page.getByRole('button', { name: 'Stop recording' }).click();
+      await expect(page.getByText('Recording ready', { exact: true })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Resend recording' })).toHaveCount(0);
+      expect(requests).toHaveLength(0);
+      await page.getByRole('button', { name: 'Record again', exact: true }).click();
+      await expect(page.getByRole('button', { name: 'Stop recording' })).toBeEnabled();
+      expect(requests).toHaveLength(0);
+      expect(generations).toBe(1);
+      await page.getByRole('button', { name: 'Stop recording' }).click();
+      await expect(page.getByText('Recording ready', { exact: true })).toBeVisible();
+      expect(requests).toHaveLength(0);
+      await page.getByRole('button', { name: 'Submit recording' }).click();
+      await expect(page.getByRole('button', { name: 'Resend recording' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Record again', exact: true })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Submit recording' })).toHaveCount(0);
+      await page.getByRole('button', { name: 'Resend recording' }).click();
+      await expect(page.getByText('Resend succeeded')).toBeVisible();
+      expect(requests).toHaveLength(2);
+      for (const request of requests) {
+        expect(multipartField(request, 'attemptId')).toBe('9876');
+        expect(multipartField(request, 'durationSeconds')).toMatch(/^\d+$/);
+        expect(request.postDataBuffer()?.toString()).toContain('recording-2');
+        expect(request.postDataBuffer()?.toString()).not.toContain('recording-1');
+        expect(request.headers()['content-type']).toContain('multipart/form-data');
+        if (mode === 'image-description') {
+          expect(multipartField(request, 'imageDescription')).toBe('The original image description');
+        }
+      }
+      expect(generations).toBe(1);
+    });
+  }
+}
 
 test('429 refreshes Speaking quota without blocking Listening', async ({ page }) => {
   const token = 'speaking-quota-jwt';

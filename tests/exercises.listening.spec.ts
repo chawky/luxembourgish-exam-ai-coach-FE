@@ -126,7 +126,8 @@ test('generates listening audio and completes attempt on answer selection', asyn
   await expect(page.getByRole('heading', { name: 'Train your ear' })).toBeVisible();
   await expect(page.getByLabel('Level')).toHaveValue('A1');
   await expect(page.getByLabel('Topic')).toHaveValue('DAILY_ROUTINE');
-  await expect(page.getByLabel('Answer type')).toHaveValue('MULTIPLE_CHOICE');
+  await expect(page.getByLabel('Answer type')).toHaveValue('TRANSLATION');
+  await page.getByLabel('Answer type').selectOption('MULTIPLE_CHOICE');
 
   await page.getByRole('button', { name: /Generate listening exercise/ }).click();
 

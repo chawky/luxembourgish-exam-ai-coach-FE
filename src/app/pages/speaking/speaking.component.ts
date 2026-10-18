@@ -31,7 +31,6 @@ interface SpeakingSessionState {
   showQuestion: boolean;
   showTranslation: boolean;
   evaluation: SpeakingEvaluationDto | null;
-  attemptEvaluationClosed: boolean;
 }
 
 @Component({
@@ -109,7 +108,7 @@ interface SpeakingSessionState {
           <button
             type="submit"
             class="btn btn-primary btn-block"
-            [disabled]="loading() || configLoading() || form.invalid || recording() || uploadingRecording() || promptQuotaBlocked()"
+            [disabled]="loading() || configLoading() || form.invalid || recording() || uploadingRecording() || recordingBusy() || recordingReady() || retryableRecording() || promptQuotaBlocked()"
           >
             @if (configLoading()) {
               <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
@@ -142,7 +141,7 @@ interface SpeakingSessionState {
               <span class="badge badge-sky">
                 {{ promptTopicLabel(prompt) }} &middot; {{ prompt.level }}
               </span>
-              <button type="button" class="btn btn-ghost" (click)="clearExercise()">
+              <button type="button" class="btn btn-ghost" [disabled]="uploadingRecording()" (click)="clearExercise()">
                 Clear exercise
               </button>
             </div>
@@ -200,12 +199,15 @@ interface SpeakingSessionState {
                 class="record-btn"
                 [class.recording]="recording()"
                 (click)="toggleRecord()"
-                [disabled]="uploadingRecording() || attemptEvaluationClosed()"
+                [disabled]="recordingBusy() || recordingReady() || retryableRecording() || uploadingRecording() || evaluation()"
                 [attr.aria-label]="recording() ? 'Stop recording' : 'Start recording'"
               >
                 <app-icon [name]="recording() ? 'check' : 'mic'" [size]="26"></app-icon>
               </button>
-              <div class="recorder-meta">
+              <div class="recorder-meta" aria-live="polite">
+                @if (uploadingRecording()) {
+                  <app-icon class="inline-loading-icon" name="sparkles" [size]="18"></app-icon>
+                }
                 <strong>
                   {{
                     recording()
@@ -214,12 +216,21 @@ interface SpeakingSessionState {
                         ? 'Uploading recording...'
                         : evaluation()
                           ? 'Evaluation ready'
-                        : 'Ready when you are'
+                        : recordingReady()
+                          ? 'Recording ready'
+                          : 'Ready when you are'
                   }}
                 </strong>
                 <span class="text-muted">{{ formattedTime() }}</span>
               </div>
             </div>
+
+            @if (recordingReady()) {
+              <div class="record-again-actions">
+                <button type="button" class="btn btn-primary" (click)="submitRecording()">Submit recording</button>
+                <button type="button" class="btn btn-outline" (click)="recordAgain()">Record again</button>
+              </div>
+            }
 
             @if (recordingError()) {
               <div class="form-error recording-error" role="alert">
@@ -330,9 +341,11 @@ export class SpeakingComponent implements OnDestroy, OnInit {
   recording = signal(false);
   uploadingRecording = signal(false);
   evaluation = signal<SpeakingEvaluationDto | null>(null);
-  attemptEvaluationClosed = signal(false);
   recordingError = signal('');
   retryableRecording = signal(false);
+  recordingReady = signal(false);
+  recordingBusy = signal(false);
+  private recordingSession = 0;
   elapsed = signal(0);
   showQuestion = signal(false);
   showTranslation = signal(false);
@@ -345,7 +358,7 @@ export class SpeakingComponent implements OnDestroy, OnInit {
   private mediaStream: MediaStream | null = null;
   private recordedChunks: Blob[] = [];
   private lastRecordingAudio: Blob | null = null;
-  private shouldUploadStoppedRecording = false;
+  private shouldKeepStoppedRecording = false;
   private audioSource: SpeakingPracticeDto | null = null;
 
   form = this.fb.nonNullable.group({
@@ -360,6 +373,7 @@ export class SpeakingComponent implements OnDestroy, OnInit {
   }
 
   generate(): void {
+    if (this.recordingBusy() || this.recording() || this.uploadingRecording()) return;
     this.errorMsg.set('');
 
     if (this.promptQuotaBlocked()) {
@@ -427,6 +441,7 @@ export class SpeakingComponent implements OnDestroy, OnInit {
   }
 
   clearExercise(): void {
+    if (this.uploadingRecording()) return;
     this.stopRecording(false);
     this.resetPracticeSession();
     this.current.set(null);
@@ -436,7 +451,7 @@ export class SpeakingComponent implements OnDestroy, OnInit {
   }
 
   toggleRecord(): void {
-    if (!this.current() || this.loading() || this.uploadingRecording() || this.attemptEvaluationClosed()) {
+    if (!this.current() || this.loading() || this.uploadingRecording() || this.recordingBusy() || this.recordingReady() || this.retryableRecording() || this.evaluation()) {
       return;
     }
 
@@ -447,11 +462,18 @@ export class SpeakingComponent implements OnDestroy, OnInit {
     }
   }
 
-  resendRecording(): void {
-    if (!this.lastRecordingAudio || this.uploadingRecording() || this.attemptEvaluationClosed()) {
-      return;
-    }
+  submitRecording(): void {
+    if (!this.recordingReady() || this.uploadingRecording() || !this.lastRecordingAudio) return;
+    this.uploadRecordedAudio(this.lastRecordingAudio);
+  }
 
+  recordAgain(): void {
+    if (!this.recordingReady() || this.uploadingRecording()) return;
+    void this.startRecording();
+  }
+
+  resendRecording(): void {
+    if (!this.retryableRecording() || !this.lastRecordingAudio || this.uploadingRecording()) return;
     this.uploadRecordedAudio(this.lastRecordingAudio);
   }
 
@@ -481,12 +503,14 @@ export class SpeakingComponent implements OnDestroy, OnInit {
     }
   }
 
-  private stopRecording(uploadRecording: boolean): void {
-    this.shouldUploadStoppedRecording = uploadRecording;
+  private stopRecording(keepRecording: boolean): void {
+    this.shouldKeepStoppedRecording = keepRecording;
+    if (!keepRecording) this.recordingSession += 1;
     this.recording.set(false);
     this.clearTimer();
 
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.recordingBusy.set(true);
       this.mediaRecorder.stop();
       return;
     }
@@ -497,10 +521,10 @@ export class SpeakingComponent implements OnDestroy, OnInit {
   private resetPracticeSession(): void {
     this.clearPromptAudio();
     this.evaluation.set(null);
-    this.attemptEvaluationClosed.set(false);
     this.recordingError.set('');
     this.retryableRecording.set(false);
     this.lastRecordingAudio = null;
+    this.recordingReady.set(false);
     this.elapsed.set(0);
     this.showQuestion.set(false);
     this.showTranslation.set(false);
@@ -512,16 +536,23 @@ export class SpeakingComponent implements OnDestroy, OnInit {
     this.evaluation.set(null);
     this.retryableRecording.set(false);
     this.lastRecordingAudio = null;
+    this.recordingReady.set(false);
 
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
       this.recordingError.set('Audio recording is not supported in this browser.');
       return;
     }
 
+    const session = ++this.recordingSession;
+    this.recordingBusy.set(true);
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: true,
       });
+      if (session !== this.recordingSession) {
+        mediaStream.getTracks().forEach((track) => track.stop());
+        return;
+      }
       const mimeType = this.supportedAudioMimeType();
 
       this.mediaStream = mediaStream;
@@ -548,18 +579,21 @@ export class SpeakingComponent implements OnDestroy, OnInit {
     } catch (error) {
       this.recordingError.set(this.microphoneErrorMessage(error));
       this.cleanupRecordingResources();
+    } finally {
+      this.recordingBusy.set(false);
     }
   }
 
   private handleRecordingStop(): void {
-    const shouldUploadRecording = this.shouldUploadStoppedRecording;
+    const shouldKeepRecording = this.shouldKeepStoppedRecording;
     const recordedChunks = [...this.recordedChunks];
     const mimeType = this.mediaRecorder?.mimeType || 'audio/webm';
 
-    this.shouldUploadStoppedRecording = false;
+    this.shouldKeepStoppedRecording = false;
     this.cleanupRecordingResources();
+    this.recordingBusy.set(false);
 
-    if (!shouldUploadRecording) {
+    if (!shouldKeepRecording) {
       return;
     }
 
@@ -568,12 +602,12 @@ export class SpeakingComponent implements OnDestroy, OnInit {
       return;
     }
 
-    const audio = new Blob(recordedChunks, { type: mimeType });
-    this.uploadRecordedAudio(audio);
+    this.lastRecordingAudio = new Blob(recordedChunks, { type: mimeType });
+    this.recordingReady.set(true);
   }
 
   private uploadRecordedAudio(audio: Blob): void {
-    if (this.attemptEvaluationClosed()) {
+    if (this.evaluation()) {
       return;
     }
 
@@ -584,6 +618,7 @@ export class SpeakingComponent implements OnDestroy, OnInit {
     }
 
     this.lastRecordingAudio = audio;
+    this.recordingReady.set(false);
     this.uploadingRecording.set(true);
     this.retryableRecording.set(false);
     this.evaluation.set(null);
@@ -594,25 +629,16 @@ export class SpeakingComponent implements OnDestroy, OnInit {
       .subscribe({
       next: (evaluation) => {
         this.evaluation.set(evaluation);
-        this.attemptEvaluationClosed.set(true);
         this.retryableRecording.set(false);
         this.lastRecordingAudio = null;
+        this.recordingReady.set(false);
         this.saveSession();
         this.loadQuota(true);
       },
       error: (error) => {
         const message = this.errorMessage(error);
-        const normalizedMessage = message.toLowerCase();
-        const alreadyEvaluated =
-          normalizedMessage.includes('already been evaluated') ||
-          normalizedMessage.includes('exercise attempt cannot be evaluated');
         this.recordingError.set(message);
-        this.loadQuota(true);
-        this.attemptEvaluationClosed.set(alreadyEvaluated);
-        this.retryableRecording.set(!alreadyEvaluated);
-        if (alreadyEvaluated) {
-          this.saveSession();
-        }
+        this.retryableRecording.set(true);
         this.uploadingRecording.set(false);
       },
       complete: () => {
@@ -648,11 +674,7 @@ export class SpeakingComponent implements OnDestroy, OnInit {
         this.levels = config.levels;
         this.topics = config.topics;
         this.exerciseTypes = config.exerciseTypes;
-        this.answerTypeCode.set(
-          this.exerciseTypes.find((type) => type.value === 'SHORT_ANSWER')?.value ||
-            this.exerciseTypes[0]?.value ||
-            '',
-        );
+        this.answerTypeCode.set(this.exerciseTypes[0]?.value || '');
         this.applySelectionDefaults();
       },
       error: (error) => {
@@ -782,7 +804,6 @@ export class SpeakingComponent implements OnDestroy, OnInit {
         showQuestion: this.showQuestion(),
         showTranslation: this.showTranslation(),
         evaluation: this.evaluation(),
-        attemptEvaluationClosed: this.attemptEvaluationClosed(),
       },
     );
   }
@@ -809,22 +830,14 @@ export class SpeakingComponent implements OnDestroy, OnInit {
     this.showQuestion.set(state.showQuestion);
     this.showTranslation.set(state.showTranslation);
     this.evaluation.set(state.evaluation);
-    this.attemptEvaluationClosed.set(state.attemptEvaluationClosed);
   }
 
   private translationText(practice: SpeakingPracticeDto): string {
-    return (
-      practice.questionsTranslations ||
-      practice.questionTranslation ||
-      practice.questionEn ||
-      practice.promptEn ||
-      ''
-    );
+    return practice.questionTranslation || '';
   }
 
   private collectTips(practice: SpeakingPracticeDto): string[] {
-    const hints = practice.hints ?? [];
-    return practice.hint ? [practice.hint, ...hints] : hints;
+    return [practice.hint, practice.hintTranslation].filter((hint): hint is string => !!hint);
   }
 
   correctionItems(evaluation: SpeakingEvaluationDto): string[] {

@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, tap, throwError } from 'rxjs';
 import { apiUrl } from '../api/api-url';
@@ -48,16 +48,14 @@ export class SpeakingService {
 
     const formData = new FormData();
     formData.append('audio', this.toRecordingFile(audio));
-    let params = new HttpParams().set('attemptId', attemptId);
+    formData.append('attemptId', String(attemptId));
 
     if (durationSeconds !== undefined) {
-      params = params.set('durationSeconds', durationSeconds);
+      formData.append('durationSeconds', String(durationSeconds));
     }
 
     return this.http
-      .post<SpeakingEvaluationResponse>(this.recordingUrl, formData, {
-        params,
-      })
+      .post<SpeakingEvaluationResponse>(this.recordingUrl, formData)
       .pipe(
         map((response) => this.unwrapEvaluation(response)),
         tap(() => {

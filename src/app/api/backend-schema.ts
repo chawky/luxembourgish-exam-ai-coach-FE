@@ -1163,7 +1163,7 @@ export interface components {
             exerciseType?: string;
             exerciseName?: string;
             /** @enum {string} */
-            status?: "GENERATED" | "COMPLETED" | "EVALUATED";
+            status?: "GENERATED" | "EVALUATING" | "COMPLETED" | "EVALUATED";
             level?: string;
             topic?: string;
             answerType?: string;

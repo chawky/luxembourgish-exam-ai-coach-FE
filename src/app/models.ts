@@ -168,11 +168,7 @@ export interface AudioExerciseDto extends GeneratedExerciseDto {
 
 export interface ListeningExerciseDto extends AudioExerciseDto {}
 
-export interface SpeakingPracticeDto extends AudioExerciseDto {
-  questionsTranslations?: string;
-  questionEn?: string;
-  promptEn?: string;
-}
+export interface SpeakingPracticeDto extends AudioExerciseDto {}
 
 export interface GeneratedImageDto {
   attemptId?: number;

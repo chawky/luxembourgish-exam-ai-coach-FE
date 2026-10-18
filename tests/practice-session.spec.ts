@@ -186,6 +186,8 @@ test('evaluated Speaking stays closed after restore and clearing it preserves Li
   await page.getByRole('button', { name: /Generate prompt/ }).click();
   await page.getByRole('button', { name: 'Start recording' }).click();
   await page.getByRole('button', { name: 'Stop recording' }).click();
+  await expect(page.getByText('Recording ready', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Submit recording' }).click();
   await expect(page.getByText('Persisted speaking evaluation')).toBeVisible();
 
   await page.goto('/app/dashboard');
@@ -240,6 +242,8 @@ test('image description recreates its image and remains closed after refresh', a
   const firstImageUrl = await page.getByRole('img').getAttribute('src');
   await page.getByRole('button', { name: 'Start recording' }).click();
   await page.getByRole('button', { name: 'Stop recording' }).click();
+  await expect(page.getByText('Recording ready', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Submit recording' }).click();
   await expect(page.getByText('Persisted image evaluation')).toBeVisible();
 
   await page.reload();

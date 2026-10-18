@@ -65,10 +65,13 @@ export function friendlyMessage(
 
   if (
     normalizedMessage.includes('already evaluated') ||
-    normalizedMessage.includes('already been evaluated') ||
-    normalizedMessage.includes('exercise attempt cannot be evaluated')
+    normalizedMessage.includes('already been evaluated')
   ) {
     return 'This answer has already been evaluated. Generate a new exercise to try again.';
+  }
+
+  if (normalizedMessage.includes('exercise attempt cannot be evaluated')) {
+    return 'This recording cannot be evaluated right now. Try again or generate a new exercise.';
   }
 
   if (

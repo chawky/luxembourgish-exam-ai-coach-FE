@@ -570,13 +570,8 @@ export class ListeningComponent implements OnDestroy, OnInit {
       this.form.controls.level.setValue(this.levels[0].value);
     }
 
-    const multipleChoice = this.exerciseTypes.find(
-      (type) => type.value === 'MULTIPLE_CHOICE',
-    );
-    if (!this.form.controls.type.value && (multipleChoice || this.exerciseTypes[0])) {
-      this.form.controls.type.setValue(
-        multipleChoice?.value || this.exerciseTypes[0].value,
-      );
+    if (!this.form.controls.type.value && this.exerciseTypes[0]) {
+      this.form.controls.type.setValue(this.exerciseTypes[0].value);
     }
 
     this.ensureTopicMatchesLevel();

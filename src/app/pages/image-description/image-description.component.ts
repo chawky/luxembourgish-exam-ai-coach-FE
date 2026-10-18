@@ -180,7 +180,7 @@ interface ImageDescriptionSessionState {
                 class="record-btn"
                 [class.recording]="recording()"
                 (click)="toggleRecord()"
-                [disabled]="uploadingRecording() || !exercise.imageDescription || attemptEvaluationClosed()"
+                [disabled]="uploadingRecording() || recordingReady() || !exercise.imageDescription || attemptEvaluationClosed()"
                 [attr.aria-label]="recording() ? 'Stop recording' : 'Start recording'"
               >
                 <app-icon [name]="recording() ? 'check' : 'mic'" [size]="26"></app-icon>
@@ -194,12 +194,35 @@ interface ImageDescriptionSessionState {
                         ? 'Uploading recording...'
                         : evaluation()
                           ? 'Evaluation ready'
+                        : recordingReady()
+                          ? 'Recording ready — submit or record again'
                         : 'Ready when you are'
                   }}
                 </strong>
                 <span class="text-muted">{{ formattedTime() }}</span>
               </div>
             </div>
+
+            @if (recordingReady()) {
+              <div class="recording-review-actions">
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  [disabled]="uploadingRecording()"
+                  (click)="submitRecording()"
+                >
+                  Submit recording
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-outline"
+                  [disabled]="uploadingRecording()"
+                  (click)="recordAgain()"
+                >
+                  Record again
+                </button>
+              </div>
+            }
 
             @if (recordingError()) {
               <div class="form-error recording-error" role="alert">
@@ -323,6 +346,7 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
   quota = signal<AiQuotaStatus | null>(null);
   current = signal<ImageDescriptionExerciseView | null>(null);
   recording = signal(false);
+  recordingReady = signal(false);
   uploadingRecording = signal(false);
   evaluation = signal<SpeakingEvaluationDto | null>(null);
   attemptEvaluationClosed = signal(false);
@@ -426,6 +450,27 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
     } else {
       void this.startRecording();
     }
+  }
+
+  submitRecording(): void {
+    if (!this.lastRecordingAudio || this.uploadingRecording() || this.attemptEvaluationClosed()) {
+      return;
+    }
+
+    this.recordingReady.set(false);
+    this.uploadRecordedAudio(this.lastRecordingAudio);
+  }
+
+  recordAgain(): void {
+    if (this.uploadingRecording() || this.attemptEvaluationClosed()) {
+      return;
+    }
+
+    this.lastRecordingAudio = null;
+    this.recordingReady.set(false);
+    this.recordingError.set('');
+    this.retryableRecording.set(false);
+    void this.startRecording();
   }
 
   resendRecording(): void {
@@ -634,6 +679,7 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
     this.attemptEvaluationClosed.set(false);
     this.recordingError.set('');
     this.retryableRecording.set(false);
+    this.recordingReady.set(false);
     this.lastRecordingAudio = null;
     this.elapsed.set(0);
   }
@@ -642,6 +688,7 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
     this.recordingError.set('');
     this.evaluation.set(null);
     this.retryableRecording.set(false);
+    this.recordingReady.set(false);
     this.lastRecordingAudio = null;
 
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
@@ -699,8 +746,9 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
       return;
     }
 
-    const audio = new Blob(recordedChunks, { type: mimeType });
-    this.uploadRecordedAudio(audio);
+    this.lastRecordingAudio = new Blob(recordedChunks, { type: mimeType });
+    this.recordingReady.set(true);
+    this.recordingError.set('');
   }
 
   private uploadRecordedAudio(audio: Blob): void {
@@ -716,6 +764,7 @@ export class ImageDescriptionComponent implements OnDestroy, OnInit {
     }
 
     this.lastRecordingAudio = audio;
+    this.recordingReady.set(false);
     this.uploadingRecording.set(true);
     this.retryableRecording.set(false);
     this.evaluation.set(null);
